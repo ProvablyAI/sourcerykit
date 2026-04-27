@@ -47,4 +47,7 @@ select = ["E", "F", "I", "UP", "W"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
+markers = [
+    "e2e: end-to-end tests that drive the SDK against a real loopback HTTP server",
+]
