@@ -109,6 +109,32 @@ def test_creates_query_record_falls_back_to_api_url_without_app_ui(
     assert qurl == "https://api.test/api/v1/organizations/org-1/queries/q-uuid"
 
 
+def test_infers_app_deep_link_when_only_rust_be_is_provably_saas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If ``PROVABLY_APP_UI_URL`` is unset but ``PROVABLY_RUST_BE_URL`` is *.provably.ai, infer ``app-*``."""
+    monkeypatch.setenv("PROVABLY_RUST_BE_URL", "https://api-dev.provably.ai")
+    monkeypatch.setenv("PROVABLY_API_KEY", "k")
+    monkeypatch.setenv("PROVABLY_ORG_ID", "org-1")
+    monkeypatch.delenv("PROVABLY_APP_UI_URL", raising=False)
+
+    def fake_post(path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        if path.endswith("/query"):
+            return {"id": "q-uuid"}
+        return {}
+
+    monkeypatch.setattr("provably.handoff._query_records.post_json", fake_post)
+    monkeypatch.setattr("provably.handoff._query_records.wait_for_proof_completed", lambda *_a, **_kw: None)
+
+    _qid, qurl = create_query_record_for_intercept(
+        "endpoint_0",
+        agent_id="fetch_and_claim",
+        middleware_id="mw-1",
+        collection_id="coll-1",
+    )
+    assert qurl == "https://app-dev.provably.ai/org/org-1/query-record/q-uuid"
+
+
 def test_escapes_single_quotes_in_sql(
     fake_env: None,
     monkeypatch: pytest.MonkeyPatch,
