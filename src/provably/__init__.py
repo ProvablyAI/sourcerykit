@@ -4,6 +4,7 @@ from provably.handoff.client import initialize_runtime
 from provably.handoff.contract import claim_contract
 from provably.handoff.evaluator import evaluate_handoff, extract_indexed_from_query_record
 from provably.handoff.guide import default_instructions, field_descriptions
+from provably.handoff.payload_builder import DEFAULT_HANDOFF_TASK, build_handoff_payload
 from provably.handoff.transport import default_cluster_b_url, post_handoff
 from provably.handoff.types import (
     BenchmarkRow,
@@ -39,6 +40,8 @@ __all__ = [
     "HandoffProofBundle",
     "Outcome",
     "VerificationMode",
+    "DEFAULT_HANDOFF_TASK",
+    "build_handoff_payload",
     "check_claim_endpoints_are_trusted",
     "claim_contract",
     "default_cluster_b_url",

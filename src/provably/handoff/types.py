@@ -1,4 +1,4 @@
-"""Pydantic models for handoff payloads (Cluster A → B, dashboard)."""
+"""Pydantic models for handoff payloads (verifier, dashboard, etc.)."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ class HandoffClaim(BaseModel):
 
 
 class HandoffPayload(BaseModel):
-    """Handoff contract v2 — assembled by deterministic Cluster A code only (never by the LLM)."""
+    """Handoff contract v2 — assembled by deterministic sender-side code (never by the LLM)."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -73,7 +73,7 @@ class HandoffPayload(BaseModel):
     )
     handoff_evaluate_url: str = Field(
         default="",
-        description="Endpoint Cluster B POSTs verification results to.",
+        description="Handoff evaluation URL (MCP / evaluator) the consumer calls for this payload.",
     )
     handoff_contract_version: str = Field(default="2.0", description="Wire-contract version.")
     handoff_field_guide: dict[str, str] = Field(
@@ -125,7 +125,7 @@ class BenchmarkRow(BaseModel):
 
 
 class HandoffProofAction(BaseModel):
-    """Per-action proof metadata produced by the Provably API during Cluster A's proof phase."""
+    """Per-action proof metadata produced by the Provably API during the sender's proof phase."""
 
     model_config = ConfigDict(extra="ignore")
 

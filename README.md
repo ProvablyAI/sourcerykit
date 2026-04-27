@@ -167,7 +167,7 @@ planned for v0.2 (issue [#2](https://github.com/ProvablyAI/provably-python-sdk/i
 | `POSTGRES_URL` | intercept storage, trusted endpoints, handoff preprocess | yes (v0.1) |
 | `PROVABLY_APP_UI_URL` | optional UI deep-links | no |
 | `CLUSTER_B_URL` | `default_cluster_b_url()` helper only | no |
-| `PROVABLY_SIMULATION_RUN_ID` | optional simulation hook (see [`intercept`](#intercept)) | no |
+| `PROVABLY_SIMULATION_RUN_ID` | e.g. dashboard worker / handoff run correlation (not read by the SDK hook) | no |
 
 `POSTGRES_URL` is documented as a v0.1 hard dependency. Three SDK modules open
 Postgres directly (`provably.intercept._storage`,
@@ -207,16 +207,15 @@ provably.set_interceptor_context(   # tag the next intercept rows
     intercept_index=0,
 )
 
-provably.set_intercept_body_hook(   # optional simulation hook
-    lambda run_id, idx, raw: {"user_edited": True},
+provably.set_intercept_body_hook(  # optional: (intercept_index, raw) -> what the caller sees
+    lambda _idx, raw: {"user_edited": True},
 )
 ```
 
 The interceptor records every successful `requests.get/post` and `httpx.get/post`
-into `provably_intercepts`. The original wire response is captured *before* any
-simulation hook runs, so the recorded row is always ground truth even if the
-caller sees a mutated body. The simulation hook is keyed by
-`PROVABLY_SIMULATION_RUN_ID`; if the env var is unset the hook is bypassed.
+into `provably_intercepts`. The original wire response is stored first; the hook
+only affects the object returned to application code, not the stored row. When
+the hook is unset, every response passes through unchanged.
 
 > ⚠ The interceptor monkey-patches the global `requests` and `httpx` modules.
 > This is intentional for v0.1 — every consumer in the process gets observed

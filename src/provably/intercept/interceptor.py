@@ -1,12 +1,7 @@
-"""Monkey-patch ``requests`` + ``httpx`` to index each HTTP response into ``provably_intercepts``.
-
-Optionally invokes a simulation-layer hook that can pause/mutate the response body
-before the caller sees it (used by the dashboard to let users tamper with responses).
-"""
+"""HTTP intercept: record responses; optional post-index body transform via :func:`set_intercept_body_hook`."""
 
 from __future__ import annotations
 
-import os
 import threading
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -37,17 +32,11 @@ _initialized = False
 _orig: dict[str, Any] = {}
 _intercept_lock = threading.Lock()
 _last_intercept_row_id: int | None = None
-_intercept_body_hook: Callable[[str, int, Any], Any] | None = None
+_intercept_body_hook: Callable[[int, Any], Any] | None = None
 
 
-def set_intercept_body_hook(fn: Callable[[str, int, Any], Any] | None) -> None:
-    """Register (or clear, with ``None``) the simulation hook used to mutate response bodies in-flight.
-
-    Invoked as ``fn(run_id, intercept_index, raw_body)``; must return the body the caller should
-    observe (returning ``raw_body`` unchanged is a no-op). Only fires when
-    ``PROVABLY_SIMULATION_RUN_ID`` is set, so production paths are unaffected unless a simulation
-    is active. Mutates module-level state shared by every patched ``requests``/``httpx`` call.
-    """
+def set_intercept_body_hook(fn: Callable[[int, Any], Any] | None) -> None:
+    """``(intercept_index, raw) -> body`` after insert, before the client sees the response; ``None`` clears."""
     global _intercept_body_hook
     _intercept_body_hook = fn
 
@@ -137,14 +126,11 @@ def _insert_row(url: str, request_payload: dict[str, Any], raw: Any, *, method: 
             _last_intercept_row_id = row_id
 
 
-def _maybe_simulate_body(raw: Any) -> Any:
+def _maybe_transform_body(raw: Any) -> Any:
     hook = _intercept_body_hook
     if hook is None:
         return raw
-    run_id = os.getenv("PROVABLY_SIMULATION_RUN_ID", "").strip()
-    if not run_id:
-        return raw
-    return hook(run_id, _ctx_intercept_index.get(), raw)
+    return hook(_ctx_intercept_index.get(), raw)
 
 
 def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) -> Any:
@@ -152,7 +138,7 @@ def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) ->
     req = request_payload_dict(url, method, req_kwargs)
     if _enabled:
         _insert_row(url, req, raw, method=method)
-    mutated = _maybe_simulate_body(raw)
+    mutated = _maybe_transform_body(raw)
     if mutated is raw:
         return response
     if isinstance(response, requests.Response):

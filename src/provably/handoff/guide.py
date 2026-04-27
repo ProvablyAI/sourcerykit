@@ -1,15 +1,4 @@
-"""Neutral, schema-level guide embedded in outgoing :class:`HandoffPayload` values.
-
-The strings in this module are designed to be packed into a payload's
-``handoff_field_guide`` and ``instructions`` fields so a downstream agent that has
-never seen the SDK can still understand what each top-level field means and how to
-verify the payload at inference time.
-
-These descriptions are deliberately **neutral**: they don't name any specific
-sender / receiver agent, deployment, or simulation. Consumers (e.g. the example
-``cluster_a`` agent in this repo's sibling demo) are expected to merge their own
-deployment-flavoured overrides on top via plain ``dict.update``.
-"""
+"""Default ``handoff_field_guide`` and ``instructions`` text for :class:`HandoffPayload`."""
 
 from __future__ import annotations
 

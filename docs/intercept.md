@@ -63,22 +63,19 @@ row_id = provably.take_last_intercept_row_id()
 
 `take_*` clears the slot, so each call returns the id once.
 
-## Simulation hook (optional)
+## Optional response-body hook
 
-The interceptor exposes a single hook so a host can let users tamper with
-response bodies for testing:
+After a row is stored, an optional callback can change what the **caller** sees (tests, UIs, etc.):
 
 ```python
-def hook(run_id: str, intercept_index: int, raw_body: Any) -> Any:
+def hook(intercept_index: int, raw_body: Any) -> Any:
     return {"user_edited": True} if some_condition else raw_body
 
 provably.set_intercept_body_hook(hook)
 ```
 
-The hook only fires when `PROVABLY_SIMULATION_RUN_ID` is set in the
-environment. It receives the raw response body (after the row is recorded) and
-returns the body the caller should see. The recorded row is unchanged — the
-hook is purely a UX layer.
+It receives the raw body after insert; the DB row is unchanged. Host code (e.g. a
+simulation dashboard) can read any env it wants inside the hook.
 
 If the hook returns the same object it received (`raw is mutated`), the
 original `requests.Response` / `httpx.Response` is returned unmodified. If

@@ -63,9 +63,7 @@ def test_simulation_hook_overrides_response_body(
 ) -> None:
     fake_server.respond("GET", "/data", status=200, body={"original": True})
 
-    monkeypatch.setenv("PROVABLY_SIMULATION_RUN_ID", "run-123")
-
-    def hook(_run_id: str, _idx: int, raw: Any) -> Any:
+    def hook(_idx: int, raw: Any) -> Any:
         assert raw == {"original": True}
         return {"user_edited": True}
 

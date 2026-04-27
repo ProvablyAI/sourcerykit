@@ -17,7 +17,7 @@ def test_insert_row_receives_raw_before_mutation(monkeypatch: Any) -> None:
         return {"user_edited": True}
 
     monkeypatch.setattr(interceptor, "_insert_row", fake_insert)
-    monkeypatch.setattr(interceptor, "_maybe_simulate_body", fake_mutate)
+    monkeypatch.setattr(interceptor, "_maybe_transform_body", fake_mutate)
     monkeypatch.setattr(interceptor, "_enabled", True)
 
     resp = requests.Response()
