@@ -29,6 +29,7 @@ the request leaves the process.
 - [Public API](#public-api)
 - [Development](#development)
 - [Tests](#tests)
+- [Docker](#docker)
 - [Security model](#security-model)
 - [Status](#status)
 
@@ -303,6 +304,47 @@ E2E tests register routes on a per-test `FakeHttpServer` and drive the real
 `requests` / `httpx` patches against it. The Postgres-touching storage layer
 is patched per-test, so the suite stays hermetic and runs without a live
 database.
+
+## Docker
+
+The repo ships a multi-stage `Dockerfile` and a `docker-compose.yml` that
+pairs the SDK with a Postgres service. Three build targets are exposed:
+
+| Target    | What it produces                                                    |
+| --------- | ------------------------------------------------------------------- |
+| `builder` | Wheel + sdist in `/dist` (used by the other stages, not run alone). |
+| `test`    | Wheel installed + dev tools; `CMD` runs `ruff check && pytest -q`.  |
+| `runtime` | Slim image with only the wheel; `CMD` smoke-imports `provably`.     |
+
+Run the full lint + test suite in a container:
+
+```bash
+docker build --target test -t provably-sdk:test .
+docker run --rm provably-sdk:test
+```
+
+Smoke-import the runtime image:
+
+```bash
+docker build --target runtime -t provably-sdk:runtime .
+docker run --rm provably-sdk:runtime
+```
+
+Bring up Postgres alongside the SDK image (useful for future integration
+tests that exercise the real `psycopg2` path against
+`provably_intercepts` / `trusted_endpoints` / preprocess):
+
+```bash
+docker compose run --rm sdk                  # ruff + pytest, db wired
+docker compose run --rm sdk pytest -q -m e2e # only e2e tests
+docker compose down -v
+```
+
+`POSTGRES_URL` is wired automatically inside the `sdk` service to
+`postgresql://provably:provably@db:5432/provably_sdk`, so opt-in
+integration tests can talk to the live database without extra plumbing.
+The same Docker layout runs on every push in
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Security model
 

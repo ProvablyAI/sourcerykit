@@ -43,7 +43,10 @@ provably-python-sdk/
     unit/                   fast, hermetic; mocks for httpx + psycopg2
     e2e/                    real loopback http.server; real requests + httpx
   docs/                     architecture, per-pillar deep dives, historical plans
-  .github/workflows/        ci.yml (active), publish.yml (manual stub)
+  .github/workflows/        ci.yml (active, runs lint + tests + docker), publish.yml (manual stub)
+  Dockerfile                multi-stage: builder → test → runtime
+  docker-compose.yml        sdk container + Postgres for integration tests
+  .dockerignore
 ```
 
 ## Dependency rules
@@ -123,6 +126,28 @@ remain functional via a default singleton.
 
 A new pillar without at least one unit test **and** one e2e test is not
 considered done.
+
+## Docker
+
+The repo is dockerised so any contributor (or CI) can reproduce the test
+matrix without a local Python toolchain.
+
+- **`Dockerfile`** — three stages:
+  - `builder` builds the wheel/sdist from `src/` into `/dist`.
+  - `test` installs the wheel + dev tools and defaults to `ruff check && pytest -q`.
+  - `runtime` is a slim image with only the wheel installed, suitable as a
+    base for services that consume the SDK.
+- **`docker-compose.yml`** — pairs the `test` image with a Postgres 16
+  service (`db`) and wires `POSTGRES_URL` into the `sdk` container, so
+  future integration tests that exercise the real psycopg2 path can use it
+  without extra plumbing.
+- **CI** — `.github/workflows/ci.yml` has a `docker` job that builds both
+  `test` and `runtime` targets and runs them, so the Docker layout cannot
+  silently rot.
+
+If you change `pyproject.toml` (deps, optional extras, name, license,
+build-system), bump the Docker layer that copies that file and run
+`docker run --rm provably-sdk:test` locally before pushing.
 
 ## When you are about to break things
 
