@@ -1,6 +1,6 @@
 ---
 name: Split provably_package out of the verifiable-state-demo monorepo
-overview: "Carve `provably_package/` out of the `verifiable-state-demo` monorepo into this standalone repository, published on PyPI as `provably-sdk` (import path: `provably`). The monorepo became a consumer of the SDK. Scope was intentionally lean: init, intercept, handoff, evaluator, trusted endpoints."
+overview: "Carve `provably_package/` out of the `verifiable-state-demo` monorepo into this standalone repository (intended PyPI distribution: `provably-sdk`, import path: `provably`). The monorepo became a consumer of the SDK via a local editable install; PyPI publish is pending. Scope was intentionally lean: init, intercept, handoff, evaluator, trusted endpoints."
 status: executed
 ---
 
@@ -8,9 +8,17 @@ status: executed
 
 The SDK is now a separate git repository
 ([`ProvablyAI/provably-python-sdk`](https://github.com/ProvablyAI/provably-python-sdk))
-and a separate PyPI distribution (`provably-sdk`). The
+with `provably-sdk` reserved as its intended PyPI distribution name (publish
+pending — see `.github/workflows/publish.yml`). The
 [`verifiable-state-demo`](https://github.com/ProvablyAI/verifiable-state-demo)
-monorepo depends on it via `provably-sdk>=0.1.0,<0.2`.
+monorepo declares the dependency as `provably-sdk>=0.1.0,<0.2` and overrides
+its source to a local editable path during development:
+
+```toml
+# verifiable-state-demo/pyproject.toml
+[tool.uv.sources]
+provably-sdk = { path = "../provably-python-sdk", editable = true }
+```
 
 ```
 Before                                After
@@ -51,8 +59,8 @@ controls, and the trusted-endpoint helpers.
 
 ## Decisions locked in
 
-- **PyPI name**: `provably-sdk`. **Import path**: `provably`. Source layout:
-  `src/provably/`.
+- **PyPI name** (intended; publish pending): `provably-sdk`. **Import
+  path**: `provably`. Source layout: `src/provably/`.
 - **License**: `pyproject.toml` declares `license = { text = "Proprietary" }`.
   `LICENSE.md` was copied from the monorepo's git remote into the new repo
   root.
@@ -94,6 +102,9 @@ making `psycopg2-binary` an optional `[postgres]` extra, and removing
   - Removed `provably_package*` from `[tool.setuptools.packages.find].include`.
   - Removed `jsonschema>=4.0` (no longer used directly by the monorepo).
   - Added `provably-sdk>=0.1.0,<0.2` to `dependencies`.
+  - Added a `[tool.uv.sources]` override pointing `provably-sdk` at the
+    sibling `provably-python-sdk/` directory (editable). This is what
+    actually resolves the dependency until the package is published.
   - Added `[tool.uv.sources] provably-sdk = { path = "../provably-python-sdk", editable = true }`
     for local development.
 

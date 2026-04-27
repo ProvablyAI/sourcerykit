@@ -73,7 +73,7 @@ def post_json_with_transient_retry(
     *,
     max_attempts: int = 12,
 ) -> dict[str, Any]:
-    """Retry POST on 429/5xx transient statuses; the verifier occasionally returns 503."""
+    """Retry POST on 429/5xx transient statuses; the eval service occasionally returns 503."""
     payload = payload or {}
     last: requests.Response | None = None
     for attempt in range(max_attempts):

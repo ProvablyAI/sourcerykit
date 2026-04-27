@@ -4,13 +4,14 @@
 [![python: 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
 [![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](LICENSE.md)
 
-The Python SDK for [Provably](https://provably.ai). Adds a deterministic verification
-layer to any Python agent: every outbound HTTP call is recorded, every claim handed
-off to another service is checked against a trusted query record, and the policy
-edge (which endpoints an agent is allowed to talk to at all) is enforced before
-the request leaves the process.
+The Python SDK for [Provably](https://provably.ai). Adds a deterministic
+**eval** layer (verifiable guardrails — distinct from proof _verification_)
+to any Python agent: every outbound HTTP call is recorded, every claim
+handed off to another agent is evaluated against a trusted Provably query
+record, and the policy edge — which endpoints an agent is allowed to talk
+to at all — is enforced before the request leaves the process.
 
-- **Distribution name (PyPI):** `provably-sdk`
+- **Distribution name:** `provably-sdk` (PyPI publish pending — see below)
 - **Import name:** `provably`
 - **Source layout:** `src/provably/`
 
@@ -38,43 +39,80 @@ the request leaves the process.
 ```mermaid
 flowchart LR
   agent[Your agent]
-  reg[(trusted_endpoints)]
+  patch[Provably interceptor<br/>monkey-patched requests + httpx]
+  reg[("trusted_endpoints<br/><i>your Postgres</i>")]
   ext[(External API)]
-  store[(provably_intercepts)]
-  b[Verifier service]
-  rec[(Provably query record)]
+  store[("provably_intercepts<br/><i>your Postgres</i>")]
+  eval[Eval service<br/>verifiable guardrails]
+  rec[("Provably query record<br/><i>Provably backend</i>")]
 
-  agent -- "GET / POST" --> reg
-  reg -- "allowed?" --> agent
-  agent -- "request" --> ext
-  ext -- "response" --> store
-  agent -- "HandoffPayload" --> b
-  b -- "fetch" --> rec
-  b -- "PASS / CAUGHT" --> agent
+  agent -- "requests.get / httpx.post" --> patch
+  patch -- "1 trusted?" --> reg
+  reg -- "yes / BLOCKED" --> patch
+  patch -- "2 request" --> ext
+  ext -- "3 response" --> patch
+  patch -- "4 store row" --> store
+  patch -- "response" --> agent
+  agent -- "post_handoff(HandoffPayload)" --> eval
+  eval -- "evaluate_handoff:<br/>fetch query record" --> rec
+  eval -- "PASS / CAUGHT" --> agent
 ```
 
-1. **Record** — the SDK monkey-patches `requests` and `httpx` so every successful
-   HTTP call is canonicalized and inserted into `provably_intercepts`.
-2. **Police** — outbound `GET`s are blocked unless the URL is in
-   `trusted_endpoints` for the agent's org.
-3. **Hand off** — when an agent finishes, it builds a typed `HandoffPayload`
-   describing what it claims about each external response and POSTs it to a
-   verifier service.
-4. **Verify** — the verifier runs the deterministic evaluator: each claim is
-   compared against the corresponding Provably query record using one of four
-   verification modes (`verbatim`, `field_extraction`, `schema_type`,
-   `range_threshold`) and returns `PASS` / `CAUGHT` per claim.
+The flow, in order:
+
+1. **Intercept + Police** — every outbound `requests` / `httpx` call goes
+   through the SDK's monkey-patched HTTP path. _Inside_ the interceptor, before
+   the request leaves the process, the URL is checked against the
+   `trusted_endpoints` table. If the URL is not registered the call is killed
+   with `RuntimeError("BLOCKED: ...")` and never reaches the network.
+2. **Capture + Store** — if the endpoint is trusted, the request goes out, the
+   response is captured (status + headers + raw body), canonicalized, and
+   inserted by the interceptor into `provably_intercepts`. The agent only
+   sees the response after the row is written.
+3. **Hand off** — when an agent finishes its work it builds a typed
+   `HandoffPayload` (one `HandoffClaim` per external call, describing what the
+   agent claims about that response) and ships it to the next agent / service
+   via `post_handoff(...)`.
+4. **Eval** — the receiving service runs `evaluate_handoff(payload)` (the
+   SDK's verifiable-guardrails check; **not** to be confused with proof
+   verification). For each claim the evaluator pulls the corresponding query
+   record from the Provably backend and runs one of four deterministic
+   comparisons (`verbatim`, `field_extraction`, `schema_type`,
+   `range_threshold`); the result is `PASS` or `CAUGHT` per claim.
 
 Nothing in this loop relies on a model self-evaluating its own output.
 
+### Where things live
+
+| Component | Hosted by | Notes |
+| --- | --- | --- |
+| `trusted_endpoints` table | **You** — sits in whatever Postgres `POSTGRES_URL` points to. | The SDK ships the schema (`ensure_trusted_endpoints_table`), the policy check, and CRUD helpers; it does **not** host the registry. Same DB instance as `provably_intercepts` in v0.1. |
+| `provably_intercepts` table | **You** — same Postgres as above. | Append-only. The interceptor inserts one row per outbound HTTP call, keyed by `query_record_id` so claims can be linked back. |
+| Eval service | **You** — any HTTP service that calls `provably.evaluate_handoff(...)` on the incoming payload. | In the demo this is Cluster B (FastAPI). The SDK gives you the function; you decide where to host it. |
+| Provably query record | **Provably** — fetched over HTTPS by the eval service using the `integration_api_key` from the handoff payload. | This is the source of truth the evaluator compares each claim against. |
+
 ## Install
+
+> **Status:** v0.1 — not yet published to PyPI. Install from source.
+
+```bash
+# from source (editable, recommended for now)
+git clone git@github.com:ProvablyAI/provably-python-sdk.git
+pip install -e ./provably-python-sdk
+
+# or build a wheel
+cd provably-python-sdk && python -m build
+pip install dist/provably_sdk-0.1.0-py3-none-any.whl
+```
+
+When PyPI publishing lands the install will become:
 
 ```bash
 pip install provably-sdk
 ```
 
-The PyPI distribution name is `provably-sdk`. The import name is `provably`.
-Requires Python 3.11+.
+The intended PyPI distribution name is `provably-sdk`. The import name is
+`provably`. Requires Python 3.11+.
 
 ## Quick start
 
@@ -100,10 +138,10 @@ payload = provably.HandoffPayload(
         ),
     ],
 )
-provably.post_handoff("https://my-verifier.example", payload)
+provably.post_handoff("https://my-eval-service.example", payload)
 ```
 
-On the verifier side:
+On the eval-service side:
 
 ```python
 import provably
@@ -195,7 +233,7 @@ payload = HandoffPayload(
     integration_api_key="key",
     claims=[HandoffClaim(action_name="get", claimed_value=..., query_record_id="qr_1")],
 )
-post_handoff("https://my-verifier.example", payload, headers={"x-trace-id": "abc"})
+post_handoff("https://my-eval-service.example", payload, headers={"x-trace-id": "abc"})
 ```
 
 `post_handoff` POSTs canonical JSON to `{base_url}/handoffs/receive` and raises
@@ -212,7 +250,8 @@ result = evaluate_handoff(payload, provably_base_url="https://api.provably.ai")
 
 The evaluator fetches each claim's referenced query record from the Provably
 backend over HTTPS and runs `evaluate_claim` against the canonicalized indexed
-value. Verification modes:
+value. Comparison modes (the `VerificationMode` enum — name kept for backward
+compatibility; semantically these are eval comparison modes):
 
 | Mode | Comparison |
 |---|---|
@@ -355,7 +394,7 @@ The same Docker layout runs on every push in
   `provably_intercepts`. A `GET` to an unlisted URL raises
   `RuntimeError("BLOCKED: ...")` and never reaches Postgres.
 - The evaluator pulls query records over HTTPS using `x-api-key` from the
-  payload's `integration_api_key`. Revoking that key revokes verification access
+  payload's `integration_api_key`. Revoking that key revokes eval access
   for all in-flight handoffs.
 
 ## Status

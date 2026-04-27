@@ -1,7 +1,10 @@
 # Handoff
 
 The handoff pillar is the wire contract between an agent that *makes claims*
-and a verifier that *checks them deterministically*.
+and an **eval service** that *checks those claims deterministically against
+a Provably query record*. (Naming note: this is **eval** /
+"verifiable guardrails" — distinct from proof _verification_, which is a
+reserved term in the wider Provably product.)
 
 ## `HandoffPayload` v2
 
@@ -10,18 +13,18 @@ is `"2.0"`; bumping it is a breaking change.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `provably_org_id` | `str` | Org that owns the query records being verified. |
-| `integration_api_key` | `str` | API key the verifier uses to fetch query records. |
+| `provably_org_id` | `str` | Org that owns the query records being eval'd. |
+| `integration_api_key` | `str` | API key the eval service uses to fetch query records. |
 | `provably_mcp_url` | `str` | Optional MCP endpoint hint. |
-| `handoff_evaluate_url` | `str` | Optional verifier URL hint (set by Cluster A; ignored by the SDK). |
+| `handoff_evaluate_url` | `str` | Optional eval-service URL hint (set by Cluster A; ignored by the SDK). |
 | `handoff_contract_version` | `str` | `"2.0"`. |
 | `handoff_field_guide` | `dict[str, str]` | Optional human-readable field doc embedded in the payload. |
-| `instructions` | `str` | Free-form instructions surfaced to the verifier. |
+| `instructions` | `str` | Free-form instructions surfaced to the eval service. |
 | `query_record_ids` | `list[str]` | Top-level list of record ids referenced by the claims. |
 | `query_record_urls` | `list[str]` | Optional matching list of record URLs. |
 | `trusted_endpoint_registry` | `list[str]` | Snapshot of the trusted endpoints at handoff time. |
 | `claims` | `list[HandoffClaim]` | The actual claims (see below). |
-| `verification_results` | `list[str]` | Filled in by the verifier; agent leaves it empty. |
+| `verification_results` | `list[str]` | Filled in by the eval service; agent leaves it empty. (Field name kept for backward compatibility.) |
 | `task` | `str` | Free-form task label. |
 | `reasoning` | `str` | Optional summary. |
 | `run_id` | `str \| None` | Simulation/run identifier. |
@@ -35,8 +38,8 @@ is `"2.0"`; bumping it is a breaking change.
 | `claimed_value` | `Any` | What the agent says is true. |
 | `request_payload` | `dict[str, Any]` | What the agent sent (URL, query, headers, etc.). |
 | `response_payload` | `Any` | What the agent received (optional; the indexed record is the source of truth). |
-| `query_record_id` | `str` | The Provably query record this claim should be verified against. |
-| `verification_mode` | `Literal["verbatim", "field_extraction", "schema_type", "range_threshold"]` | See below. |
+| `query_record_id` | `str` | The Provably query record this claim should be eval'd against. |
+| `verification_mode` | `Literal["verbatim", "field_extraction", "schema_type", "range_threshold"]` | Eval comparison mode (field name kept for backward compatibility — semantically these are eval-comparison modes, not proof-verification modes). See below. |
 | `json_path` | `str` | Dot path into the indexed payload. Empty = root. |
 | `expected_json_schema` | `dict \| None` | Required for `schema_type`. |
 | `range_min`, `range_max` | `float \| int \| None` | Required for `range_threshold`. |
@@ -47,7 +50,7 @@ is `"2.0"`; bumping it is a breaking change.
 from provably import HandoffPayload, post_handoff
 
 post_handoff(
-    "https://my-verifier.example",
+    "https://my-eval-service.example",
     payload,
     headers={"x-trace-id": "..."},
     timeout_s=120.0,
@@ -68,7 +71,10 @@ There is no retry, no batching, no fallback. Failures bubble up as
 `os.getenv("CLUSTER_B_URL", "http://localhost:8082")` with whitespace and
 trailing-slash trimming. Use it where it helps; ignore it otherwise.
 
-## Verification modes
+## Eval comparison modes
+
+(Stored in the `verification_mode` field — name kept for backward
+compatibility; these are not proof-verification modes.)
 
 ### `verbatim` (default)
 
@@ -113,7 +119,7 @@ For each claim:
 3. The indexed value is extracted from the record (preferring `result`, then
    `indexed_value`, `response`, `raw_response`, `data`, `output`; recursing
    into a nested `query` dict if present).
-4. The claim is dispatched to the appropriate verification mode.
+4. The claim is dispatched to the appropriate eval comparison mode.
 
 The handoff outcome is `PASS` only if every claim's `result` is `PASS`. Any
 HTTP error during fetch is recorded both in the claim's `result` (as
@@ -144,6 +150,6 @@ HTTP error during fetch is recorded both in the claim's `result` (as
 
 - It does not carry the agent's chain-of-thought.
 - It does not carry the LLM-rendered prose response to the user.
-- It does not authenticate the agent itself — the verifier trusts that the
-  embedded `integration_api_key` is the right key to fetch records on the
-  agent's behalf, no more.
+- It does not authenticate the agent itself — the eval service trusts that
+  the embedded `integration_api_key` is the right key to fetch records on
+  the agent's behalf, no more.

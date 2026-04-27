@@ -91,7 +91,7 @@ provably.init_interceptor()            # install monkey-patch, set _enabled=True
 provably.disable()                     # optional: stop recording
 provably.enable()                      # resume
 provably.post_handoff(url, payload)    # at handoff time
-provably.evaluate_handoff(payload, ..) # on the verifier side
+provably.evaluate_handoff(payload, ..) # on the eval-service side
 ```
 
 `init_interceptor` is idempotent. The v0.2 plan

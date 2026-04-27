@@ -85,8 +85,8 @@ deployment.
 
 ### `check_claim_endpoints_are_trusted(payload, *, postgres_url, org_id_fallback="")`
 
-Used by verifiers (e.g. `agents/cluster_b` in the demo). For every claim that
-has a `request_payload.url`, normalizes it and:
+Used by eval services (e.g. `agents/cluster_b` in the demo). For every
+claim that has a `request_payload.url`, normalizes it and:
 
 1. If `payload.trusted_endpoint_registry` is non-empty, the URL must appear
    in that snapshot. Missing entries raise `ValueError`.
