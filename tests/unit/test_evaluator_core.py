@@ -9,6 +9,64 @@ from provably.handoff.evaluator import (
 from provably.handoff.types import HandoffClaim, HandoffPayload
 
 
+def test_trust_gate_caught_when_url_untrusted() -> None:
+    hp = HandoffPayload(
+        provably_org_id="org",
+        integration_api_key="k",
+        claims=[
+            HandoffClaim(
+                action_name="get",
+                claimed_value={},
+                query_record_id="q1",
+                request_payload={"url": "https://untrusted.example/api"},
+            )
+        ],
+    )
+    with patch(
+        "provably.handoff.evaluator.check_claim_endpoints_are_trusted",
+        side_effect=ValueError("handoff has untrusted endpoints: https://untrusted.example/api"),
+    ):
+        r = evaluate_handoff(hp, provably_base_url="http://api.test", postgres_url="x")
+    assert r["outcome"] == "CAUGHT"
+    assert r["per_claim"] == []
+    assert r["errors"] and "trust gate" in r["errors"][0]
+
+
+def test_trust_gate_caught_when_postgres_missing_with_urls() -> None:
+    hp = HandoffPayload(
+        provably_org_id="org",
+        integration_api_key="k",
+        claims=[
+            HandoffClaim(
+                action_name="get",
+                claimed_value={},
+                query_record_id="q1",
+                request_payload={"url": "https://api.test/x"},
+            )
+        ],
+    )
+    r = evaluate_handoff(hp, provably_base_url="http://api.test")
+    assert r["outcome"] == "CAUGHT"
+    assert r["errors"] and "trust gate" in r["errors"][0]
+
+
+@patch("provably.handoff.evaluator.httpx.Client")
+def test_trust_gate_skipped_when_no_urls(mock_client_cls: MagicMock) -> None:
+    stored = {"result": {"x": 1}}
+    resp = MagicMock(); resp.status_code = 200; resp.text = "{}"
+    resp.json.return_value = stored; resp.raise_for_status = MagicMock()
+    inst = MagicMock(); inst.get.return_value = resp
+    cm = MagicMock(); cm.__enter__.return_value = inst; cm.__exit__.return_value = None
+    mock_client_cls.return_value = cm
+    hp = HandoffPayload(
+        provably_org_id="org",
+        integration_api_key="k",
+        claims=[HandoffClaim(action_name="get", claimed_value={"x": 1}, query_record_id="q1")],
+    )
+    r = evaluate_handoff(hp, provably_base_url="http://api.test")
+    assert r["outcome"] == "PASS"
+
+
 def test_extract_prefers_result_key() -> None:
     assert extract_indexed_from_query_record({"result": {"a": 1}}) == {"a": 1}
 

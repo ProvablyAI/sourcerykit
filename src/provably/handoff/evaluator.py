@@ -9,6 +9,7 @@ import httpx
 from provably.handoff.eval_modes import evaluate_claim
 from provably.handoff.json_utils import canonical_json
 from provably.handoff.types import HandoffClaim, HandoffPayload
+from provably.trusted_endpoints import check_claim_endpoints_are_trusted
 
 __all__ = ["evaluate_handoff", "extract_indexed_from_query_record"]
 
@@ -19,24 +20,51 @@ _INDEXED_VALUE_KEYS = ("result", "indexed_value", "response", "raw_response", "d
 def evaluate_handoff(
     payload: HandoffPayload,
     *,
-    provably_base_url: str,
+    provably_base_url: str = "",
+    postgres_url: str = "",
+    org_id_fallback: str = "",
     timeout_s: float = 120.0,
 ) -> dict[str, Any]:
-    """Verify each claim in ``payload`` against its Provably query record.
+    """Run the trusted-endpoint gate, then verify each claim against its Provably query record.
 
-    For each claim this fetches the canonical indexed value from Provably and runs the
-    mode-specific check (see :func:`provably.handoff.eval_modes.evaluate_claim`). Network
-    failures are recorded per-claim (not raised) and force ``outcome="CAUGHT"``; missing
-    ``provably_org_id`` / ``integration_api_key`` short-circuits to a no-op ``PASS``.
+    The trust gate runs first and trips the whole handoff to ``CAUGHT`` if any claim's
+    ``request_payload.url`` is missing from the active registry; payloads with no URLs skip it.
+    Past the gate, each claim is checked per its ``verification_mode`` against the canonical
+    indexed value fetched from Provably. Config errors (missing base URL / org / credentials,
+    trust-gate failure) are returned as structured results, never raised — callers can treat
+    this as a total function and route on ``outcome``.
 
     Args:
         payload: Handoff payload to verify.
-        provably_base_url: Base URL of the Provably backend.
+        provably_base_url: Base URL of the Provably backend; empty short-circuits to CAUGHT.
+        postgres_url: DSN for the trust-gate lookup; required when any claim carries a URL.
+        org_id_fallback: Used only when ``payload.provably_org_id`` is empty.
         timeout_s: HTTP timeout per query record fetch.
 
     Returns:
-        ``{"outcome": "PASS"|"CAUGHT", "per_claim": [...], "errors": [...]}``.
+        ``{"outcome": "PASS"|"CAUGHT", "per_claim": [...], "errors": [...]}``. On a trust-gate
+        trip ``per_claim`` is empty and ``errors[0]`` carries the reason.
     """
+    try:
+        check_claim_endpoints_are_trusted(
+            payload,
+            postgres_url=postgres_url,
+            org_id_fallback=org_id_fallback,
+        )
+    except (ValueError, RuntimeError) as exc:
+        return {
+            "outcome": "CAUGHT",
+            "per_claim": [],
+            "errors": [f"trust gate: {exc}"],
+        }
+
+    if not provably_base_url:
+        return {
+            "outcome": "CAUGHT",
+            "per_claim": [],
+            "errors": ["provably_base_url not set"],
+        }
+
     org = payload.provably_org_id
     api_key = payload.integration_api_key
     if not org or not api_key:
@@ -69,11 +97,13 @@ def evaluate_handoff(
 
 
 def extract_indexed_from_query_record(record: dict[str, Any]) -> Any:
-    """Return the indexed value from a Provably query-record JSON regardless of envelope shape.
+    """Return the indexed value out of a Provably query-record JSON, regardless of envelope shape.
 
-    Tries known wrapper keys (``result`` / ``indexed_value`` / ``response`` / ``raw_response`` /
-    ``data`` / ``output``), recurses through a nested ``query`` envelope, and falls back to the
-    entire record so callers can still attempt a verbatim compare.
+    The Provably API has historically wrapped the indexed value under several names
+    (``result`` / ``indexed_value`` / ``response`` / ``raw_response`` / ``data`` / ``output``),
+    sometimes nested under a ``query`` key. This helper picks the first known field present and
+    recurses through the ``query`` envelope; if nothing matches, the entire record is returned
+    so the caller can still attempt a verbatim compare.
     """
     for key in _INDEXED_VALUE_KEYS:
         value = record.get(key)
