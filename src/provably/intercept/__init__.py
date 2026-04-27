@@ -1,4 +1,4 @@
-"""Intercept phase: record each HTTP response into provably_intercepts."""
+"""Intercept phase: monkey-patch ``requests`` + ``httpx`` and record responses into Postgres."""
 
 from .interceptor import (
     disable,

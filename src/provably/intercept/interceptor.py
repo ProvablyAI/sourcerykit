@@ -41,19 +41,36 @@ _intercept_body_hook: Callable[[str, int, Any], Any] | None = None
 
 
 def set_intercept_body_hook(fn: Callable[[str, int, Any], Any] | None) -> None:
-    """Register a simulation hook called with (run_id, intercept_index, raw_body); returns the body to use."""
+    """Register (or clear, with ``None``) the simulation hook used to mutate response bodies in-flight.
+
+    Invoked as ``fn(run_id, intercept_index, raw_body)``; must return the body the caller should
+    observe (returning ``raw_body`` unchanged is a no-op). Only fires when
+    ``PROVABLY_SIMULATION_RUN_ID`` is set, so production paths are unaffected unless a simulation
+    is active. Mutates module-level state shared by every patched ``requests``/``httpx`` call.
+    """
     global _intercept_body_hook
     _intercept_body_hook = fn
 
 
 def set_interceptor_context(*, agent_id: str, action_name: str, intercept_index: int = 0) -> None:
+    """Bind per-call context that subsequent intercepts will tag onto their inserted rows.
+
+    Uses :class:`contextvars.ContextVar` so concurrent tasks/threads each see their own values.
+    Call this immediately before invoking the agent action whose HTTP traffic should be tagged.
+
+    Args:
+        agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
+        action_name: Action name; recorded in ``provably_intercepts.action_name``.
+        intercept_index: Per-action sequence number used by the simulation hook to address a
+            specific intercept (e.g. "mutate the second response of action X"). Default ``0``.
+    """
     _ctx_agent_id.set(agent_id)
     _ctx_action_name.set(action_name)
     _ctx_intercept_index.set(intercept_index)
 
 
 def take_last_intercept_row_id() -> int | None:
-    """Pop and return the row id from the latest ``provably_intercepts`` INSERT."""
+    """Pop the row id from the most recent ``provably_intercepts`` INSERT (single-shot, thread-safe)."""
     global _last_intercept_row_id
     with _intercept_lock:
         rid = _last_intercept_row_id
@@ -62,6 +79,13 @@ def take_last_intercept_row_id() -> int | None:
 
 
 def init_interceptor() -> None:
+    """Install the SDK's monkey-patches on :mod:`requests` and :mod:`httpx` (idempotent).
+
+    Replaces ``requests.get``/``requests.post`` and ``httpx.get``/``httpx.post`` with wrapped
+    versions that record the response into ``provably_intercepts`` and optionally pass it
+    through the simulation hook. The patch is one-way (use :func:`disable` to short-circuit
+    rather than uninstall) and flips ``enabled=True``.
+    """
     global _initialized, _enabled
     if _initialized:
         return
@@ -78,6 +102,7 @@ def init_interceptor() -> None:
 
 
 def enable() -> None:
+    """Turn intercept recording on, calling :func:`init_interceptor` first on cold start."""
     global _enabled
     if not _initialized:
         init_interceptor()
@@ -85,11 +110,13 @@ def enable() -> None:
 
 
 def disable() -> None:
+    """Stop recording intercepts; patches stay installed but become a passthrough."""
     global _enabled
     _enabled = False
 
 
 def is_enabled() -> bool:
+    """Return whether intercept recording is currently on."""
     return _enabled
 
 

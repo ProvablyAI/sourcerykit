@@ -2,6 +2,7 @@
 
 from provably.handoff.client import initialize_runtime
 from provably.handoff.evaluator import evaluate_handoff, extract_indexed_from_query_record
+from provably.handoff.guide import default_instructions, field_descriptions
 from provably.handoff.transport import default_cluster_b_url, post_handoff
 from provably.handoff.types import (
     BenchmarkRow,
@@ -39,11 +40,13 @@ __all__ = [
     "VerificationMode",
     "check_claim_endpoints_are_trusted",
     "default_cluster_b_url",
+    "default_instructions",
     "disable",
     "enable",
     "ensure_trusted_endpoints_table",
     "evaluate_handoff",
     "extract_indexed_from_query_record",
+    "field_descriptions",
     "init_interceptor",
     "initialize_runtime",
     "is_enabled",

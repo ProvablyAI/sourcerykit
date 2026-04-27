@@ -1,4 +1,4 @@
-"""Public Provably handoff API: runtime init."""
+"""Public Provably handoff API: one-shot runtime initialization."""
 
 from __future__ import annotations
 
@@ -23,7 +23,23 @@ __all__ = [
 
 
 def initialize_runtime(*, preprocess: bool = True) -> None:
-    """One-time startup init. Must be called before enabling HTTP intercepts."""
+    """One-time SDK bootstrap; call once at process startup before enabling HTTP intercepts.
+
+    Reads ``PROVABLY_RUST_BE_URL``, ``PROVABLY_API_KEY``, ``PROVABLY_ORG_ID`` and (when
+    ``preprocess=True``) ``POSTGRES_URL``. Registers a Provably middleware, onboards the
+    configured Postgres database, ensures the ``provably_intercepts`` collection exists, and
+    caches an integration API key. With ``preprocess=True`` (default) it also pads the
+    intercepts table to ≥2 rows and runs preprocess to completion. Idempotent per process via
+    a module-level cache.
+
+    Args:
+        preprocess: When ``False``, skip table padding + preprocess (useful for unit tests or
+            for callers that want to drive preprocess on their own schedule).
+
+    Raises:
+        ValueError: A required env var is missing.
+        RuntimeError: Provably API returned an unrecoverable error during bootstrap.
+    """
     ensure_bootstrap_cached()
     if not preprocess:
         return

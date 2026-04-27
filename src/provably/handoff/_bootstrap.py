@@ -19,14 +19,17 @@ _CACHE: dict[str, str] = {}
 
 
 def cache() -> dict[str, str]:
+    """Return the live process-wide bootstrap cache."""
     return _CACHE
 
 
 def runtime_ready() -> bool:
+    """Return whether :func:`initialize_runtime` has populated middleware id and integration key."""
     return bool(_CACHE.get("middleware_id") and _CACHE.get("integration_api_key"))
 
 
 def cached_integration_api_key() -> str:
+    """Return the cached integration API key, or ``""`` if bootstrap has not run yet."""
     return str(_CACHE.get("integration_api_key") or "")
 
 

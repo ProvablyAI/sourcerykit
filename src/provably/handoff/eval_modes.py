@@ -14,6 +14,15 @@ __all__ = ["evaluate_claim"]
 
 
 def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
+    """Run ``claim.verification_mode`` against ``indexed_root``; see :data:`VerificationMode` for modes.
+
+    ``indexed_root`` is the canonical indexed value from the Provably query record (already
+    unwrapped via :func:`provably.handoff.evaluator.extract_indexed_from_query_record`).
+
+    Returns a verdict dict with ``action_name``, ``verification_mode``, ``result`` (``"PASS"``
+    or ``"CAUGHT"``), ``claimed``, ``indexed``, plus ``indexed_at_path`` for non-verbatim modes
+    and ``detail`` when caught.
+    """
     base = _base_verdict(claim, indexed_root)
     mode = claim.verification_mode
 

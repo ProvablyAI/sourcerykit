@@ -22,7 +22,21 @@ def evaluate_handoff(
     provably_base_url: str,
     timeout_s: float = 120.0,
 ) -> dict[str, Any]:
-    """Return ``{outcome, per_claim, errors}``; outcome is PASS only if every claim passes."""
+    """Verify each claim in ``payload`` against its Provably query record.
+
+    For each claim this fetches the canonical indexed value from Provably and runs the
+    mode-specific check (see :func:`provably.handoff.eval_modes.evaluate_claim`). Network
+    failures are recorded per-claim (not raised) and force ``outcome="CAUGHT"``; missing
+    ``provably_org_id`` / ``integration_api_key`` short-circuits to a no-op ``PASS``.
+
+    Args:
+        payload: Handoff payload to verify.
+        provably_base_url: Base URL of the Provably backend.
+        timeout_s: HTTP timeout per query record fetch.
+
+    Returns:
+        ``{"outcome": "PASS"|"CAUGHT", "per_claim": [...], "errors": [...]}``.
+    """
     org = payload.provably_org_id
     api_key = payload.integration_api_key
     if not org or not api_key:
@@ -55,6 +69,12 @@ def evaluate_handoff(
 
 
 def extract_indexed_from_query_record(record: dict[str, Any]) -> Any:
+    """Return the indexed value from a Provably query-record JSON regardless of envelope shape.
+
+    Tries known wrapper keys (``result`` / ``indexed_value`` / ``response`` / ``raw_response`` /
+    ``data`` / ``output``), recurses through a nested ``query`` envelope, and falls back to the
+    entire record so callers can still attempt a verbatim compare.
+    """
     for key in _INDEXED_VALUE_KEYS:
         value = record.get(key)
         if value is not None:

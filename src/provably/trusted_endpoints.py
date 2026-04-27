@@ -1,3 +1,5 @@
+"""Trusted-endpoint registry: per-org allowlist used to gate outbound GETs and verify claims."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -12,7 +14,12 @@ _DDL_DONE = False
 
 
 def normalize_url_for_trust(url: str) -> str:
-    """Canonical form: lowercase scheme + host, strip trailing slash on path (empty path → '')."""
+    """Return the canonical form of ``url`` used for trust look-ups.
+
+    Lowercases scheme and host, drops the default port for http/https, and strips a single
+    trailing slash from the path so equivalent URLs collapse to the same key. Empty / whitespace
+    input returns an empty string.
+    """
     raw = (url or "").strip()
     if not raw:
         return ""
@@ -62,12 +69,12 @@ def _ensure_trusted_table(conn: psycopg2.extensions.connection) -> None:
 
 
 def ensure_trusted_endpoints_table(conn: psycopg2.extensions.connection) -> None:
-    """Create trusted_endpoints + index if missing (idempotent)."""
+    """Create the ``trusted_endpoints`` table and uniqueness index if absent (idempotent, commits)."""
     _ensure_trusted_table(conn)
 
 
 def is_trusted_endpoint(url: str, org_id: str, conn: psycopg2.extensions.connection) -> bool:
-    """Return True if normalized URL exists as a non-revoked endpoint row for org."""
+    """Return whether ``url`` is currently allowlisted for ``org_id``; normalizes URL before look-up."""
     if not url or not org_id:
         return False
     norm = normalize_url_for_trust(url)
@@ -93,12 +100,20 @@ def list_trusted_endpoints(
     excluded_urls: set[str] | None = None,
     metadata_seeds: list[dict] | None = None,
 ) -> list[dict[str, str]]:
-    """Return trusted endpoints for ``org_id``.
+    """Return active trusted endpoints for ``org_id`` ordered most-recent-first.
 
-    ``excluded_urls`` is a set of normalized URLs the caller wants hidden
-    (typically internal service URLs auto-allowed by the caller's deployment).
-    ``metadata_seeds`` enriches rows with category/risk/description when a seed's
-    URL matches.
+    Each result row is a flat ``dict`` with stable keys (``url``, ``label``, ``category``,
+    ``risk_level``, ``description``, ``expected_response``) so it can be serialized straight to
+    a UI without further wrangling. Revoked rows are filtered out by the underlying query.
+
+    Args:
+        conn: Live psycopg2 connection (will not be closed).
+        org_id: Provably org id to scope the query to. Empty returns ``[]``.
+        excluded_urls: Normalized URLs the caller wants hidden — typically internal services
+            auto-allowed by the deployment that should not appear in the user-facing list.
+        metadata_seeds: Optional list of seed dicts (``url``, ``category``, ``risk_level``,
+            ``description``, ``expected_response``) used to enrich rows when the seed's
+            normalized URL matches a registry row.
     """
     if not org_id:
         return []
@@ -147,11 +162,23 @@ def check_claim_endpoints_are_trusted(
     postgres_url: str,
     org_id_fallback: str = "",
 ) -> None:
-    """Raise ValueError / RuntimeError if any claim endpoint is outside the trusted registry.
+    """Verify every claim's source URL is in the trusted registry; raise on violation.
 
-    Checks ``hp.trusted_endpoint_registry`` (payload snapshot) first, then verifies against
-    the live DB. Raises ``ValueError`` for policy violations and ``RuntimeError`` for
-    missing configuration.
+    Performs two checks: (1) every claim URL must appear in the immutable
+    ``hp.trusted_endpoint_registry`` snapshot embedded in the handoff (catches tampering after
+    the snapshot was built); (2) every claim URL must still be a non-revoked row in the live DB
+    for the relevant org (catches use of stale endpoints). Opens and closes its own psycopg2
+    connection.
+
+    Args:
+        hp: Handoff payload whose claims and snapshot are being audited.
+        postgres_url: DSN for the live registry DB. Required.
+        org_id_fallback: Used when ``hp.provably_org_id`` is empty.
+
+    Raises:
+        ValueError: A claim references a URL not in the snapshot, not in the live DB, or
+            ``provably_org_id`` is missing.
+        RuntimeError: ``postgres_url`` was not provided.
     """
     claim_urls: list[str] = []
     for claim in hp.claims:
