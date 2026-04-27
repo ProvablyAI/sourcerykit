@@ -13,6 +13,7 @@ from provably.handoff._discovery import (
     resolve_intercepts_collection_uuid,
 )
 from provably.handoff._http import get_json, log_failed_response, org_id, post_json, post_raw
+from provably.handoff._preprocess import ensure_preprocess_intercept_padding
 from provably.handoff._resources import extract_id, provably_database_host_field
 
 _CACHE: dict[str, str] = {}
@@ -41,6 +42,10 @@ def ensure_bootstrap_cached() -> None:
     postgres_url = os.getenv("POSTGRES_URL", "").strip()
     if not postgres_url:
         raise ValueError("Missing POSTGRES_URL")
+
+    # The table must exist before database onboard so the middleware can introspect it, and
+    # before discover_intercepts_table() (otherwise /data and schema walks find nothing).
+    ensure_preprocess_intercept_padding(postgres_url)
 
     print("[HANDOFF] Bootstrapping Provably...")
     middleware_id = _create_middleware(current_org)
@@ -82,7 +87,10 @@ def _onboard_database(current_org: str, middleware_id: str, postgres_url: str) -
         data = resp.json() if resp.text else {}
         database_id = extract_id(data if isinstance(data, dict) else {}, ["id", "database_id"])
     elif resp.status_code == 400 and _already_exists(resp.text):
-        print("[HANDOFF] Database already exists; attempting to reuse existing registration...")
+        # Provably API does not support DB deletion. Reuse the existing registration; the
+        # padding step ran above to ensure provably_intercepts exists, and the backend's
+        # schema introspection will pick it up so discover_intercepts_table() can find it.
+        print("[HANDOFF] Database already exists; reusing existing registration...")
         database_id = resolve_existing_database_id(current_org, middleware_id, db_name)
         if not database_id:
             log_failed_response(resp)

@@ -27,6 +27,20 @@ def test_evaluate_handoff_pass_against_real_server(fake_server: FakeHttpServer) 
         status=200,
         body=_stored({"x": 1, "y": 2}),
     )
+    # The evaluator's final-verify phase POSTs to /verify for each unique query_record_id.
+    fake_server.respond(
+        "POST",
+        "/api/v1/organizations/org-1/queries/q1/verify",
+        status=200,
+        body={"verified": True},
+    )
+    # After verify the evaluator re-GETs the record to populate TVT.
+    fake_server.respond(
+        "GET",
+        "/api/v1/organizations/org-1/queries/q1",
+        status=200,
+        body=_stored({"x": 1, "y": 2}),
+    )
 
     payload = HandoffPayload(
         provably_org_id="org-1",

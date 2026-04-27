@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Added `provably.configure_indexing(enable_indexing: bool)`: one-call bootstrap (`initialize_runtime` + `init_interceptor` + `enable` / `disable`) for sender agents.
+- Added `provably.handoff.outcomes` with `outcome_from_trace(trace)` and `aggregate_outcome(payload)`; both re-exported as `provably.outcome_from_trace` and `provably.aggregate_outcome`.
+
 ## 0.1.0 (unreleased)
 
 Initial extraction from the `langraph-demo` monorepo.

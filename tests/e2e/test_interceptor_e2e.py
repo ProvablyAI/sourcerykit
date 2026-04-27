@@ -5,8 +5,8 @@ Postgres-touching storage layer, and drives real ``requests.get`` + ``httpx.get`
 calls against a loopback HTTP server. Asserts that:
 
 - The original wire response is captured (before any simulation hook runs).
-- A simulation body hook can override the response the caller sees, without
-  changing the row recorded into the storage layer.
+- A simulation body hook can override the response the caller sees (only for URLs
+  on :func:`set_intercept_url_allowlist`), without changing the row recorded into the storage layer.
 - ``disable()`` stops recording on subsequent calls.
 """
 
@@ -67,12 +67,15 @@ def test_simulation_hook_overrides_response_body(
         assert raw == {"original": True}
         return {"user_edited": True}
 
+    url = f"{fake_server.base_url}/data"
+    interceptor.set_intercept_url_allowlist([url])
     provably.set_intercept_body_hook(hook)
     try:
-        resp = requests.get(f"{fake_server.base_url}/data")
+        resp = requests.get(url)
         assert resp.json() == {"user_edited": True}
     finally:
         provably.set_intercept_body_hook(None)
+        interceptor.set_intercept_url_allowlist(None)
 
     assert patched_interceptor[0]["raw"] == {"original": True}
 

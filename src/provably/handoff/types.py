@@ -44,7 +44,10 @@ class HandoffClaim(BaseModel):
     )
     json_path: str = Field(
         default="",
-        description="Dot path into the indexed payload (e.g. 'response.field_x'); empty = root.",
+        description=(
+            "Path into the indexed JSON: dot form (e.g. 'response.field_x') or JSONPath root "
+            "style '$.userId' / '$.' (empty or '$' = full payload)."
+        ),
     )
     expected_json_schema: dict[str, Any] | None = Field(
         default=None,

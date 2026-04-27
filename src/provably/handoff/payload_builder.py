@@ -5,10 +5,15 @@ from typing import Any, cast
 
 from provably.common.env import get_env_str
 from provably.handoff import client as handoff_client
+from provably.handoff._bootstrap import cache, runtime_ready
+from provably.handoff._query_records import create_query_record_for_intercept
 from provably.handoff.guide import default_instructions, field_descriptions
 from provably.handoff.types import HandoffClaim, HandoffPayload, VerificationMode
-from provably.intercept import is_enabled, load_latest_intercept_payload
+from provably.intercept import get_intercept_row_id, is_enabled, load_latest_intercept_payload
+from provably.log import get_logger
 from provably.trusted_endpoints import load_trusted_endpoint_urls
+
+_log = get_logger(__name__)
 
 _VERIFICATION_MODES: frozenset[VerificationMode] = frozenset(
     ("verbatim", "field_extraction", "schema_type", "range_threshold")
@@ -34,7 +39,9 @@ def build_handoff_payload(
     claims, query_record_urls, query_record_ids = _build_claims(
         blob,
         pg_url=env["postgres_url"],
+        org_id=env["org_id"],
         intercept_agent_id=intercept_agent_id,
+        provably_on=provably_on,
     )
 
     reasoning = str(blob.get("reasoning") or "")
@@ -95,7 +102,9 @@ def _build_claims(
     fetch_and_claim_json: Any,
     *,
     pg_url: str,
+    org_id: str,
     intercept_agent_id: str,
+    provably_on: bool,
 ) -> tuple[list[HandoffClaim], list[str], list[str]]:
     raw_claims = (
         fetch_and_claim_json.get("claims") if isinstance(fetch_and_claim_json, dict) else None
@@ -107,6 +116,9 @@ def _build_claims(
     urls: list[str] = []
     ids: list[str] = []
 
+    claim_rows: list[
+        tuple[dict[str, Any], str, Any, dict[str, Any] | None, Any]
+    ] = []
     for raw in raw_claims:
         if not isinstance(raw, dict):
             continue
@@ -120,10 +132,44 @@ def _build_claims(
         )
         if not pg_url:
             response_payload = claimed_value
+        claim_rows.append((raw, action_name, claimed_value, request_payload, response_payload))
 
-        urls.append("")
-        ids.append("")
-        claims.append(_build_claim(raw, action_name, claimed_value, request_payload, response_payload, ""))
+    if not claim_rows:
+        return [], [], []
+
+    resolved: list[tuple[str, str]] = [("", "") for _ in claim_rows]
+    if provably_on and pg_url and runtime_ready():
+        cached = cache() or {}
+        coll = str(cached.get("collection_id") or "").strip()
+        mw = str(cached.get("middleware_id") or "").strip()
+        if coll and mw:
+            for i, (_raw, action_name, _cv, _req, _resp) in enumerate(claim_rows):
+                rid = get_intercept_row_id(intercept_agent_id, action_name)
+                try:
+                    resolved[i] = create_query_record_for_intercept(
+                        action_name,
+                        agent_id=intercept_agent_id,
+                        middleware_id=mw,
+                        collection_id=coll,
+                        org_id=org_id,
+                        row_id=rid,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    _log.warning(
+                        "query_record_create_failed",
+                        action_name=action_name,
+                        error=str(exc),
+                    )
+
+    for i, (raw, action_name, claimed_value, request_payload, response_payload) in enumerate(
+        claim_rows
+    ):
+        qid, qurl = resolved[i] if i < len(resolved) else ("", "")
+        ids.append(qid)
+        urls.append(qurl)
+        claims.append(
+            _build_claim(raw, action_name, claimed_value, request_payload, response_payload, qid)
+        )
 
     return claims, urls, ids
 
