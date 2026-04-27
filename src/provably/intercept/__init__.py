@@ -1,5 +1,6 @@
 """Intercept phase: monkey-patch ``requests`` + ``httpx`` and record responses into Postgres."""
 
+from ._loader import load_latest_intercept_payload
 from .interceptor import (
     disable,
     enable,
@@ -18,4 +19,5 @@ __all__ = [
     "set_interceptor_context",
     "take_last_intercept_row_id",
     "set_intercept_body_hook",
+    "load_latest_intercept_payload",
 ]

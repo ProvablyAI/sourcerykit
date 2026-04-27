@@ -156,6 +156,23 @@ def list_trusted_endpoints(
     return result
 
 
+def load_trusted_endpoint_urls(pg_url: str, org_id: str) -> list[str]:
+    """Return active trusted-endpoint URLs for ``org_id``; opens its own connection.
+
+    Convenience wrapper around :func:`list_trusted_endpoints` for callers that just need the
+    URL strings (e.g. to embed a registry snapshot in a handoff payload). Returns ``[]`` when
+    ``pg_url`` or ``org_id`` is empty.
+    """
+    if not pg_url or not org_id:
+        return []
+    conn = psycopg2.connect(pg_url)
+    try:
+        rows = list_trusted_endpoints(conn, org_id)
+    finally:
+        conn.close()
+    return [url for url in (str(r.get("url") or "").strip() for r in rows) if url]
+
+
 def check_claim_endpoints_are_trusted(
     hp: HandoffPayload,
     *,
