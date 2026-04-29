@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 import time
 from typing import Any
 
 import psycopg2
 
 from provably.handoff._http import get_json, post_json
+
+_preprocess_after_insert_lock = threading.Lock()
 
 _PAD_AGENT = "__provably_preprocess_pad"
 _PAD_ACTION = "__dummy_row"
@@ -59,6 +62,20 @@ def ensure_preprocess_intercept_padding(postgres_url: str) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def preprocess_after_intercept_write() -> None:
+    """Run full-table preprocess after a new intercept row (serialized across threads).
+
+    No-op when bootstrap has not finished (no cached middleware / integration key).
+    """
+    from provably.handoff._bootstrap import cache, runtime_ready
+
+    if not runtime_ready():
+        return
+    c = cache()
+    with _preprocess_after_insert_lock:
+        run_preprocess(str(c["org_id"]), str(c["middleware_id"]), str(c["table_id"]))
 
 
 def run_preprocess(org_id: str, middleware_id: str, table_id: str) -> None:

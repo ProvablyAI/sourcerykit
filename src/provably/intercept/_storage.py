@@ -9,6 +9,7 @@ from typing import Any
 
 import psycopg2
 
+from provably.handoff._preprocess import preprocess_after_intercept_write
 from provably.log import get_logger
 from provably.trusted_endpoints import ensure_trusted_endpoints_table, is_trusted_endpoint
 
@@ -163,6 +164,8 @@ def _write_row(
                 row_id = int(row[0])
         conn.commit()
         _log.info("intercept_stored", agent_id=agent_id, action_name=action_name, url=url, method=method)
+        if row_id is not None:
+            preprocess_after_intercept_write()
         return row_id
     finally:
         conn.close()

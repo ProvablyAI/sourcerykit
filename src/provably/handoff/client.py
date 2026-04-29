@@ -29,8 +29,9 @@ def initialize_runtime(*, preprocess: bool = True) -> None:
     ``preprocess=True``) ``POSTGRES_URL``. Registers a Provably middleware, onboards the
     configured Postgres database, ensures the ``provably_intercepts`` collection exists, and
     caches an integration API key. With ``preprocess=True`` (default) it also pads the
-    intercepts table to ≥2 rows and runs preprocess to completion. Idempotent per process via
-    a module-level cache.
+    intercepts table to ≥2 rows and runs preprocess to completion; each subsequent intercept
+    insert also reruns preprocess so query proofs match the latest table state. Idempotent
+    per process via a module-level cache.
 
     Args:
         preprocess: When ``False``, skip table padding + preprocess (useful for unit tests or
