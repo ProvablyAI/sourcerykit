@@ -40,6 +40,7 @@ coverage.xml
 .pytype/
 
 # IDEs
+.claude/
 .idea/
 .vscode/
 *.swp
