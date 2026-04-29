@@ -40,11 +40,17 @@ _PROVABLY_CLOUD_HOST_SUFFIX = ".provably.ai"
 
 
 def _infer_app_ui_base_from_rust_api_url(rust_url: str) -> str:
-    """Map ``api[-*].*.provably.ai`` → ``app[-*].*.provably.ai`` when ``PROVABLY_APP_UI_URL`` is unset.
+    """Derive the parallel **Provably Data Admin** origin from an **API** URL (hostname only).
 
-    Keeps demos working without a second env var as long as ``PROVABLY_RUST_BE_URL`` targets
-    Provably SaaS (e.g. ``https://api-dev.provably.ai`` → ``https://app-dev.provably.ai``).
-    Unknown / non-Provably hosts → ``""`` (caller uses API fallback).
+    The query-record UI is always served from the **app** tier (e.g.
+    ``https://app-dev.provably.ai``), never from the Rust JSON API base. Given a URL whose
+    hostname uses the usual ``api-…`` labels on ``*.provably.ai``, returns the matching
+    ``app-…`` origin (``https://api-dev.provably.ai`` → ``https://app-dev.provably.ai``).
+
+    Rewrites the *first* matching DNS label left-to-right (e.g.
+    ``https://eu.api-dev.provably.ai`` → ``https://eu.app-dev.provably.ai``).
+
+    If the hostname does not match an API → app pattern, returns ``""``.
     """
     raw = (rust_url or "").strip()
     if not raw:
@@ -54,42 +60,55 @@ def _infer_app_ui_base_from_rust_api_url(rust_url: str) -> str:
     host = (parsed.hostname or "").lower()
     if not host.endswith(_PROVABLY_CLOUD_HOST_SUFFIX) and host != "provably.ai":
         return ""
-    first, *rest = host.split(".")
-    if first.startswith("api-"):
-        first = "app-" + first[4:]
-    elif first == "api":
-        first = "app"
-    elif re.match(r"^api\d+", first):  # e.g. api0 edge case
-        first = "app" + first[3:]
-    else:
-        return ""
-    new_host = ".".join([first, *rest])
-    rebuilt = urlunparse((scheme, new_host, "", "", "", ""))
-    return rebuilt.rstrip("/")
+    labels = host.split(".")
+    for i, seg in enumerate(labels):
+        replacement: str | None = None
+        if seg.startswith("api-"):
+            replacement = "app-" + seg[4:]
+        elif seg == "api":
+            replacement = "app"
+        elif re.fullmatch(r"api\d+", seg):
+            replacement = "app" + seg[3:]
+        if replacement is None:
+            continue
+        new_host = ".".join([*labels[:i], replacement, *labels[i + 1 :]])
+        rebuilt = urlunparse((scheme, new_host, "", "", "", ""))
+        return rebuilt.rstrip("/")
+
+    return ""
 
 
 def _resolved_app_ui_base() -> str:
+    """Base URL of the **Admin / app** UI (query-record pages), never the Rust JSON API origin.
+
+    Prefer ``PROVABLY_APP_UI_URL`` (the admin origin, e.g. ``https://app-dev.provably.ai`` in dev cloud).
+    If that value mistakenly points at an ``api-…`` host, it is normalized to the app host.
+    When unset, the app host is inferred from ``PROVABLY_RUST_BE_URL`` **only** via
+    :func:`_infer_app_ui_base_from_rust_api_url` (api-dev → app-dev). The API base is never
+    used as the prefix for human-facing query-record links.
+    """
     explicit = os.getenv("PROVABLY_APP_UI_URL", "").strip().rstrip("/")
     if explicit:
-        return explicit
+        as_app = _infer_app_ui_base_from_rust_api_url(explicit)
+        return as_app if as_app else explicit
     inferred = _infer_app_ui_base_from_rust_api_url(os.getenv("PROVABLY_RUST_BE_URL", "").strip())
     return inferred.rstrip("/") if inferred else ""
 
 
 def query_record_page_url(org_id: str, query_record_id: str) -> str:
-    """Human-facing Provably app URL for a query record (admin / dashboard deep-link).
+    """Human-facing **Provably Data Admin** URL for a query record (never the Rust API origin).
 
-    Pattern: ``{PROVABLY_APP_UI_URL}/org/{org_id}/query-record/{query_record_id}`` (e.g.
-    ``https://app-dev.provably.ai/org/.../query-record/...``).
+    Pattern: ``{admin_app_origin}/org/{org_id}/query-record/{query_record_id}``, e.g.
+    ``https://app-dev.provably.ai/org/…/query-record/…`` (see Provably Data Admin).
 
-    Resolution order:
+    Resolution:
 
-    #. ``PROVABLY_APP_UI_URL`` when set.
+    #. ``PROVABLY_APP_UI_URL`` when set (canonical app origin; optional normalization if it points at ``api-…``).
 
-    #. Else, if ``PROVABLY_RUST_BE_URL`` is a Provably SaaS API host (``*.provably.ai``),
-       infer ``app-…`` from ``api-…`` (see :func:`_infer_app_ui_base_from_rust_api_url`).
+    #. Else derive app admin host from ``PROVABLY_RUST_BE_URL`` hostname only
+       (see :func:`_infer_app_ui_base_from_rust_api_url`)—never use the API base as the page URL.
 
-    #. Else fallback to the JSON API record URL under ``PROVABLY_RUST_BE_URL`` for tests and custom deployments.
+    #. Else fallback to the JSON API record URL under ``PROVABLY_RUST_BE_URL`` (tests / non-cloud only).
     """
     oid = (org_id or "").strip()
     qid = (query_record_id or "").strip()
