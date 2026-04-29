@@ -11,6 +11,9 @@ from typing import Any
 import psycopg2
 
 from provably.handoff._http import get_json, post_json
+from provably.log import get_logger
+
+_log = get_logger(__name__)
 
 _preprocess_after_insert_lock = threading.Lock()
 
@@ -81,18 +84,18 @@ def preprocess_after_intercept_write() -> None:
 def run_preprocess(org_id: str, middleware_id: str, table_id: str) -> None:
     """Kick preprocess for the intercepts table and poll until it completes."""
     path = f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
-    print("[HANDOFF] Preprocessing provably_intercepts...")
+    _log.info("preprocess_started")
     post_json(path, {})
     retried_force = False
     while True:
         status = _preprocess_status(get_json(path))
         if status == "completed":
-            print("[HANDOFF] Preprocessing provably_intercepts... done ✓")
+            _log.info("preprocess_completed")
             return
         if status in {"failed", "error"}:
             if retried_force:
                 raise RuntimeError(f"Preprocess failed (status={status})")
-            print("[HANDOFF] Preprocess returned error; retrying with force=true...")
+            _log.warning("preprocess_error_retrying_with_force")
             post_json(path, {"force": True})
             retried_force = True
             continue

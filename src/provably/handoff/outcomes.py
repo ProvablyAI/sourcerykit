@@ -1,3 +1,5 @@
+"""Outcome helpers: extract the final verdict from a trace dict or aggregate across a payload."""
+
 from __future__ import annotations
 
 from typing import Any, cast

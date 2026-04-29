@@ -22,6 +22,7 @@ from provably.intercept import (
     init_interceptor,
     is_enabled,
     set_intercept_body_hook,
+    set_intercept_url_allowlist,
     set_interceptor_context,
     take_last_intercept_row_id,
 )
@@ -65,6 +66,7 @@ __all__ = [
     "outcome_from_trace",
     "post_handoff",
     "set_intercept_body_hook",
+    "set_intercept_url_allowlist",
     "set_interceptor_context",
     "take_last_intercept_row_id",
 ]

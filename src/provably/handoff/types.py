@@ -6,8 +6,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Outcome = Literal["PASS", "CAUGHT"]
-"""Final verdict for a handoff: ``"PASS"`` if every claim verified, ``"CAUGHT"`` otherwise."""
+Outcome = Literal["PASS", "CAUGHT", "ERROR"]
+"""Final verdict for a handoff evaluation.
+
+- ``"PASS"``   — every claim matched its proven indexed value and every proof verified.
+- ``"CAUGHT"`` — at least one claim disagreed with the indexed value or a proof failed.
+- ``"ERROR"``  — the evaluator could not run (missing config, Provably backend unreachable,
+  transient 5xx).  Not evidence of tampering; the system was unhealthy, not the agent.
+"""
 
 VerificationMode = Literal["verbatim", "field_extraction", "schema_type", "range_threshold"]
 """How a claim's ``claimed_value`` is compared against the indexed query record.

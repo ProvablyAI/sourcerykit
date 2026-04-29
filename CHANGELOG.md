@@ -3,9 +3,12 @@
 ## 0.2.0
 
 - Added `provably.configure_indexing(enable_indexing: bool)`: one-call bootstrap (`initialize_runtime` + `init_interceptor` + `enable` / `disable`) for sender agents.
-- Added `provably.handoff.outcomes` with `outcome_from_trace(trace)` and `aggregate_outcome(payload)`; both re-exported as `provably.outcome_from_trace` and `provably.aggregate_outcome`.
+- Added `provably.outcome_from_trace(trace)` and `provably.aggregate_outcome(payload)`: outcome helpers for extracting and rolling up verdicts.
+- Added `provably.set_intercept_url_allowlist(urls)` to top-level namespace: scopes the simulation body hook to an explicit set of URLs.
+- `Outcome` type now includes `"ERROR"` alongside `"PASS"` and `"CAUGHT"`.
+- Bootstrap, preprocess, and HTTP error logging migrated from `print()` to structured `structlog` output.
 
-## 0.1.0 (unreleased)
+## 0.1.0
 
 Initial extraction from the `langraph-demo` monorepo.
 
@@ -14,5 +17,6 @@ Initial extraction from the `langraph-demo` monorepo.
 - Added `provably.handoff.types` (`HandoffPayload` v2, `HandoffClaim`, `HandoffProofAction`, `HandoffProofBundle`, `BenchmarkRow`).
 - Added `provably.handoff.transport.post_handoff` and `default_cluster_b_url`.
 - Added `provably.handoff.evaluator.evaluate_handoff` and per-claim modes (`verbatim`, `field_extraction`, `schema_type`, `range_threshold`).
-- Added `provably.claim_contract` (re-exported from `provably.handoff.contract`): builds the LLM-facing JSON contract for emitting `HandoffClaim` claims, derived from `HandoffClaim` + `VerificationMode` so prompts cannot drift from the wire model. Callers pass deployment config (`action_names`, `wrapper_fields`, `extra_rules`).
+- Added `provably.claim_contract` (re-exported from `provably.handoff.contract`): builds the LLM-facing JSON contract for emitting `HandoffClaim` claims, derived from `HandoffClaim` + `VerificationMode` so prompts cannot drift from the wire model.
+- Added `provably.build_handoff_payload` and `provably.claim_contract` convenience builders.
 - Added `provably.trusted_endpoints` (DDL, `is_trusted_endpoint`, `list_trusted_endpoints`, `check_claim_endpoints_are_trusted`, `normalize_url_for_trust`).

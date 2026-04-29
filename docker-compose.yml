@@ -1,43 +1,19 @@
 # Local docker-compose for provably-sdk.
 #
-# Two services:
-#   - db:  Postgres 16 (used by future integration tests that exercise the
-#          real psycopg2 path: intercept storage, trusted endpoints,
-#          handoff preprocess).
-#   - sdk: builds the SDK "test" stage and runs `ruff check` + `pytest -q`
-#          inside the container. POSTGRES_URL is wired so any opt-in
-#          integration test can talk to the local Postgres without extra
-#          plumbing.
+# Builds the SDK "test" stage and runs `ruff check` + `pytest -q` inside
+# the container. No database service is included — the test suite is fully
+# hermetic (no live Postgres required).
 #
 # Quick commands:
 #   docker compose run --rm sdk                       # run unit + e2e suites
 #   docker compose run --rm sdk pytest -q -m e2e      # only e2e tests
 #   docker compose run --rm sdk ruff check            # only lint
-#   docker compose down -v                            # tear it all down
 
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: provably
-      POSTGRES_PASSWORD: provably
-      POSTGRES_DB: provably_sdk
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U provably -d provably_sdk"]
-      interval: 2s
-      timeout: 3s
-      retries: 20
-    tmpfs:
-      - /var/lib/postgresql/data
-
   sdk:
     build:
       context: .
       target: test
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      POSTGRES_URL: postgresql://provably:provably@db:5432/provably_sdk
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"

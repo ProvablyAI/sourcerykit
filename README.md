@@ -1,6 +1,6 @@
 # provably-sdk
 
-[![status: v0.1](https://img.shields.io/badge/status-v0.1-blue)](CHANGELOG.md)
+[![status: v0.2](https://img.shields.io/badge/status-v0.2-blue)](CHANGELOG.md)
 [![python: 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
 [![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](LICENSE.md)
 
@@ -78,7 +78,7 @@ The flow, in order:
    verification). For each claim the evaluator pulls the corresponding query
    record from the Provably backend and runs one of four deterministic
    comparisons (`verbatim`, `field_extraction`, `schema_type`,
-   `range_threshold`); the result is `PASS` or `CAUGHT` per claim.
+   `range_threshold`); the result is `PASS`, `CAUGHT`, or `ERROR` per claim.
 
 Nothing in this loop relies on a model self-evaluating its own output.
 
@@ -86,14 +86,14 @@ Nothing in this loop relies on a model self-evaluating its own output.
 
 | Component | Hosted by | Notes |
 | --- | --- | --- |
-| `trusted_endpoints` table | **You** — sits in whatever Postgres `POSTGRES_URL` points to. | The SDK ships the schema (`ensure_trusted_endpoints_table`), the policy check, and CRUD helpers; it does **not** host the registry. Same DB instance as `provably_intercepts` in v0.1. |
+| `trusted_endpoints` table | **You** — sits in whatever Postgres `POSTGRES_URL` points to. | The SDK ships the schema (`ensure_trusted_endpoints_table`), the policy check, and CRUD helpers; it does **not** host the registry. Same DB instance as `provably_intercepts`. |
 | `provably_intercepts` table | **You** — same Postgres as above. | Append-only. The interceptor inserts one row per outbound HTTP call, keyed by `query_record_id` so claims can be linked back. |
-| Eval service | **You** — any HTTP service that calls `provably.evaluate_handoff(...)` on the incoming payload. | In the demo this is Cluster B (FastAPI). The SDK gives you the function; you decide where to host it. |
+| Eval service | **You** — any HTTP service that calls `provably.evaluate_handoff(...)` on the incoming payload. | The SDK gives you the function; you decide where to host it. |
 | Provably query record | **Provably** — fetched over HTTPS by the eval service using the `integration_api_key` from the handoff payload. | This is the source of truth the evaluator compares each claim against. |
 
 ## Install
 
-> **Status:** v0.1 — not yet published to PyPI. Install from source.
+> **Status:** v0.2 — not yet published to PyPI. Install from source.
 
 ```bash
 # from source (editable, recommended for now)
@@ -102,7 +102,7 @@ pip install -e ./provably-python-sdk
 
 # or build a wheel
 cd provably-python-sdk && python -m build
-pip install dist/provably_sdk-0.1.0-py3-none-any.whl
+pip install dist/provably_sdk-0.2.0-py3-none-any.whl
 ```
 
 When PyPI publishing lands the install will become:
@@ -120,8 +120,8 @@ The intended PyPI distribution name is `provably-sdk`. The import name is
 import provably
 import requests
 
-provably.initialize_runtime()
-provably.init_interceptor()
+# One-call bootstrap: initialize runtime + install interceptor + enable recording
+provably.configure_indexing(True)
 
 response = requests.get("https://my-trusted-endpoint.example/data")
 record = response.json()
@@ -150,30 +150,31 @@ result = provably.evaluate_handoff(
     payload,
     provably_base_url="https://api.provably.ai",
 )
-assert result["outcome"] in ("PASS", "CAUGHT")
+# outcome is "PASS", "CAUGHT", or "ERROR"
+assert result["outcome"] in ("PASS", "CAUGHT", "ERROR")
 ```
 
 ## Configuration
 
-v0.1 reads configuration from environment variables. A typed
+The SDK reads configuration from environment variables. A typed
 `Provably(api_key=..., org_id=..., ...)` client that replaces these globals is
-planned for v0.2 (issue [#2](https://github.com/ProvablyAI/provably-python-sdk/issues/2)).
+planned (issue [#2](https://github.com/ProvablyAI/provably-python-sdk/issues/2)).
 
 | Variable | Used by | Required |
 |---|---|---|
 | `PROVABLY_API_KEY` | `initialize_runtime`, integration cache | yes |
 | `PROVABLY_ORG_ID` | `initialize_runtime`, intercept allow-list | yes |
 | `PROVABLY_RUST_BE_URL` | `initialize_runtime`, evaluator | yes |
-| `POSTGRES_URL` | intercept storage, trusted endpoints, handoff preprocess | yes (v0.1) |
+| `POSTGRES_URL` | intercept storage, trusted endpoints, handoff preprocess | yes |
 | `PROVABLY_APP_UI_URL` | optional UI deep-links | no |
 | `CLUSTER_B_URL` | `default_cluster_b_url()` helper only | no |
-| `PROVABLY_SIMULATION_RUN_ID` | e.g. dashboard worker / handoff run correlation (not read by the SDK hook) | no |
+| `PROVABLY_QUERY_RESOLVE_MAX_WAIT_S` | max seconds to wait for a query record to appear (default 15) | no |
 
-`POSTGRES_URL` is documented as a v0.1 hard dependency. Three SDK modules open
-Postgres directly (`provably.intercept._storage`,
-`provably.trusted_endpoints`, `provably.handoff._preprocess`); v0.2 will move
-them onto a caller-injected connection and make `psycopg2-binary` an optional
-extra (issue [#1](https://github.com/ProvablyAI/provably-python-sdk/issues/1)).
+`POSTGRES_URL` is a hard dependency today. Three SDK modules open Postgres
+directly (`provably.intercept._storage`, `provably.trusted_endpoints`,
+`provably.handoff._preprocess`). Issue
+[#1](https://github.com/ProvablyAI/provably-python-sdk/issues/1) tracks moving
+them onto a caller-injected connection and making `psycopg2-binary` optional.
 
 ## The five pillars
 
@@ -181,18 +182,24 @@ extra (issue [#1](https://github.com/ProvablyAI/provably-python-sdk/issues/1)).
 
 ```python
 import provably
-provably.initialize_runtime()       # one-time, idempotent: bootstrap + integration cache
-provably.init_interceptor()         # install monkey-patches for requests + httpx
+
+# Option A: one-call bootstrap (recommended)
+provably.configure_indexing(True)   # bootstrap + interceptor + enable
+provably.configure_indexing(False)  # interceptor only, recording off
+
+# Option B: step-by-step
+provably.initialize_runtime()   # one-time bootstrap; idempotent per process
+provably.init_interceptor()     # install monkey-patches for requests + httpx
+provably.enable()               # turn recording on (default after init_interceptor)
 ```
 
-`initialize_runtime()` is intended to be called exactly once per process,
-before any HTTP traffic flows. It performs the runtime bootstrap (config
-discovery, integration lookup) and warms an in-memory cache.
+`initialize_runtime()` registers a Provably middleware, onboards the configured
+Postgres database, ensures the `provably_intercepts` collection exists, and
+warms an in-memory cache with the integration API key.
 
-`init_interceptor()` is the explicit "start observing" call. It is idempotent;
-calling it again is a no-op. See issue
-[#3](https://github.com/ProvablyAI/provably-python-sdk/issues/3) for the
-v0.2 plan to fold this into `initialize_runtime()`.
+`configure_indexing(enable_indexing)` is the recommended single-call entry point.
+Pass `True` to enable full indexing (bootstrap + intercept + record); pass `False`
+to install the interceptor in passthrough mode (patches installed, recording off).
 
 ### `intercept`
 
@@ -207,18 +214,25 @@ provably.set_interceptor_context(   # tag the next intercept rows
     intercept_index=0,
 )
 
-provably.set_intercept_body_hook(  # optional: (intercept_index, raw) -> what the caller sees
+provably.set_intercept_body_hook(   # optional: (intercept_index, raw) -> what the caller sees
     lambda _idx, raw: {"user_edited": True},
+)
+
+provably.set_intercept_url_allowlist(   # scope simulation hook to specific URLs
+    ["https://my-trusted-api.example/v1"],
 )
 ```
 
 The interceptor records every successful `requests.get/post` and `httpx.get/post`
 into `provably_intercepts`. The original wire response is stored first; the hook
-only affects the object returned to application code, not the stored row. When
-the hook is unset, every response passes through unchanged.
+only affects the object returned to application code, not the stored row.
+
+`set_intercept_url_allowlist` scopes the simulation body hook to an explicit set
+of URLs. Internal SDK calls (bootstrap API, handoff transport) are never passed
+to the hook regardless of this setting.
 
 > ⚠ The interceptor monkey-patches the global `requests` and `httpx` modules.
-> This is intentional for v0.1 — every consumer in the process gets observed
+> This is intentional — every consumer in the process gets observed
 > automatically — but it means hosts that need a request-scoped opt-out should
 > wrap calls in `disable()` / `enable()` blocks.
 
@@ -238,19 +252,58 @@ post_handoff("https://my-eval-service.example", payload, headers={"x-trace-id": 
 `post_handoff` POSTs canonical JSON to `{base_url}/handoffs/receive` and raises
 on any non-2xx response.
 
+#### Convenience builders
+
+`build_handoff_payload` assembles a `HandoffPayload` automatically from the
+interceptor's in-memory state — no manual claim construction needed:
+
+```python
+from provably import build_handoff_payload, post_handoff, default_cluster_b_url
+
+# fetch_and_claim is the raw JSON dict the LLM emitted
+payload = build_handoff_payload(fetch_and_claim, run_id="run-001")
+post_handoff(default_cluster_b_url(), payload)
+```
+
+`claim_contract` generates the system-prompt text that tells an LLM how to
+emit the correct `HandoffClaim` JSON shape:
+
+```python
+from provably import claim_contract
+
+system_prompt = claim_contract(
+    action_names=["lookup_patient", "fetch_records"],
+    wrapper_fields={"reasoning": "string"},
+)
+```
+
+`default_instructions` and `field_descriptions` give you ready-made
+instructions and per-field notes to embed in a receiving-agent prompt:
+
+```python
+from provably import default_instructions, field_descriptions
+
+# provably_indexing=True when you want the receiver to call the evaluator
+instructions = default_instructions(provably_indexing=True)
+guide = field_descriptions(provably_indexing=True)
+```
+
 ### `eval`
 
 ```python
 from provably import evaluate_handoff
 
 result = evaluate_handoff(payload, provably_base_url="https://api.provably.ai")
-# {"outcome": "PASS" | "CAUGHT", "per_claim": [...], "errors": [...]}
+# {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...], "errors": [...]}
 ```
 
-The evaluator fetches each claim's referenced query record from the Provably
-backend over HTTPS and runs `evaluate_claim` against the canonicalized indexed
-value. Comparison modes (the `VerificationMode` enum — name kept for backward
-compatibility; semantically these are eval comparison modes):
+Outcome semantics:
+
+- **`PASS`** — every claim's content matched its proven indexed value and every proof verified.
+- **`CAUGHT`** — at least one claim disagreed with the indexed value or a proof failed.
+- **`ERROR`** — the evaluator could not run (missing config, Provably backend unreachable, transient server error). Not evidence of tampering — the system was unhealthy, not the agent.
+
+Comparison modes (the `VerificationMode` type):
 
 | Mode | Comparison |
 |---|---|
@@ -259,7 +312,17 @@ compatibility; semantically these are eval comparison modes):
 | `schema_type` | `claimed_value` is ignored; the value at `json_path` is validated against `expected_json_schema`. |
 | `range_threshold` | Numeric `claimed_value` must equal the indexed numeric and lie in `[range_min, range_max]`. |
 
-A handoff is `PASS` only if every claim passes.
+#### Outcome helpers
+
+```python
+from provably import outcome_from_trace, aggregate_outcome
+
+# Extract verdict from a raw evaluate_handoff result dict
+verdict = outcome_from_trace(result)   # "PASS" | "CAUGHT" | None
+
+# Roll up verification_results from a HandoffPayload
+verdict = aggregate_outcome(payload)   # "PASS" | "CAUGHT"
+```
 
 ### `trusted_endpoints`
 
@@ -290,13 +353,25 @@ All public symbols are re-exported from the top-level `provably` namespace. See
 
 ```python
 from provably import (
+    # init
     initialize_runtime,
+    configure_indexing,
+    # intercept
     init_interceptor, enable, disable, is_enabled,
-    set_interceptor_context, set_intercept_body_hook, take_last_intercept_row_id,
+    set_interceptor_context, set_intercept_body_hook,
+    set_intercept_url_allowlist, take_last_intercept_row_id,
+    # handoff types
     HandoffPayload, HandoffClaim, HandoffProofAction, HandoffProofBundle,
     BenchmarkRow, Outcome, VerificationMode,
+    # handoff transport
     post_handoff, default_cluster_b_url,
+    # handoff builders
+    build_handoff_payload, DEFAULT_HANDOFF_TASK,
+    claim_contract, default_instructions, field_descriptions,
+    # eval
     evaluate_handoff, extract_indexed_from_query_record,
+    outcome_from_trace, aggregate_outcome,
+    # trusted endpoints
     is_trusted_endpoint, list_trusted_endpoints,
     check_claim_endpoints_are_trusted, normalize_url_for_trust,
     ensure_trusted_endpoints_table,
@@ -328,7 +403,7 @@ The suite is split into two layers:
 ```
 tests/
   unit/    # fast, hermetic, mocks for httpx + psycopg2
-  e2e/    # drives real requests + httpx against a loopback HTTP server
+  e2e/     # drives real requests + httpx against a loopback HTTP server
 ```
 
 ```bash
@@ -345,8 +420,7 @@ database.
 
 ## Docker
 
-The repo ships a multi-stage `Dockerfile` and a `docker-compose.yml` that
-pairs the SDK with a Postgres service. Three build targets are exposed:
+The repo ships a multi-stage `Dockerfile`. Three build targets are exposed:
 
 | Target    | What it produces                                                    |
 | --------- | ------------------------------------------------------------------- |
@@ -368,21 +442,13 @@ docker build --target runtime -t provably-sdk:runtime .
 docker run --rm provably-sdk:runtime
 ```
 
-Bring up Postgres alongside the SDK image (useful for future integration
-tests that exercise the real `psycopg2` path against
-`provably_intercepts` / `trusted_endpoints` / preprocess):
+Use `docker-compose.yml` for local development runs (no database required —
+tests are hermetic):
 
 ```bash
-docker compose run --rm sdk                  # ruff + pytest, db wired
+docker compose run --rm sdk                  # ruff + pytest
 docker compose run --rm sdk pytest -q -m e2e # only e2e tests
-docker compose down -v
 ```
-
-`POSTGRES_URL` is wired automatically inside the `sdk` service to
-`postgresql://provably:provably@db:5432/provably_sdk`, so opt-in
-integration tests can talk to the live database without extra plumbing.
-The same Docker layout runs on every push in
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Security model
 
@@ -398,7 +464,5 @@ The same Docker layout runs on every push in
 
 ## Status
 
-v0.1 — first extracted release; split from the
-[`verifiable-state-demo`](https://github.com/ProvablyAI/verifiable-state-demo) monorepo.
-See [`CHANGELOG.md`](CHANGELOG.md). License: Proprietary —
+v0.2 — see [`CHANGELOG.md`](CHANGELOG.md). License: Proprietary —
 see [`LICENSE.md`](LICENSE.md).

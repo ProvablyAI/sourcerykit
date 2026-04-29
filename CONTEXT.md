@@ -4,7 +4,7 @@ Human-facing setup: **`README.md`**. **This file** is for anyone (or any agent)
 changing behavior in this SDK: what must stay true, where code lives, and how
 pieces talk. Prefer editing code over guessing.
 
-## Scope (locked for v0.1)
+## Scope
 
 The SDK ships **five pillars and only five**:
 
@@ -35,7 +35,7 @@ provably-python-sdk/
     __init__.py             public surface; only re-exports the documented API
     log.py                  structlog wrapper used SDK-internally
     common/env.py           env-var helpers
-    trusted_endpoints.py    registry DDL + normalization + policy check
+      trusted_endpoints.py    registry DDL + normalization + policy check
     intercept/              global requests/httpx monkey-patch + storage
     handoff/                types, transport, evaluator, eval modes, bootstrap
   tests/
@@ -56,7 +56,7 @@ provably-python-sdk/
 | stdlib | `fastapi`, `flask`, any web framework |
 | `httpx`, `requests` | `langgraph`, `langchain`, `crewai`, `autogen` |
 | `pydantic`, `jsonschema` | `openai`, `anthropic`, any LLM-vendor SDK |
-| `psycopg2-binary` (v0.1 only — see issue #1) | `uvicorn`, `gunicorn`, any server |
+| `psycopg2-binary` (see issue #1 for planned optional extras) | `uvicorn`, `gunicorn`, any server |
 | `structlog` | `python-dotenv`, app-level config helpers |
 
 CI should fail any PR that adds a forbidden import to `src/provably/`. Until a
@@ -96,15 +96,15 @@ The interceptor monkey-patches `requests` and `httpx` for everyone *else* in
 the process; SDK-internal HTTP calls always use `httpx` directly so they are
 not double-counted.
 
-## Configuration contract (v0.1)
+## Configuration contract
 
 The SDK reads from environment variables only. The full set is documented in
 `README.md`. Changing this contract — adding, removing, or renaming a variable
 the SDK reads — is a breaking change.
 
-The v0.2 plan is to introduce a typed `Provably(...)` client that owns this
-configuration explicitly (issue #2). When that lands, the env-var path should
-remain functional via a default singleton.
+A typed `Provably(...)` client that owns configuration explicitly is planned
+(issue #2). When that lands, the env-var path should remain functional via a
+default singleton.
 
 ## Test boundary (strict)
 
@@ -158,7 +158,7 @@ build-system), bump the Docker layer that copies that file and run
   `handoff_contract_version` (currently `"2.0"`) and document both versions
   during the transition.
 - **Adding a Postgres dependency to a new module** — don't. Open an issue
-  blocked on #1; v0.2 inverts this so callers pass a connection in.
+  blocked on #1; the plan is to invert this so callers pass a connection in.
 - **Adding an LLM SDK dependency** — also don't. The SDK stays vendor-neutral.
 
 ## Out of scope

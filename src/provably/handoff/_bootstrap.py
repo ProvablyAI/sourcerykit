@@ -15,6 +15,9 @@ from provably.handoff._discovery import (
 from provably.handoff._http import get_json, log_failed_response, org_id, post_json, post_raw
 from provably.handoff._preprocess import ensure_preprocess_intercept_padding
 from provably.handoff._resources import extract_id, provably_database_host_field
+from provably.log import get_logger
+
+_log = get_logger(__name__)
 
 _CACHE: dict[str, str] = {}
 
@@ -47,7 +50,7 @@ def ensure_bootstrap_cached() -> None:
     # before discover_intercepts_table() (otherwise /data and schema walks find nothing).
     ensure_preprocess_intercept_padding(postgres_url)
 
-    print("[HANDOFF] Bootstrapping Provably...")
+    _log.info("bootstrap_started")
     middleware_id = _create_middleware(current_org)
     database_id = _onboard_database(current_org, middleware_id, postgres_url)
     table_bundle = discover_intercepts_table(current_org, middleware_id, database_id)
@@ -68,7 +71,7 @@ def ensure_bootstrap_cached() -> None:
 def _create_middleware(current_org: str) -> str:
     mw = post_json(f"/api/v1/organizations/{current_org}/middlewares/provably", {})
     middleware_id = extract_id(mw, ["id", "middleware_id"])
-    print(f"[HANDOFF] Middleware created: {middleware_id}")
+    _log.info("middleware_created", middleware_id=middleware_id)
     return middleware_id
 
 
@@ -90,7 +93,7 @@ def _onboard_database(current_org: str, middleware_id: str, postgres_url: str) -
         # Provably API does not support DB deletion. Reuse the existing registration; the
         # padding step ran above to ensure provably_intercepts exists, and the backend's
         # schema introspection will pick it up so discover_intercepts_table() can find it.
-        print("[HANDOFF] Database already exists; reusing existing registration...")
+        _log.info("database_already_exists_reusing")
         database_id = resolve_existing_database_id(current_org, middleware_id, db_name)
         if not database_id:
             log_failed_response(resp)
@@ -99,7 +102,7 @@ def _onboard_database(current_org: str, middleware_id: str, postgres_url: str) -
         log_failed_response(resp)
         resp.raise_for_status()
         database_id = ""
-    print(f"[HANDOFF] Database onboarded: {database_id}")
+    _log.info("database_onboarded", database_id=database_id)
     return database_id
 
 
@@ -117,7 +120,7 @@ def _ensure_collection(
     table_id = table_bundle["table_id"]
     existing = resolve_existing_collection_id(current_org, middleware_id, database_id, table_id)
     if existing:
-        print(f"[HANDOFF] Reusing existing collection: {existing}")
+        _log.info("collection_reused", collection_id=existing)
         return existing
     payload: dict[str, Any] = {
         "name": "provably_intercepts",
@@ -139,7 +142,7 @@ def _ensure_collection(
         resp.raise_for_status()
     coll = resp.json() if resp.text else {}
     collection_id = extract_id(coll if isinstance(coll, dict) else {}, ["id", "collection_id"])
-    print(f"[HANDOFF] Collection created: {collection_id}")
+    _log.info("collection_created", collection_id=collection_id)
     return collection_id
 
 
@@ -162,7 +165,7 @@ def _ensure_integration_cached() -> None:
     try:
         resp = post_json(f"/api/v1/organizations/{current_org}/integrations", body)
     except Exception as exc:  # noqa: BLE001
-        print(f"[HANDOFF] Integration create failed ({exc}); attempting to reuse existing integrations...")
+        _log.warning("integration_create_failed_reusing", error=str(exc))
         if _reuse_any_existing_integration(current_org):
             return
         raise
@@ -186,6 +189,6 @@ def _reuse_any_existing_integration(current_org: str) -> bool:
             continue
         _CACHE["integration_id"] = extract_id(item, ["id", "integration_id"])
         _CACHE["integration_api_key"] = key
-        print("[HANDOFF] Reusing existing integration from API list")
+        _log.info("integration_reused_from_api")
         return True
     return False

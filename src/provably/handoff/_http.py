@@ -10,6 +10,9 @@ from urllib.parse import urlparse, urlunparse
 
 import requests
 
+from provably.log import get_logger
+
+_log = get_logger(__name__)
 _SESSION = requests.Session()
 
 _TRANSIENT_STATUS = {429, 502, 503, 504}
@@ -120,7 +123,7 @@ def query_record_page_url(org_id: str, query_record_id: str) -> str:
 
 def log_failed_response(resp: requests.Response) -> None:
     try:
-        print(f"[HANDOFF] HTTP {resp.status_code} body: {resp.text[:2000]}")
+        _log.warning("http_error", status=resp.status_code, body=resp.text[:2000])
     except Exception:  # noqa: BLE001
         pass
 
