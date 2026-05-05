@@ -28,17 +28,15 @@ from typing import Any
 
 import pytest
 import requests as requests_lib
-
+from agents import Agent, Runner, function_tool, set_default_openai_api, set_default_openai_client
 from openai import AsyncOpenAI
-from agents import Agent, Runner, function_tool, set_default_openai_client, set_default_openai_api
 
-import provably.intercept.interceptor as _interceptor_module
 import provably.intercept._storage as _storage_module
+import provably.intercept.interceptor as _interceptor_module
 from provably.handoff.evaluator import evaluate_handoff
 from provably.handoff.types import HandoffClaim, HandoffPayload
 from provably.trusted_endpoints import normalize_url_for_trust
 from tests.e2e.conftest import FakeHttpServer
-
 
 # ---------------------------------------------------------------------------
 # Helper: build canonical ChatCompletion JSON responses for the fake LLM server
