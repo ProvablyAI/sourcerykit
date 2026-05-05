@@ -7,6 +7,7 @@ import threading
 from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 import httpx
 import requests
@@ -23,9 +24,6 @@ from provably.intercept._storage import (
     request_payload_dict,
 )
 from provably.trusted_endpoints import normalize_url_for_trust
-
-_RequestsJsonOverride = RequestsJsonOverride
-_HttpxJsonOverride = HttpxJsonOverride
 
 _ctx_agent_id: ContextVar[str] = ContextVar("provably_agent_id", default="")
 _ctx_action_name: ContextVar[str] = ContextVar("provably_action_name", default="")
@@ -173,19 +171,21 @@ def is_enabled() -> bool:
 def _insert_row(url: str, request_payload: dict[str, Any], raw: Any, *, method: str = "GET") -> None:
     if not _enabled:
         return
+    agent_id = _ctx_agent_id.get() or "unknown"
+    action_name = _ctx_action_name.get() or "unknown"
     row_id = insert_intercept_row(
         url=url,
         method=method,
         request_payload=request_payload,
         raw=raw,
-        agent_id=_ctx_agent_id.get() or "unknown",
-        action_name=_ctx_action_name.get() or "unknown",
+        agent_id=agent_id,
+        action_name=action_name,
     )
     if row_id is not None:
         global _last_intercept_row_id
         with _intercept_lock:
             _last_intercept_row_id = row_id
-            _action_row_ids[(_ctx_agent_id.get() or "unknown", _ctx_action_name.get() or "unknown")] = row_id
+            _action_row_ids[(agent_id, action_name)] = row_id
 
 
 def _maybe_transform_body(raw: Any) -> Any:
@@ -220,9 +220,9 @@ def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) ->
     if mutated is raw:
         return response
     if isinstance(response, requests.Response):
-        return _RequestsJsonOverride(response, mutated)
+        return RequestsJsonOverride(response, mutated)
     if isinstance(response, httpx.Response):
-        return _HttpxJsonOverride(response, mutated)
+        return HttpxJsonOverride(response, mutated)
     return response
 
 
@@ -245,49 +245,43 @@ def _wrap_call(orig_fn, method: str):
     return wrapped
 
 
+def _decode_body_into_kwargs(kwargs: dict[str, Any], body: bytes | str | None, content_type: str) -> None:
+    """Decode a raw request body into the kwargs shape ``request_payload_dict`` understands.
+
+    JSON bodies (when Content-Type contains ``application/json``) are parsed and stored under
+    ``json``; everything else is decoded to text and stored under ``data``. Mutates ``kwargs``.
+    """
+    if body is None or body == b"":
+        return
+    text = body if isinstance(body, str) else body.decode(errors="replace")
+    if "application/json" in content_type:
+        try:
+            kwargs["json"] = json.loads(text)
+            return
+        except Exception:  # noqa: BLE001
+            pass
+    kwargs["data"] = text
+
+
 def _httpx_request_to_kwargs(req: httpx.Request) -> dict[str, Any]:
-    """Extract request metadata from an httpx.Request into the kwargs shape request_payload_dict understands."""
+    """Extract httpx.Request metadata into the kwargs shape request_payload_dict understands."""
     kwargs: dict[str, Any] = {}
-    # Query params
     params = dict(req.url.params)
     if params:
         kwargs["params"] = params
-    # Body: try to parse as JSON if Content-Type is application/json
-    content_type = req.headers.get("content-type", "")
-    if req.content and "application/json" in content_type:
-        try:
-            kwargs["json"] = json.loads(req.content)
-        except Exception:  # noqa: BLE001
-            kwargs["content"] = req.content.decode(errors="replace")
-    elif req.content:
-        kwargs["data"] = req.content.decode(errors="replace")
+    _decode_body_into_kwargs(kwargs, req.content, req.headers.get("content-type", ""))
     return kwargs
 
 
 def _requests_prepared_to_kwargs(req: requests.PreparedRequest) -> dict[str, Any]:
-    """Extract request metadata from a PreparedRequest into the kwargs shape request_payload_dict understands."""
-    from urllib.parse import parse_qs, urlsplit
-
+    """Extract PreparedRequest metadata into the kwargs shape request_payload_dict understands."""
     kwargs: dict[str, Any] = {}
-    # Query params from URL
-    url_str = str(req.url or "")
-    parsed = urlsplit(url_str)
+    parsed = urlsplit(str(req.url or ""))
     if parsed.query:
         raw_params = parse_qs(parsed.query, keep_blank_values=True)
         # Flatten single-value lists to scalars (matches typical kwargs["params"] shape)
         kwargs["params"] = {k: (v[0] if len(v) == 1 else v) for k, v in raw_params.items()}
-    # Body
-    content_type = (req.headers or {}).get("Content-Type", "") or ""
-    body = req.body
-    if body is not None:
-        if "application/json" in content_type:
-            try:
-                body_str = body if isinstance(body, str) else body.decode(errors="replace")
-                kwargs["json"] = json.loads(body_str)
-            except Exception:  # noqa: BLE001
-                kwargs["data"] = body if isinstance(body, str) else body.decode(errors="replace")
-        else:
-            kwargs["data"] = body if isinstance(body, str) else body.decode(errors="replace")
+    _decode_body_into_kwargs(kwargs, req.body, (req.headers or {}).get("Content-Type", "") or "")
     return kwargs
 
 
