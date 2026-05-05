@@ -26,53 +26,29 @@ import os
 
 import psycopg2
 import requests
-
-# ---------------------------------------------------------------------------
-# Step 1 – activate Provably indexing
-# (calls initialize_runtime() + init_interceptor() + enable())
-# ---------------------------------------------------------------------------
-import provably.runtime as _prt
-_prt.configure_indexing(enable_indexing=True)
-
-# ---------------------------------------------------------------------------
-# Step 2 – configure the OpenAI Agents SDK to use OpenRouter
-# ---------------------------------------------------------------------------
+from agents import Agent, Runner, function_tool, set_default_openai_api, set_default_openai_client
 from openai import AsyncOpenAI
-from agents import (
-    Agent,
-    Runner,
-    function_tool,
-    set_default_openai_client,
-    set_default_openai_api,
+
+import provably.runtime as _prt
+from provably.handoff.client import cached_integration_api_key
+from provably.handoff.evaluator import evaluate_handoff
+from provably.handoff.types import HandoffClaim, HandoffPayload
+from provably.intercept import set_interceptor_context, take_last_intercept_row_id
+from provably.trusted_endpoints import (
+    ensure_trusted_endpoints_table,
+    load_trusted_endpoint_urls,
+    normalize_url_for_trust,
 )
 
-_openrouter_client = AsyncOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ["OPENROUTER_API_KEY"],
-)
-set_default_openai_client(_openrouter_client, use_for_tracing=False)
-# OpenRouter speaks the Chat Completions API, not the Responses API that the
-# Agents SDK defaults to.  Switching to "chat_completions" is required.
-set_default_openai_api("chat_completions")
-
 # ---------------------------------------------------------------------------
-# Step 3 – seed trusted_endpoints
-# We register both the LLM provider URL and the weather API URL so the trust
-# gate allows them through.  normalize_url_for_trust strips trailing slashes
-# and normalises scheme/host; we use the exact path URLs so exact matching works.
+# Trusted endpoint URLs for this demo
 # ---------------------------------------------------------------------------
-from provably.trusted_endpoints import normalize_url_for_trust, ensure_trusted_endpoints_table
-
-# Exact URLs that will appear in intercepted requests
 _OPENROUTER_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
-_OPEN_METEO_URL = (
-    "https://api.open-meteo.com/v1/forecast"
-    "?latitude=51.5074&longitude=-0.1278&current=temperature_2m"
-)
+_OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 
 _TRUSTED_URLS = [
     _OPENROUTER_COMPLETIONS_URL,
-    "https://api.open-meteo.com/v1/forecast",  # base path (prefix match not needed – exact norm)
+    _OPEN_METEO_BASE_URL,
 ]
 
 
@@ -101,24 +77,20 @@ def _seed_trusted_endpoints() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Step 4 – define the weather tool
+# Tool definition — the @function_tool decorator registers the schema at
+# import time but does NOT make HTTP calls, so the interceptor doesn't need
+# to be active yet at decoration time.
 # ---------------------------------------------------------------------------
-from provably.intercept import set_interceptor_context, take_last_intercept_row_id
-from provably.handoff.evaluator import evaluate_handoff
-from provably.handoff.types import HandoffClaim, HandoffPayload
-
-
 @function_tool
 def get_current_temperature_london() -> dict:
     """Fetch the current temperature in London (51.5074 N, 0.1278 W) from Open-Meteo.
 
     Returns a dict with a ``temperature_2m`` key (Celsius, float).
     """
-    # Tag this tool call so the interceptor records it under action_name="get_weather"
     set_interceptor_context(agent_id="demo", action_name="get_weather")
 
     response = requests.get(
-        "https://api.open-meteo.com/v1/forecast",
+        _OPEN_METEO_BASE_URL,
         params={
             "latitude": 51.5074,
             "longitude": -0.1278,
@@ -128,20 +100,34 @@ def get_current_temperature_london() -> dict:
     )
     response.raise_for_status()
     data = response.json()
-    # The Open-Meteo API returns: {"current": {"temperature_2m": <float>, ...}, ...}
     current = data.get("current", {})
-    temperature = current.get("temperature_2m")
-    return {"temperature_2m": temperature}
+    return {"temperature_2m": current.get("temperature_2m")}
 
 
 # ---------------------------------------------------------------------------
-# Step 5 – main: run agent → capture intercept → build claim → evaluate
+# Main
 # ---------------------------------------------------------------------------
+
 
 async def main() -> None:
+    # Step 1 — activate Provably indexing (interceptor + storage)
+    # Must happen before Runner.run() so all HTTP calls are recorded.
+    _prt.configure_indexing(enable_indexing=True)
+
+    # Step 2 — configure the Agents SDK to use OpenRouter (Chat Completions API)
+    openrouter_client = AsyncOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=os.environ["OPENROUTER_API_KEY"],
+    )
+    set_default_openai_client(openrouter_client, use_for_tracing=False)
+    # OpenRouter speaks Chat Completions, not the Responses API the SDK defaults to.
+    set_default_openai_api("chat_completions")
+
+    # Step 3 — seed trusted endpoints so the trust gate allows these URLs
     print("Seeding trusted endpoints…")
     _seed_trusted_endpoints()
 
+    # Step 4 — run the agent
     agent = Agent(
         name="weather-demo",
         instructions=(
@@ -156,27 +142,14 @@ async def main() -> None:
     result = await Runner.run(agent, "What is the current temperature in London?")
     print(f"\nAgent response: {result.final_output}\n")
 
-    # -----------------------------------------------------------------
-    # Capture the intercept row id for the weather tool call.
-    # take_last_intercept_row_id() pops the most-recently inserted row id
-    # (set by the interceptor when it stored the Open-Meteo response).
-    # -----------------------------------------------------------------
+    # Step 5 — capture the intercept row id for the weather tool call
     intercept_row_id = take_last_intercept_row_id()
     if intercept_row_id is None:
-        print(
-            "WARNING: No intercept row captured. "
-            "Check POSTGRES_URL and that trusted_endpoints are seeded correctly."
-        )
+        print("WARNING: No intercept row captured. Check POSTGRES_URL and that trusted_endpoints are seeded correctly.")
 
-    # -----------------------------------------------------------------
-    # Extract the temperature value the tool actually returned.
-    # The agent's tool output is available in result.new_items as ToolCallOutputItem.
-    # For simplicity, re-derive it from the final output text is fragile, so we
-    # inspect the tool call outputs directly.
-    # -----------------------------------------------------------------
+    # Step 6 — extract tool output for the claim
     tool_output_value: dict = {}
     for item in result.new_items:
-        # ToolCallOutputItem has .output attribute (the raw tool return value)
         if hasattr(item, "output"):
             raw_out = item.output
             if isinstance(raw_out, str):
@@ -191,34 +164,19 @@ async def main() -> None:
 
     print(f"Tool output captured for claim: {tool_output_value}")
 
-    # -----------------------------------------------------------------
-    # Build a HandoffPayload with one HandoffClaim referencing the
-    # intercepted Open-Meteo response stored in provably_intercepts.
-    # -----------------------------------------------------------------
+    # Step 7 — build the HandoffPayload and evaluate
     org_id = os.environ["PROVABLY_ORG_ID"]
     provably_base_url = os.environ.get("PROVABLY_RUST_BE_URL", "").rstrip("/")
     postgres_url = os.environ["POSTGRES_URL"]
 
-    # Import the integration_api_key from the runtime cache
-    from provably.handoff.client import cached_integration_api_key
-    integration_key = cached_integration_api_key()
-
-    # Build the query_record_id.  When intercept_row_id is available the
-    # convention used by build_handoff_payload is to create a query record
-    # against the row PK.  For this demo we build the HandoffClaim directly
-    # with the row id encoded as the query_record_id string (the evaluator
-    # will fetch the record from the Provably backend using this id).
-    # In production usage you would call create_query_record_for_intercept()
-    # (via build_handoff_payload) to get the real Provably query record id.
+    # NOTE: in production use build_handoff_payload() to obtain a real Provably
+    # query record UUID. This demo passes the raw intercepts PK as a stand-in.
     query_record_id = str(intercept_row_id) if intercept_row_id else ""
-
-    # Load the trusted endpoint URLs for the snapshot embedded in the payload
-    from provably.trusted_endpoints import load_trusted_endpoint_urls
     trusted_urls = load_trusted_endpoint_urls(postgres_url, org_id)
 
     payload = HandoffPayload(
         provably_org_id=org_id,
-        integration_api_key=integration_key,
+        integration_api_key=cached_integration_api_key(),
         trusted_endpoint_registry=trusted_urls,
         claims=[
             HandoffClaim(
