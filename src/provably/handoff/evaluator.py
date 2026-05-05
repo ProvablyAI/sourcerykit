@@ -26,6 +26,7 @@ import httpx
 from provably.handoff.eval_modes import evaluate_claim
 from provably.handoff.json_utils import canonical_json
 from provably.handoff.types import HandoffClaim, HandoffPayload
+from provably.intercept._self_egress import provably_self_egress
 from provably.log import get_logger
 from provably.trusted_endpoints import check_claim_endpoints_are_trusted
 
@@ -106,40 +107,41 @@ def evaluate_handoff(
     per_claim: list[dict[str, Any]] = []
     errors: list[str] = []
 
-    with httpx.Client(timeout=timeout_s) as client:
-        # Phase 1+2: per-claim compare; capture TPT (TVT comes after verify in phase 3).
-        for claim in payload.claims:
-            query_record_id = (claim.query_record_id or "").strip()
-            if not query_record_id:
-                err = "missing query_record_id"
-                errors.append(f"{claim.action_name}: {err}")
-                per_claim.append(_error(claim, err))
-                continue
-            try:
-                record = _fetch_query_record(client, base_url, org, query_record_id, api_key)
-            except Exception as exc:  # noqa: BLE001
-                # Record exists (we have a query_record_id) but can't be fetched — treat as
-                # unverifiable (suspicious), not a plain infra/setup error.
-                errors.append(f"{claim.action_name}: fetch failed: {exc}")
-                per_claim.append(_caught_verdict(claim, f"fetch failed: {exc}"))
-                continue
-            verdict = evaluate_claim(claim, extract_indexed_from_query_record(record))
-            verdict["query_record_id"] = query_record_id
-            timing = _timing_from_query_record(record)
-            if timing:
-                verdict = {**verdict, **timing}
-            per_claim.append(verdict)
+    with provably_self_egress():
+        with httpx.Client(timeout=timeout_s) as client:
+            # Phase 1+2: per-claim compare; capture TPT (TVT comes after verify in phase 3).
+            for claim in payload.claims:
+                query_record_id = (claim.query_record_id or "").strip()
+                if not query_record_id:
+                    err = "missing query_record_id"
+                    errors.append(f"{claim.action_name}: {err}")
+                    per_claim.append(_error(claim, err))
+                    continue
+                try:
+                    record = _fetch_query_record(client, base_url, org, query_record_id, api_key)
+                except Exception as exc:  # noqa: BLE001
+                    # Record exists (we have a query_record_id) but can't be fetched — treat as
+                    # unverifiable (suspicious), not a plain infra/setup error.
+                    errors.append(f"{claim.action_name}: fetch failed: {exc}")
+                    per_claim.append(_caught_verdict(claim, f"fetch failed: {exc}"))
+                    continue
+                verdict = evaluate_claim(claim, extract_indexed_from_query_record(record))
+                verdict["query_record_id"] = query_record_id
+                timing = _timing_from_query_record(record)
+                if timing:
+                    verdict = {**verdict, **timing}
+                per_claim.append(verdict)
 
-        # Phase 3 (final): /verify each unique query_record_id and refresh TVT timing.
-        _verify_and_refresh_timings(
-            client=client,
-            base_url=base_url,
-            org=org,
-            api_key=api_key,
-            payload=payload,
-            per_claim=per_claim,
-            errors=errors,
-        )
+            # Phase 3 (final): /verify each unique query_record_id and refresh TVT timing.
+            _verify_and_refresh_timings(
+                client=client,
+                base_url=base_url,
+                org=org,
+                api_key=api_key,
+                payload=payload,
+                per_claim=per_claim,
+                errors=errors,
+            )
 
     return {"outcome": _resolve_outcome(per_claim), "per_claim": per_claim, "errors": errors}
 

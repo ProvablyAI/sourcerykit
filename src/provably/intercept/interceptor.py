@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import threading
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -10,11 +11,13 @@ from typing import Any
 import httpx
 import requests
 
+from provably.intercept._reentry import already_recording, recording_scope
 from provably.intercept._responses import (
     HttpxJsonOverride,
     RequestsJsonOverride,
     extract_raw,
 )
+from provably.intercept._self_egress import is_self_egress
 from provably.intercept._storage import (
     insert_intercept_row,
     request_payload_dict,
@@ -120,7 +123,9 @@ def init_interceptor() -> None:
 
     Replaces ``requests.get``/``requests.post`` and ``httpx.get``/``httpx.post`` with wrapped
     versions that record the response into ``provably_intercepts`` and optionally pass it
-    through the simulation hook. The patch is one-way (use :func:`disable` to short-circuit
+    through the simulation hook. Also patches ``httpx.Client.send``, ``httpx.AsyncClient.send``,
+    and ``requests.Session.send`` as lower-level choke points so instance-based and async
+    usage is also intercepted. The patch is one-way (use :func:`disable` to short-circuit
     rather than uninstall) and flips ``enabled=True``.
     """
     global _initialized, _enabled
@@ -130,10 +135,18 @@ def init_interceptor() -> None:
     _orig["requests_post"] = requests.post
     _orig["httpx_get"] = httpx.get
     _orig["httpx_post"] = httpx.post
+    _orig["httpx_client_send"] = httpx.Client.send
+    _orig["httpx_async_client_send"] = httpx.AsyncClient.send
+    _orig["requests_session_send"] = requests.Session.send
+    # Module-level convenience patches (kept for backward compatibility)
     requests.get = _wrap_call(_orig["requests_get"], "GET")
     requests.post = _wrap_call(_orig["requests_post"], "POST")
     httpx.get = _wrap_call(_orig["httpx_get"], "GET")
     httpx.post = _wrap_call(_orig["httpx_post"], "POST")
+    # Lower-level instance method patches (cover async, Client(), Session())
+    requests.Session.send = _wrap_session_send(_orig["requests_session_send"])
+    httpx.Client.send = _wrap_client_send(_orig["httpx_client_send"])
+    httpx.AsyncClient.send = _wrap_async_client_send(_orig["httpx_async_client_send"])
     _initialized = True
     _enabled = True
 
@@ -183,6 +196,14 @@ def _maybe_transform_body(raw: Any) -> Any:
 
 
 def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) -> Any:
+    """Record the response and optionally mutate it via the simulation hook.
+
+    Short-circuits immediately when inside a self-egress block or already in the middle of
+    recording (re-entry guard prevents double-recording when module-level calls like
+    ``httpx.get`` internally delegate to a patched ``Client.send``).
+    """
+    if is_self_egress() or already_recording():
+        return response
     raw = extract_raw(response)
     req = request_payload_dict(url, method, req_kwargs)
     nurl = normalize_url_for_trust(str(url))
@@ -206,8 +227,95 @@ def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) ->
 
 
 def _wrap_call(orig_fn, method: str):
+    """Wrap a module-level convenience function (e.g. httpx.get, requests.post).
+
+    Sets ``recording_scope`` BEFORE calling the original function so that any
+    lower-level ``Client.send`` / ``Session.send`` wrapper that fires during the
+    same call sees ``already_recording() == True`` and skips duplicate recording.
+    After the original returns, ``_attach`` runs in the outer scope (where
+    ``already_recording()`` is now False again) to do the actual recording.
+    """
+
     def wrapped(url, *args, **kwargs):
-        response = orig_fn(url, *args, **kwargs)
+        with recording_scope():
+            response = orig_fn(url, *args, **kwargs)
+        # recording_scope has exited; _attach will record this call
         return _attach(response, str(url), method, dict(kwargs))
+
+    return wrapped
+
+
+def _httpx_request_to_kwargs(req: httpx.Request) -> dict[str, Any]:
+    """Extract request metadata from an httpx.Request into the kwargs shape request_payload_dict understands."""
+    kwargs: dict[str, Any] = {}
+    # Query params
+    params = dict(req.url.params)
+    if params:
+        kwargs["params"] = params
+    # Body: try to parse as JSON if Content-Type is application/json
+    content_type = req.headers.get("content-type", "")
+    if req.content and "application/json" in content_type:
+        try:
+            kwargs["json"] = json.loads(req.content)
+        except Exception:  # noqa: BLE001
+            kwargs["content"] = req.content.decode(errors="replace")
+    elif req.content:
+        kwargs["data"] = req.content.decode(errors="replace")
+    return kwargs
+
+
+def _requests_prepared_to_kwargs(req: requests.PreparedRequest) -> dict[str, Any]:
+    """Extract request metadata from a requests.PreparedRequest into the kwargs shape request_payload_dict understands."""
+    from urllib.parse import parse_qs, urlsplit
+
+    kwargs: dict[str, Any] = {}
+    # Query params from URL
+    url_str = str(req.url or "")
+    parsed = urlsplit(url_str)
+    if parsed.query:
+        raw_params = parse_qs(parsed.query, keep_blank_values=True)
+        # Flatten single-value lists to scalars (matches typical kwargs["params"] shape)
+        kwargs["params"] = {k: (v[0] if len(v) == 1 else v) for k, v in raw_params.items()}
+    # Body
+    content_type = (req.headers or {}).get("Content-Type", "") or ""
+    body = req.body
+    if body is not None:
+        if "application/json" in content_type:
+            try:
+                body_str = body if isinstance(body, str) else body.decode(errors="replace")
+                kwargs["json"] = json.loads(body_str)
+            except Exception:  # noqa: BLE001
+                kwargs["data"] = body if isinstance(body, str) else body.decode(errors="replace")
+        else:
+            kwargs["data"] = body if isinstance(body, str) else body.decode(errors="replace")
+    return kwargs
+
+
+def _wrap_client_send(orig_send):
+    """Wrap httpx.Client.send to record responses via _attach."""
+
+    def wrapped(self, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+        response = orig_send(self, request, **kwargs)
+        return _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request))
+
+    return wrapped
+
+
+def _wrap_async_client_send(orig_send):
+    """Wrap httpx.AsyncClient.send to record responses via _attach."""
+
+    async def wrapped(self, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+        response = await orig_send(self, request, **kwargs)
+        return _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request))
+
+    return wrapped
+
+
+def _wrap_session_send(orig_send):
+    """Wrap requests.Session.send to record responses via _attach."""
+
+    def wrapped(self, request: requests.PreparedRequest, **kwargs: Any) -> requests.Response:
+        response = orig_send(self, request, **kwargs)
+        return _attach(response, str(request.url), request.method or "GET", _requests_prepared_to_kwargs(request))
 
     return wrapped

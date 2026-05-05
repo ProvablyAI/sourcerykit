@@ -24,23 +24,6 @@ import provably.intercept.interceptor as interceptor
 from tests.e2e.conftest import FakeHttpServer
 
 
-@pytest.fixture
-def patched_interceptor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
-    """Install the real interceptor with the storage layer redirected to an in-memory list.
-
-    Yields the list of recorded rows so tests can assert against it.
-    """
-    rows: list[dict[str, Any]] = []
-
-    def fake_insert(_url: str, request_payload: dict, raw: Any, *, method: str = "GET") -> None:
-        rows.append({"url": _url, "method": method, "request": request_payload, "raw": raw})
-
-    monkeypatch.setattr(interceptor, "_insert_row", fake_insert)
-    interceptor.init_interceptor()
-    monkeypatch.setattr(interceptor, "_enabled", True)
-    return rows
-
-
 @pytest.mark.e2e
 def test_requests_get_records_raw_response(
     fake_server: FakeHttpServer, patched_interceptor: list[dict[str, Any]]
