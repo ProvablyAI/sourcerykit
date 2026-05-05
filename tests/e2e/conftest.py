@@ -119,16 +119,6 @@ class FakeHttpServer:
 
 
 @pytest.fixture
-def fake_server() -> Iterator[FakeHttpServer]:
-    server = FakeHttpServer()
-    server.start()
-    try:
-        yield server
-    finally:
-        server.stop()
-
-
-@pytest.fixture
 def fake_server_factory() -> Iterator[Callable[[], FakeHttpServer]]:
     """Factory fixture that creates and tracks multiple FakeHttpServer instances.
 

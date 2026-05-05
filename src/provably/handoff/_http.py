@@ -14,20 +14,22 @@ from provably.log import get_logger
 
 _log = get_logger(__name__)
 _SESSION = requests.Session()
+_TRANSIENT_STATUS = {429, 502, 503, 504}
 
 
-def _self_egress():
-    """Lazy import of provably_self_egress to avoid circular imports at module load time.
+def _request(method: str, path: str, **kwargs: Any) -> requests.Response:
+    """All outbound HTTP from this module funnels through here.
 
-    provably.intercept._self_egress -> provably/intercept/__init__.py -> interceptor.py
-    -> _storage.py -> provably.handoff._preprocess -> provably.handoff._http (circular).
-    Deferring the import to call time avoids the cycle.
+    Wraps every call in ``provably_self_egress()`` so the SDK's own backend traffic
+    bypasses the trust gate and the intercept recorder. The ``provably_self_egress``
+    import is deferred to avoid the circular import:
+    ``provably.intercept`` → ``interceptor`` → ``_storage`` → ``handoff._preprocess``
+    → ``handoff._http``.
     """
     from provably.intercept._self_egress import provably_self_egress  # noqa: PLC0415
 
-    return provably_self_egress()
-
-_TRANSIENT_STATUS = {429, 502, 503, 504}
+    with provably_self_egress():
+        return _SESSION.request(method, f"{base_url()}{path}", headers=headers(), **kwargs)
 
 
 def base_url() -> str:
@@ -141,8 +143,7 @@ def log_failed_response(resp: requests.Response) -> None:
 
 
 def get_json(path: str) -> Any:
-    with _self_egress():
-        resp = _SESSION.get(f"{base_url()}{path}", headers=headers(), timeout=60)
+    resp = _request("GET", path, timeout=60)
     if not resp.ok:
         log_failed_response(resp)
         resp.raise_for_status()
@@ -151,27 +152,15 @@ def get_json(path: str) -> Any:
 
 def get_json_params(path: str, params: dict[str, Any], *, timeout_s: float = 60.0) -> Any:
     """GET with query-string parameters (e.g. list queries filtered by ``collection_ids``)."""
-    with _self_egress():
-        resp = _SESSION.get(
-            f"{base_url()}{path}", headers=headers(), params=params, timeout=timeout_s
-        )
+    resp = _request("GET", path, params=params, timeout=timeout_s)
     if not resp.ok:
         log_failed_response(resp)
         resp.raise_for_status()
-    if not resp.text:
-        return []
-    data = resp.json()
-    return data
+    return resp.json() if resp.text else []
 
 
 def post_json(path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
-    with _self_egress():
-        resp = _SESSION.post(
-            f"{base_url()}{path}",
-            headers=headers(),
-            json=payload or {},
-            timeout=60,
-        )
+    resp = _request("POST", path, json=payload or {}, timeout=60)
     if not resp.ok:
         log_failed_response(resp)
         resp.raise_for_status()
@@ -180,8 +169,7 @@ def post_json(path: str, payload: dict[str, Any] | None = None) -> dict[str, Any
 
 def post_raw(path: str, payload: dict[str, Any]) -> requests.Response:
     """Post without raising so callers can inspect error bodies (e.g. 'already exists')."""
-    with _self_egress():
-        return _SESSION.post(f"{base_url()}{path}", headers=headers(), json=payload, timeout=60)
+    return _request("POST", path, json=payload, timeout=60)
 
 
 def post_json_with_transient_retry(
@@ -194,13 +182,7 @@ def post_json_with_transient_retry(
     payload = payload or {}
     last: requests.Response | None = None
     for attempt in range(max_attempts):
-        with _self_egress():
-            last = _SESSION.post(
-                f"{base_url()}{path}",
-                headers=headers(),
-                json=payload,
-                timeout=120,
-            )
+        last = _request("POST", path, json=payload, timeout=120)
         if last.status_code in _TRANSIENT_STATUS:
             log_failed_response(last)
             time.sleep(min(3.0 * (attempt + 1), 45))

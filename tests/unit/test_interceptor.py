@@ -8,6 +8,7 @@ import requests
 
 import provably.intercept._storage as storage
 import provably.intercept.interceptor as interceptor
+from provably.intercept._responses import RequestsJsonOverride
 from provably.intercept._self_egress import provably_self_egress
 
 
@@ -33,7 +34,7 @@ def test_insert_row_receives_raw_before_mutation(monkeypatch: Any) -> None:
 
         out = interceptor._attach(resp, "https://example.com/x", "GET", {})
         assert captured == [{"original": True}]
-        assert isinstance(out, interceptor._RequestsJsonOverride)
+        assert isinstance(out, RequestsJsonOverride)
         assert out.json() == {"user_edited": True}
     finally:
         interceptor.set_intercept_url_allowlist(None)
