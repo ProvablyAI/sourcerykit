@@ -1,8 +1,8 @@
 """Self-egress exemption: SDK-internal HTTP calls bypass intercept recording and trust checks."""
 
 import contextvars
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 _self_egress: contextvars.ContextVar[bool] = contextvars.ContextVar(
     "provably_self_egress", default=False

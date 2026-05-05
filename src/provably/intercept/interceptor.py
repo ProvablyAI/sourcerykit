@@ -265,7 +265,7 @@ def _httpx_request_to_kwargs(req: httpx.Request) -> dict[str, Any]:
 
 
 def _requests_prepared_to_kwargs(req: requests.PreparedRequest) -> dict[str, Any]:
-    """Extract request metadata from a requests.PreparedRequest into the kwargs shape request_payload_dict understands."""
+    """Extract request metadata from a PreparedRequest into the kwargs shape request_payload_dict understands."""
     from urllib.parse import parse_qs, urlsplit
 
     kwargs: dict[str, Any] = {}
