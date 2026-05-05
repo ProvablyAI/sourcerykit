@@ -18,3 +18,24 @@ Both layers run by default. To run only one layer:
 """
 
 from __future__ import annotations
+
+from collections.abc import Iterator
+
+import pytest
+
+from tests.e2e.conftest import FakeHttpServer
+
+
+@pytest.fixture
+def fake_server() -> Iterator[FakeHttpServer]:
+    """Loopback HTTP server fixture available to both unit and e2e tests.
+
+    Provides a real in-process loopback server so tests can drive SDK HTTP patches
+    without any external network access.
+    """
+    server = FakeHttpServer()
+    server.start()
+    try:
+        yield server
+    finally:
+        server.stop()

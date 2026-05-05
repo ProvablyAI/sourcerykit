@@ -10,6 +10,7 @@ from typing import Any
 import psycopg2
 
 from provably.handoff._preprocess import preprocess_after_intercept_write
+from provably.intercept._self_egress import is_self_egress
 from provably.log import get_logger
 from provably.trusted_endpoints import ensure_trusted_endpoints_table, is_trusted_endpoint
 
@@ -112,12 +113,13 @@ def insert_intercept_row(
     agent_id: str,
     action_name: str,
 ) -> int | None:
-    """Insert a row and return its id; enforce trust on GET before storing."""
+    """Insert a row and return its id; enforce trust on all methods before storing."""
+    if is_self_egress():
+        return None
     postgres_url = os.getenv("POSTGRES_URL", "").strip()
     if not postgres_url:
         return None
-    if method.upper() == "GET":
-        _require_trusted_endpoint(postgres_url, url)
+    _require_trusted_endpoint(postgres_url, url)
     return _write_row(postgres_url, url, method, request_payload, raw, agent_id, action_name)
 
 
