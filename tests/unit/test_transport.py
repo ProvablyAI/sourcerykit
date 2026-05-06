@@ -4,18 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from provably.handoff.transport import default_cluster_b_url, post_handoff
+from provably.handoff.transport import post_handoff
 from provably.handoff.types import HandoffPayload
-
-
-def test_default_cluster_b_url_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("CLUSTER_B_URL", "http://custom:9999/")
-    assert default_cluster_b_url() == "http://custom:9999"
-
-
-def test_default_cluster_b_url_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CLUSTER_B_URL", raising=False)
-    assert default_cluster_b_url() == "http://localhost:8082"
 
 
 def test_post_handoff_empty_url_raises() -> None:

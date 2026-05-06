@@ -6,7 +6,7 @@ from provably.handoff.evaluator import evaluate_handoff, extract_indexed_from_qu
 from provably.handoff.guide import default_instructions, field_descriptions
 from provably.handoff.outcomes import aggregate_outcome, outcome_from_trace
 from provably.handoff.payload_builder import DEFAULT_HANDOFF_TASK, build_handoff_payload
-from provably.handoff.transport import default_cluster_b_url, post_handoff
+from provably.handoff.transport import post_handoff
 from provably.handoff.types import (
     BenchmarkRow,
     HandoffClaim,
@@ -49,7 +49,6 @@ __all__ = [
     "check_claim_endpoints_are_trusted",
     "claim_contract",
     "configure_indexing",
-    "default_cluster_b_url",
     "default_instructions",
     "disable",
     "enable",
