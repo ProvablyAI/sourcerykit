@@ -16,6 +16,8 @@ from typing import Any
 
 import pytest
 
+import provably.intercept.interceptor as _interceptor_module
+
 Handler = Callable[["RecordedRequest"], "FakeResponse"]
 
 
@@ -117,10 +119,39 @@ class FakeHttpServer:
 
 
 @pytest.fixture
-def fake_server() -> Iterator[FakeHttpServer]:
-    server = FakeHttpServer()
-    server.start()
-    try:
-        yield server
-    finally:
-        server.stop()
+def fake_server_factory() -> Iterator[Callable[[], FakeHttpServer]]:
+    """Factory fixture that creates and tracks multiple FakeHttpServer instances.
+
+    Each call to the returned factory function starts a new server; all servers
+    are shut down after the test finishes.
+    """
+    servers: list[FakeHttpServer] = []
+
+    def _make() -> FakeHttpServer:
+        s = FakeHttpServer()
+        s.start()
+        servers.append(s)
+        return s
+
+    yield _make
+
+    for s in servers:
+        s.stop()
+
+
+@pytest.fixture
+def patched_interceptor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    """Install the real interceptor with the storage layer redirected to an in-memory list.
+
+    Yields the list of recorded rows so tests can assert against it.
+    This fixture is shared between test_interceptor_e2e.py and test_openai_agents_e2e.py.
+    """
+    rows: list[dict[str, Any]] = []
+
+    def fake_insert(_url: str, request_payload: dict, raw: Any, *, method: str = "GET") -> None:
+        rows.append({"url": _url, "method": method, "request": request_payload, "raw": raw})
+
+    monkeypatch.setattr(_interceptor_module, "_insert_row", fake_insert)
+    _interceptor_module.init_interceptor()
+    monkeypatch.setattr(_interceptor_module, "_enabled", True)
+    return rows

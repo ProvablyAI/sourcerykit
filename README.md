@@ -18,6 +18,7 @@ to at all — is enforced before the request leaves the process.
 ## Contents
 
 - [What it does](#what-it-does)
+- [Framework coverage](#framework-coverage)
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
@@ -60,8 +61,8 @@ flowchart LR
 
 The flow, in order:
 
-1. **Intercept + Police** — every outbound `requests` / `httpx` call goes
-   through the SDK's monkey-patched HTTP path. _Inside_ the interceptor, before
+1. **Intercept + Police** — every outbound `requests` / `httpx` / `aiohttp`
+   call goes through the SDK's monkey-patched HTTP path. _Inside_ the interceptor, before
    the request leaves the process, the URL is checked against the
    `trusted_endpoints` table. If the URL is not registered the call is killed
    with `RuntimeError("BLOCKED: ...")` and never reaches the network.
@@ -90,6 +91,46 @@ Nothing in this loop relies on a model self-evaluating its own output.
 | `provably_intercepts` table | **You** — same Postgres as above. | Append-only. The interceptor inserts one row per outbound HTTP call, keyed by `query_record_id` so claims can be linked back. |
 | Eval service | **You** — any HTTP service that calls `provably.evaluate_handoff(...)` on the incoming payload. | The SDK gives you the function; you decide where to host it. |
 | Provably query record | **Provably** — fetched over HTTPS by the eval service using the `integration_api_key` from the handoff payload. | This is the source of truth the evaluator compares each claim against. |
+
+## Framework coverage
+
+The interceptor patches the central HTTP transport choke points, so coverage of
+agent frameworks follows automatically from which library a framework uses
+under the hood. As of v0.3.0:
+
+**Transport patches**
+
+| Transport | Patched at |
+| --- | --- |
+| `requests` | module-level `get`/`post` + `Session.send` |
+| `httpx` | module-level `get`/`post` + `Client.send` + `AsyncClient.send` |
+| `aiohttp` | `ClientSession._request` (soft dep — patches only when `aiohttp` is importable) |
+| `botocore` / `urllib3` | _pending_ — see [issue #10](https://github.com/ProvablyAI/provably-python-sdk/issues/10) |
+
+**Agent / LLM frameworks**
+
+| Framework | Status | Notes |
+| --- | --- | --- |
+| OpenAI SDK | ✅ | httpx |
+| Anthropic SDK | ✅ | httpx |
+| Pydantic AI | ✅ | delegates to AsyncOpenAI / AsyncAnthropic |
+| LangChain | ✅ | delegates to provider SDKs |
+| LangGraph | ✅ | same |
+| LlamaIndex | ✅ | httpx via OpenAI SDK |
+| AutoGen | ✅ | AsyncOpenAI |
+| Haystack | ✅ | migrated to httpx (2024–25) |
+| Phidata / Agno | ✅ | AsyncOpenAI / `httpx[http2]` |
+| OpenAI Agents SDK | ✅ | httpx; e2e suite at [tests/e2e/test_openai_agents_e2e.py](tests/e2e/test_openai_agents_e2e.py); demo at [examples/openai_agents/](examples/openai_agents/) |
+| Google GenAI | ✅ | httpx default + optional `aiohttp` extra |
+| LiteLLM | ✅ | aiohttp transport (default since v1.71) |
+| DSPy | ✅ | LiteLLM only |
+| smolagents | ✅ | OpenAI SDK / HF / LiteLLM paths covered |
+| CrewAI | ⚠️ | OpenAI/Anthropic ✅, LiteLLM fallback ✅, **Bedrock provider ❌** (boto3) |
+| AWS Strands | ❌ | boto3/botocore → urllib3; tracked in [issue #10](https://github.com/ProvablyAI/provably-python-sdk/issues/10) |
+
+**Out of scope for the HTTP interception layer** (separate shipping units):
+MCP servers, in-process LLMs (`transformers`, `mlx_lm`), gRPC (Google ADK
+A2A), websockets, raw sockets.
 
 ## Install
 
@@ -309,6 +350,15 @@ Outcome semantics:
 - **`PASS`** — every claim's content matched its proven indexed value and every proof verified.
 - **`CAUGHT`** — at least one claim disagreed with the indexed value or a proof failed.
 - **`ERROR`** — the evaluator could not run (missing config, Provably backend unreachable, transient server error). Not evidence of tampering — the system was unhealthy, not the agent.
+
+#### Getting `CAUGHT` and you don't expect to be?
+
+`CAUGHT` means the indexed value the evaluator pulled from `provably_intercepts` doesn't match the claim. In practice when this surprises you, it's almost always one of:
+
+1. **The tool body never ran.** `@function_tool` (or any agent-framework decorator) only registers the function — you still need an agent loop (e.g. `Runner.run(...)`) to invoke it. Bare LLM calls don't execute tools.
+2. **`intercept_context(...)` was called without `with`.** It's a context manager; a bare call is a no-op (see the function's docstring).
+3. **`agent_id` mismatch.** The `agent_id` you pass to `intercept_context(...)` inside the tool must match the `intercept_agent_id` you pass to `build_handoff_payload(...)` (default `"fetch_and_claim"`). Mismatch → the lookup misses → empty `request_payload`.
+4. **Wrong row-id helper.** Use `get_intercept_row_id(agent_id, action_name)` to pick the row tagged with your action. `take_last_intercept_row_id()` returns the **globally** last insert (typically the final LLM POST), which is rarely what you want.
 
 Comparison modes (the `VerificationMode` type):
 

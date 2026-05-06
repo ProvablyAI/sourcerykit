@@ -56,7 +56,7 @@ COPY --from=builder /dist /dist
 
 RUN pip install --upgrade pip \
     && pip install /dist/*.whl \
-    && pip install "pytest>=8.0" "ruff>=0.3" "build>=1.2"
+    && pip install "pytest>=8.0" "pytest-asyncio>=0.23" "ruff>=0.3" "build>=1.2" "openai-agents" "aiohttp>=3.9"
 
 COPY pyproject.toml ./
 COPY tests ./tests

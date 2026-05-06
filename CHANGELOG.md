@@ -6,6 +6,61 @@
 - README: new "Getting `PROVABLY_API_KEY` and `PROVABLY_ORG_ID`" subsection walking through sign-up at app.provably.ai → create org → Integrations menu, plus a pointer to provably.ai/docs.
 - **BREAKING:** removed `default_cluster_b_url()` and the `CLUSTER_B_URL` env var — leftovers from the langgraph-demo monorepo extraction with a `localhost:8082` default and opaque "cluster B" naming the SDK has no business assuming. `post_handoff(receiver_url, payload)` (positional arg renamed from `cluster_b_url`) takes the URL directly — supply it from your application's own configuration.
 
+## 0.3.0
+
+### aiohttp interception (soft dependency)
+
+- `aiohttp.ClientSession._request` is now patched when `aiohttp` is importable.
+  The intercept SDK does **not** add `aiohttp` as a hard dependency — the patch
+  installs only when the user's environment already has it.
+- This unlocks **LiteLLM** (which uses `aiohttp` as its default transport since
+  v1.71+) and any framework that opts into an `aiohttp` extra (Google GenAI,
+  Google ADK, etc.).
+- Body override (the simulation tamper hook) is not supported for
+  `aiohttp.ClientResponse` — recording fires in full but the response is
+  returned unchanged.
+
+### OpenAI Agents SDK integration
+
+- Added `examples/openai_agents/` — a runnable end-to-end demo that drives a
+  real OpenRouter model call through the full Provably intercept → handoff →
+  evaluate pipeline.  Model: `openai/gpt-4o-mini` (~$0.001/run); data API:
+  Open-Meteo (no auth required).
+- Added `tests/e2e/test_openai_agents_e2e.py` — six deterministic scenarios
+  (A–F) using in-process `FakeHttpServer`s; zero network egress in CI.
+
+### Broader HTTP interception surface
+
+- `httpx.Client.send`, `httpx.AsyncClient.send`, and `requests.Session.send`
+  are now patched in addition to the existing module-level shortcuts
+  (`httpx.get`, `httpx.post`, `requests.get`, `requests.post`).  This means
+  every outbound HTTP call from any framework — including the async agent loops
+  used by the OpenAI Agents SDK — is intercepted without any user-side changes.
+- A re-entry contextvar guard (`_reentry.already_recording`) prevents
+  double-recording when a module-level call (e.g. `httpx.get`) internally
+  delegates to the newly-patched `Client.send`.
+
+### Trust gate fires on all HTTP methods (BREAKING-ISH)
+
+- **Before this release** `_require_trusted_endpoint` was only called for GET
+  requests.  It now fires unconditionally for every method (POST, PUT, PATCH,
+  DELETE, etc.).
+- **Migration:** register every outbound URL — including your LLM provider
+  (e.g. `https://openrouter.ai/api/v1/chat/completions`) — in `trusted_endpoints`
+  before running an agent.  Use `INSERT ... ON CONFLICT DO NOTHING` or the
+  Provably dashboard to add rows.  See `examples/openai_agents/agent_run.py`
+  for the pattern.
+
+### New `provably_self_egress()` context manager
+
+- Added `provably.intercept.provably_self_egress()` — a context manager that
+  marks a block of code as SDK-internal egress.  Inside it, the trust gate is
+  bypassed and no intercept rows are written.  All SDK self-egress sites
+  (`handoff.transport`, `handoff.evaluator`, `handoff._bootstrap`) already wrap
+  their own HTTP calls in this context, so the SDK never trips its own gate.
+  Advanced users who make their own Provably API calls from within an agent loop
+  can use this to avoid BLOCKED errors.
+
 ## 0.2.0
 
 - Added `provably.configure_indexing(enable_indexing: bool)`: one-call bootstrap (`initialize_runtime` + `init_interceptor` + `enable` / `disable`) for sender agents.

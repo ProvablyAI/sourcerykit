@@ -20,10 +20,10 @@ from provably.intercept import (
     disable,
     enable,
     init_interceptor,
+    intercept_context,
     is_enabled,
     set_intercept_body_hook,
     set_intercept_url_allowlist,
-    set_interceptor_context,
     take_last_intercept_row_id,
 )
 from provably.runtime import configure_indexing
@@ -58,6 +58,7 @@ __all__ = [
     "field_descriptions",
     "init_interceptor",
     "initialize_runtime",
+    "intercept_context",
     "is_enabled",
     "is_trusted_endpoint",
     "list_trusted_endpoints",
@@ -66,6 +67,5 @@ __all__ = [
     "post_handoff",
     "set_intercept_body_hook",
     "set_intercept_url_allowlist",
-    "set_interceptor_context",
     "take_last_intercept_row_id",
 ]

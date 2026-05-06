@@ -3,6 +3,7 @@ from __future__ import annotations
 import httpx
 
 from provably.handoff.types import HandoffPayload
+from provably.intercept._self_egress import provably_self_egress
 from provably.log import get_logger
 
 _log = get_logger(__name__)
@@ -28,7 +29,8 @@ def post_handoff(
     body = handoff_payload.model_dump(mode="json")
     hdrs = {"Content-Type": "application/json", **(headers or {})}
     try:
-        resp = httpx.post(url, json=body, headers=hdrs, timeout=timeout_s)
+        with provably_self_egress():
+            resp = httpx.post(url, json=body, headers=hdrs, timeout=timeout_s)
         resp.raise_for_status()
     except Exception as e:
         _log.error("post_handoff_failed", url=url, error=str(e))
