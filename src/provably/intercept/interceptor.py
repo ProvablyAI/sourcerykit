@@ -12,6 +12,11 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import requests
 
+try:
+    import aiohttp as _aiohttp
+except ImportError:
+    _aiohttp = None  # type: ignore[assignment]
+
 from provably.intercept._reentry import already_recording, recording_scope
 from provably.intercept._responses import (
     HttpxJsonOverride,
@@ -145,6 +150,12 @@ def init_interceptor() -> None:
     requests.Session.send = _wrap_session_send(_orig["requests_session_send"])
     httpx.Client.send = _wrap_client_send(_orig["httpx_client_send"])
     httpx.AsyncClient.send = _wrap_async_client_send(_orig["httpx_async_client_send"])
+    # Soft-dep: aiohttp is not a hard dependency of this SDK. When present, patch the
+    # central ClientSession._request choke point that every aiohttp call routes through
+    # (LiteLLM's default transport, optional Google GenAI / Google ADK paths, etc.).
+    if _aiohttp is not None:
+        _orig["aiohttp_session_request"] = _aiohttp.ClientSession._request
+        _aiohttp.ClientSession._request = _wrap_aiohttp_request(_orig["aiohttp_session_request"])
     _initialized = True
     _enabled = True
 
@@ -196,25 +207,36 @@ def _maybe_transform_body(raw: Any) -> Any:
 
 
 def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) -> Any:
-    """Record the response and optionally mutate it via the simulation hook.
+    """Record an httpx/requests response and optionally mutate it via the simulation hook.
 
     Short-circuits immediately when inside a self-egress block or already in the middle of
     recording (re-entry guard prevents double-recording when module-level calls like
     ``httpx.get`` internally delegate to a patched ``Client.send``).
+
+    For aiohttp responses, see :func:`_wrap_aiohttp_request` which awaits the body
+    asynchronously before calling :func:`_record_and_maybe_tamper` directly.
     """
     if is_self_egress() or already_recording():
         return response
-    raw = extract_raw(response)
+    return _record_and_maybe_tamper(response, url, method, req_kwargs, extract_raw(response))
+
+
+def _record_and_maybe_tamper(
+    response: Any, url: str, method: str, req_kwargs: dict[str, Any], raw: Any
+) -> Any:
+    """Inside-the-gate recording path shared by sync (_attach) and async (aiohttp) callers.
+
+    Callers must have already cleared self-egress / re-entry guards. ``raw`` is the
+    pre-extracted body (sync from ``extract_raw``, or awaited for aiohttp).
+    """
     req = request_payload_dict(url, method, req_kwargs)
     nurl = normalize_url_for_trust(str(url))
     if _url_allowlist is not None and nurl not in _url_allowlist:
         return response
-    # Recording: any request that passed the allowlist gate (including legacy mode when
-    # allowlist is None — all outbound traffic).
     if _enabled:
         _insert_row(url, req, raw, method=method)
-    # Simulation tamper hook: only for explicit run endpoints, never for OpenRouter,
-    # Provably API, cluster handoff posts, etc. (those run with allowlist cleared or off-list).
+    # Tamper hook fires only for explicit run endpoints; never for OpenRouter, Provably API,
+    # cluster handoff posts (those run with allowlist cleared or off-list).
     tamper = _url_allowlist is not None and nurl in _url_allowlist
     mutated = _maybe_transform_body(raw) if tamper else raw
     if mutated is raw:
@@ -223,6 +245,7 @@ def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) ->
         return RequestsJsonOverride(response, mutated)
     if isinstance(response, httpx.Response):
         return HttpxJsonOverride(response, mutated)
+    # aiohttp.ClientResponse and other libraries: body override not supported, return as-is.
     return response
 
 
@@ -311,5 +334,53 @@ def _wrap_session_send(orig_send):
     def wrapped(self, request: requests.PreparedRequest, **kwargs: Any) -> requests.Response:
         response = orig_send(self, request, **kwargs)
         return _attach(response, str(request.url), request.method or "GET", _requests_prepared_to_kwargs(request))
+
+    return wrapped
+
+
+_AIOHTTP_KWARG_KEYS = ("params", "json", "data")
+
+
+def _aiohttp_kwargs_to_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Filter aiohttp _request kwargs down to the subset request_payload_dict cares about."""
+    return {k: v for k, v in kwargs.items() if k in _AIOHTTP_KWARG_KEYS and v is not None}
+
+
+def _wrap_aiohttp_request(orig_request):
+    """Wrap aiohttp.ClientSession._request — the central method every aiohttp call routes through.
+
+    Async wrapper: awaits the original to get a ClientResponse, then awaits ``response.read()``
+    to populate aiohttp's body cache (so user code calling ``.json()`` / ``.text()`` later
+    still works), parses the body, and routes through ``_record_and_maybe_tamper``.
+
+    Body override (the simulation tamper hook) is not supported for aiohttp responses — the
+    response is returned as-is. Recording works in full.
+    """
+
+    async def wrapped(self, method: str, str_or_url: Any, **kwargs: Any) -> Any:
+        response = await orig_request(self, method, str_or_url, **kwargs)
+        if is_self_egress() or already_recording():
+            return response
+        with recording_scope():
+            try:
+                body_bytes = await response.read()
+            except Exception:  # noqa: BLE001
+                body_bytes = b""
+            content_type = response.headers.get("Content-Type", "") if response.headers else ""
+            text = body_bytes.decode(errors="replace") if body_bytes else ""
+            if "application/json" in content_type and text:
+                try:
+                    raw = json.loads(text)
+                except Exception:  # noqa: BLE001
+                    raw = {"text": text}
+            else:
+                raw = {"text": text}
+            return _record_and_maybe_tamper(
+                response,
+                str(str_or_url),
+                method,
+                _aiohttp_kwargs_to_kwargs(kwargs),
+                raw,
+            )
 
     return wrapped

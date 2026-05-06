@@ -2,6 +2,18 @@
 
 ## 0.3.0
 
+### aiohttp interception (soft dependency)
+
+- `aiohttp.ClientSession._request` is now patched when `aiohttp` is importable.
+  The intercept SDK does **not** add `aiohttp` as a hard dependency — the patch
+  installs only when the user's environment already has it.
+- This unlocks **LiteLLM** (which uses `aiohttp` as its default transport since
+  v1.71+) and any framework that opts into an `aiohttp` extra (Google GenAI,
+  Google ADK, etc.).
+- Body override (the simulation tamper hook) is not supported for
+  `aiohttp.ClientResponse` — recording fires in full but the response is
+  returned unchanged.
+
 ### OpenAI Agents SDK integration
 
 - Added `examples/openai_agents/` — a runnable end-to-end demo that drives a
