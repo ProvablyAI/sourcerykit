@@ -396,6 +396,31 @@ URLs are normalized (lowercase scheme + host, default ports collapsed, trailing
 slash dropped) before any read or write so that `https://API.EXAMPLE.COM/x/`
 and `https://api.example.com/x` collide on the same row.
 
+#### Path-pattern entries
+
+Concrete URLs match exactly. To authorize a family of URLs with a single entry —
+useful for templated routes like `/customers/{id}` or runtime-generated ids —
+register the URL with FastAPI/Express-style placeholders:
+
+| Placeholder | Matches | Example |
+|---|---|---|
+| `{name}` | exactly one path segment (no `/`) | `https://api.example.com/customers/{id}` matches `…/customers/42` but **not** `…/customers/42/orders` |
+| `{name:path}` | any subtree (including `/` separators) | `https://api.example.com/customers/{rest:path}` matches both `…/customers/42` and `…/customers/42/orders` |
+
+The placeholder name (`id`, `rest`, …) is purely descriptive and does not affect
+matching. Plain URLs without `{` characters keep exact-match semantics — no
+behavior change for existing entries.
+
+```sql
+-- Register a templated route once instead of enumerating every concrete id
+INSERT INTO trusted_endpoints (org_id, normalized_url, display_label, entry_type)
+VALUES ('my-org', 'https://api.example.com/customers/{id}', 'Customers (by id)', 'endpoint');
+```
+
+`is_trusted_endpoint` and the snapshot tamper-check inside `evaluate_handoff`
+both honor the same matching rules, so a claim against `…/customers/42` will
+pass both gates when only the templated entry is registered.
+
 ## Public API
 
 All public symbols are re-exported from the top-level `provably` namespace. See

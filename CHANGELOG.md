@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `trusted_endpoints`: registered URLs may now contain FastAPI/Express-style path placeholders. `{id}` matches exactly one path segment, `{rest:path}` matches any subtree. Plain URLs without `{` keep exact-match semantics — no migration needed for existing rows. Both `is_trusted_endpoint` and the snapshot tamper-check inside `evaluate_handoff` honor the new syntax. Closes #14.
+
 ## 0.3.0
 
 ### aiohttp interception (soft dependency)
