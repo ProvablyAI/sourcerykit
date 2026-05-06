@@ -103,6 +103,8 @@ async def main(tamper: bool = False) -> None:
     model = os.getenv("LOCAL_MODEL", _DEFAULT_MODEL).strip() or _DEFAULT_MODEL
 
     print(f"Running LLM ({model})…")
+    prompt = f"What is the current temperature in London?\nTool result: {json.dumps(tool_output_value)}"
+
     llm_resp = requests.post(
         model_url,
         headers={"Content-Type": "application/json"},
@@ -110,10 +112,7 @@ async def main(tamper: bool = False) -> None:
             "model": model,
             "messages": [
                 {"role": "system", "content": "You are a helpful assistant."},
-                {
-                    "role": "user",
-                    "content": f"What is the current temperature in London?\nTool result: {json.dumps(tool_output_value)}",
-                },
+                {"role": "user", "content": prompt},
             ],
             "temperature": 0.0,
             "max_tokens": 120,
