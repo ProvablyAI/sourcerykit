@@ -204,7 +204,7 @@ planned (issue [#2](https://github.com/ProvablyAI/provably-python-sdk/issues/2))
 #### Getting `PROVABLY_API_KEY` and `PROVABLY_ORG_ID`
 
 1. Sign up at [app.provably.ai](https://app.provably.ai).
-2. Create an organisation. The org id is shown in the URL after creation and is what goes in `PROVABLY_ORG_ID`.
+2. Create an organisation. Its id is what goes in `PROVABLY_ORG_ID`.
 3. In the left-side menu, go to **Integrations** and create one. The generated key is your `PROVABLY_API_KEY`.
 
 Full product docs: [provably.ai/docs](https://provably.ai/docs).
