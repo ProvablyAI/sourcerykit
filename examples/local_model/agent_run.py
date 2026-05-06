@@ -99,12 +99,12 @@ async def main(tamper: bool = False) -> None:
     if take_last_intercept_row_id() is None:
         print("WARNING: No intercept row captured — check POSTGRES_URL and trusted_endpoints.")
 
-    tgi_url = os.getenv("LOCAL_MODEL_URL", _DEFAULT_MODEL_URL).strip() or _DEFAULT_MODEL_URL
+    model_url = os.getenv("LOCAL_MODEL_URL", _DEFAULT_MODEL_URL).strip() or _DEFAULT_MODEL_URL
     model = os.getenv("LOCAL_MODEL", _DEFAULT_MODEL).strip() or _DEFAULT_MODEL
 
     print(f"Running LLM ({model})…")
     llm_resp = requests.post(
-        tgi_url,
+        model_url,
         headers={"Content-Type": "application/json"},
         json={
             "model": model,
