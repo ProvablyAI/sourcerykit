@@ -87,6 +87,105 @@ def test_attach_skips_url_not_in_allowlist(monkeypatch: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Allowlist pattern matching ({id} / {path:path} parity with trusted_endpoints)
+# ---------------------------------------------------------------------------
+
+
+def _attach_with_pattern_allowlist(
+    monkeypatch: Any, allowlist_entries: list[str], call_url: str
+) -> tuple[list[str], list[Any]]:
+    """Helper: install a pattern allowlist, run _attach against ``call_url``, return
+    (recorded URLs, tamper-hook calls)."""
+    recorded: list[str] = []
+    tampered: list[Any] = []
+
+    monkeypatch.setattr(
+        interceptor, "_insert_row", lambda url, *_a, **_k: recorded.append(url)
+    )
+    monkeypatch.setattr(
+        interceptor, "_maybe_transform_body", lambda raw: tampered.append(raw) or raw
+    )
+    monkeypatch.setattr(interceptor, "_enabled", True)
+    try:
+        interceptor.set_intercept_url_allowlist(allowlist_entries)
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = b'{"ok": true}'
+        resp.encoding = "utf-8"
+        interceptor._attach(resp, call_url, "GET", {})
+    finally:
+        interceptor.set_intercept_url_allowlist(None)
+    return recorded, tampered
+
+
+def test_allowlist_pattern_matches_concrete_url(monkeypatch: Any) -> None:
+    """Registered ``/customers/{id}`` matches the concrete ``/customers/42`` URL — both
+    recorded and tamper-hooked."""
+    recorded, tampered = _attach_with_pattern_allowlist(
+        monkeypatch,
+        ["https://api.example.com/customers/{id}"],
+        "https://api.example.com/customers/42",
+    )
+    assert recorded == ["https://api.example.com/customers/42"]
+    assert len(tampered) == 1
+
+
+def test_allowlist_pattern_rejects_extra_segment(monkeypatch: Any) -> None:
+    """Registered ``/customers/{id}`` does NOT match ``/customers/42/orders``
+    (single-segment placeholder)."""
+    recorded, tampered = _attach_with_pattern_allowlist(
+        monkeypatch,
+        ["https://api.example.com/customers/{id}"],
+        "https://api.example.com/customers/42/orders",
+    )
+    assert recorded == []
+    assert tampered == []
+
+
+def test_allowlist_path_placeholder_matches_subtree(monkeypatch: Any) -> None:
+    """``{rest:path}`` covers any subtree, including nested segments."""
+    recorded, _ = _attach_with_pattern_allowlist(
+        monkeypatch,
+        ["https://api.example.com/customers/{rest:path}"],
+        "https://api.example.com/customers/42/orders/9",
+    )
+    assert recorded == ["https://api.example.com/customers/42/orders/9"]
+
+
+def test_allowlist_mixed_exact_and_pattern(monkeypatch: Any) -> None:
+    """An allowlist with both exact URLs and patterns: each entry retains its semantics."""
+    # Exact entry hits exactly; pattern entry hits its pattern; unrelated URL is rejected.
+    for url, expected_recorded in [
+        ("https://api.example.com/health", True),  # exact match
+        ("https://api.example.com/customers/9", True),  # pattern match
+        ("https://api.example.com/customers/9/orders", False),  # past pattern
+        ("https://api.example.com/other", False),  # unrelated
+    ]:
+        recorded, _ = _attach_with_pattern_allowlist(
+            monkeypatch,
+            [
+                "https://api.example.com/health",
+                "https://api.example.com/customers/{id}",
+            ],
+            url,
+        )
+        assert (recorded == [url]) is expected_recorded, (
+            f"url={url!r}: expected_recorded={expected_recorded}, got recorded={recorded}"
+        )
+
+
+def test_allowlist_plain_url_still_uses_exact_match(monkeypatch: Any) -> None:
+    """An allowlist entry without ``{`` keeps exact-match semantics — no perf regression for
+    the common case and no accidental prefix match."""
+    recorded, _ = _attach_with_pattern_allowlist(
+        monkeypatch,
+        ["https://api.example.com/customers"],  # no placeholders → exact-only
+        "https://api.example.com/customers/42",
+    )
+    assert recorded == []
+
+
+# ---------------------------------------------------------------------------
 # Phase 1 additions: Client.send / AsyncClient.send / Session.send coverage,
 # re-entry guard, and self-egress exemption.
 # ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 ## Unreleased
 
 - `trusted_endpoints`: registered URLs may now contain FastAPI/Express-style path placeholders. `{id}` matches exactly one path segment, `{rest:path}` matches any subtree. Plain URLs without `{` keep exact-match semantics — no migration needed for existing rows. Both `is_trusted_endpoint` and the snapshot tamper-check inside `evaluate_handoff` honor the new syntax. Closes #14.
+- `set_intercept_url_allowlist`: now accepts the same `{id}` / `{rest:path}` placeholders as `trusted_endpoints` (parity, single matching helper used by both code paths). A registered `https://api.example.com/customers/{id}` covers the concrete `https://api.example.com/customers/42` for both intercept recording and the simulation tamper hook. Plain URLs without `{` keep exact-match semantics — zero migration. Closes #20.
 - README: new "Getting `PROVABLY_API_KEY` and `PROVABLY_ORG_ID`" subsection walking through sign-up at app.provably.ai → create org → Integrations menu, plus a pointer to provably.ai/docs.
 - **BREAKING:** removed `default_cluster_b_url()` and the `CLUSTER_B_URL` env var — leftovers from the langgraph-demo monorepo extraction with a `localhost:8082` default and opaque "cluster B" naming the SDK has no business assuming. `post_handoff(receiver_url, payload)` (positional arg renamed from `cluster_b_url`) takes the URL directly — supply it from your application's own configuration.
 
