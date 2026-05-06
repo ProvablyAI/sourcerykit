@@ -1,9 +1,9 @@
-"""Tests for ``intercept_context`` and the ContextVar-leak it fixes.
+"""Tests for ``intercept_context`` and the ContextVar-leak it prevents.
 
-The leak: ``set_interceptor_context`` writes to a ContextVar with no reset. Inside an
-agent loop the tool function and the subsequent LLM call run in the same asyncio.Task,
-so the tag set inside the tool keeps applying to LLM calls fired after the tool
-returns. ``intercept_context`` is the scoped fix.
+The leak: a naked ``ContextVar.set()`` inside an agent loop's tool function persists past
+the tool boundary into subsequent LLM calls running in the same ``asyncio.Task``, because
+async tasks share their ContextVar cell unless an explicit ``reset(token)`` is paired with
+the original ``set``. ``intercept_context`` is the scoped fix.
 """
 
 from __future__ import annotations
@@ -11,28 +11,30 @@ from __future__ import annotations
 import asyncio
 
 import provably.intercept.interceptor as interceptor
-from provably.intercept import intercept_context, set_interceptor_context
+from provably.intercept import intercept_context
 
 
-def _reset_ctx() -> None:
-    """Bring ContextVars back to defaults for test isolation (no SDK API for this — by design)."""
-    set_interceptor_context(agent_id="", action_name="", intercept_index=0)
+def _reset_ctx_for_test_isolation() -> None:
+    """Bring the ContextVars back to their declared defaults between tests."""
+    interceptor._ctx_agent_id.set("")
+    interceptor._ctx_action_name.set("")
+    interceptor._ctx_intercept_index.set(0)
 
 
 def test_intercept_context_sets_values_inside_block() -> None:
-    _reset_ctx()
+    _reset_ctx_for_test_isolation()
     try:
         with intercept_context(agent_id="ag-1", action_name="get_weather", intercept_index=2):
             assert interceptor._ctx_agent_id.get() == "ag-1"
             assert interceptor._ctx_action_name.get() == "get_weather"
             assert interceptor._ctx_intercept_index.get() == 2
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
 
 
 def test_intercept_context_resets_to_default_on_exit() -> None:
     """When called with no prior values, exit restores the default empty/zero state."""
-    _reset_ctx()
+    _reset_ctx_for_test_isolation()
     try:
         with intercept_context(agent_id="ag-1", action_name="get_weather"):
             pass
@@ -40,25 +42,25 @@ def test_intercept_context_resets_to_default_on_exit() -> None:
         assert interceptor._ctx_action_name.get() == ""
         assert interceptor._ctx_intercept_index.get() == 0
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
 
 
 def test_intercept_context_restores_prior_values_on_exit() -> None:
     """Nesting: exit restores whatever values were set BEFORE the context manager entered."""
-    _reset_ctx()
+    _reset_ctx_for_test_isolation()
     try:
-        set_interceptor_context(agent_id="outer-ag", action_name="outer-action", intercept_index=7)
-        with intercept_context(agent_id="inner-ag", action_name="inner-action", intercept_index=99):
-            assert interceptor._ctx_action_name.get() == "inner-action"
-        assert interceptor._ctx_agent_id.get() == "outer-ag"
-        assert interceptor._ctx_action_name.get() == "outer-action"
-        assert interceptor._ctx_intercept_index.get() == 7
+        with intercept_context(agent_id="outer", action_name="outer-action", intercept_index=7):
+            with intercept_context(agent_id="inner", action_name="inner-action", intercept_index=99):
+                assert interceptor._ctx_action_name.get() == "inner-action"
+            assert interceptor._ctx_agent_id.get() == "outer"
+            assert interceptor._ctx_action_name.get() == "outer-action"
+            assert interceptor._ctx_intercept_index.get() == 7
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
 
 
 def test_intercept_context_resets_even_on_exception() -> None:
-    _reset_ctx()
+    _reset_ctx_for_test_isolation()
     try:
         try:
             with intercept_context(agent_id="x", action_name="y"):
@@ -68,80 +70,76 @@ def test_intercept_context_resets_even_on_exception() -> None:
         assert interceptor._ctx_agent_id.get() == ""
         assert interceptor._ctx_action_name.get() == ""
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
 
 
 # ---------------------------------------------------------------------------
 # Regression: agent-loop scenario (LLM → tool → LLM in one asyncio.Task).
 #
-# We make three "HTTP calls" — a fake LLM POST, a tool GET that tags itself as
-# ``get_weather``, then a second LLM POST. We capture what tag each "call" sees by
-# reading the ContextVar (which is exactly what _insert_row does).
+# We simulate three "HTTP calls" by reading the ContextVars (which is exactly what
+# ``_insert_row`` does at intercept time). The "tool" body sets the tag using
+# ``intercept_context``; the second LLM call must NOT inherit the tool's tag.
 # ---------------------------------------------------------------------------
 
 
-def _record_what_insert_row_would_see() -> tuple[str, str]:
-    """Mirror of interceptor._insert_row's tag-reading logic."""
+def _read_what_insert_row_would_record() -> tuple[str, str]:
     return (
         interceptor._ctx_agent_id.get() or "unknown",
         interceptor._ctx_action_name.get() or "unknown",
     )
 
 
-async def _agent_loop_with_set_interceptor_context() -> list[tuple[str, str]]:
-    """Reproduces the bug: tool calls set_interceptor_context fire-and-forget."""
+async def _agent_loop_with_naked_set() -> list[tuple[str, str]]:
+    """Demonstrates WHY the context manager exists: a fire-and-forget ``ContextVar.set``
+    inside the tool persists into the subsequent LLM call in the same Task."""
     rows: list[tuple[str, str]] = []
-    rows.append(_record_what_insert_row_would_see())          # LLM turn 1
-    # tool body:
-    set_interceptor_context(agent_id="demo", action_name="get_weather")
-    rows.append(_record_what_insert_row_would_see())          # tool GET — tagged correctly
+    rows.append(_read_what_insert_row_would_record())          # LLM turn 1
+    # tool body uses naked .set() (the buggy pattern):
+    interceptor._ctx_agent_id.set("demo")
+    interceptor._ctx_action_name.set("get_weather")
+    rows.append(_read_what_insert_row_would_record())          # tool GET
     # tool returns; agent continues with another LLM call in the SAME task:
-    rows.append(_record_what_insert_row_would_see())          # LLM turn 2
+    rows.append(_read_what_insert_row_would_record())          # LLM turn 2
     return rows
 
 
 async def _agent_loop_with_intercept_context() -> list[tuple[str, str]]:
-    """Same scenario, but the tool uses the scoped intercept_context manager."""
+    """The fix: scoping with ``intercept_context`` resets the tag on tool exit."""
     rows: list[tuple[str, str]] = []
-    rows.append(_record_what_insert_row_would_see())          # LLM turn 1
-    # tool body:
+    rows.append(_read_what_insert_row_would_record())          # LLM turn 1
     with intercept_context(agent_id="demo", action_name="get_weather"):
-        rows.append(_record_what_insert_row_would_see())      # tool GET — tagged correctly
-    # tool returns; tag is reset:
-    rows.append(_record_what_insert_row_would_see())          # LLM turn 2
+        rows.append(_read_what_insert_row_would_record())      # tool GET
+    rows.append(_read_what_insert_row_would_record())          # LLM turn 2
     return rows
 
 
-def test_set_interceptor_context_leaks_into_subsequent_calls() -> None:
-    """Documents the bug — turn-2 LLM call inherits the tool's action_name.
-
-    This is the failure mode that produces wrong ``claim_urls`` (LLM URL instead of the
-    data-API URL) in handoff payloads built by ``payload_builder``, and the always-CAUGHT
-    outcome in ``evaluate_handoff`` (because the wrong intercept row gets indexed)."""
-    _reset_ctx()
+def test_naked_ctx_var_set_leaks_into_subsequent_calls() -> None:
+    """Documents WHY ``intercept_context`` must reset on exit. If an agent loop sets a
+    ContextVar directly inside a tool, the tag persists into the next LLM call in the
+    same asyncio.Task — producing wrong ``claim_urls`` and always-CAUGHT outcomes
+    downstream."""
+    _reset_ctx_for_test_isolation()
     try:
-        rows = asyncio.run(_agent_loop_with_set_interceptor_context())
-        # turn 1: untagged
-        assert rows[0] == ("unknown", "unknown")
-        # tool: tagged
-        assert rows[1] == ("demo", "get_weather")
-        # turn 2: STILL tagged → this is the leak that produces wrong claim_urls / always-CAUGHT
-        assert rows[2] == ("demo", "get_weather"), (
-            "Expected leak to persist with set_interceptor_context — if this assertion "
-            "starts failing it means set_interceptor_context now scopes itself, in which "
-            "case the deprecation note in its docstring should be removed."
+        rows = asyncio.run(_agent_loop_with_naked_set())
+        assert rows[0] == ("unknown", "unknown")               # turn 1
+        assert rows[1] == ("demo", "get_weather")              # tool
+        assert rows[2] == ("demo", "get_weather"), (           # turn 2 — leaks
+            "Naked ContextVar.set should leak into subsequent calls in the same Task. "
+            "If this assertion ever starts failing it means asyncio's ContextVar "
+            "semantics changed, in which case revisit the rationale for "
+            "intercept_context."
         )
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
 
 
 def test_intercept_context_does_not_leak_into_subsequent_calls() -> None:
     """The fix: turn-2 LLM call goes back to ``"unknown"`` after the tool's ``with`` block."""
-    _reset_ctx()
+    _reset_ctx_for_test_isolation()
     try:
         rows = asyncio.run(_agent_loop_with_intercept_context())
         assert rows[0] == ("unknown", "unknown")           # turn 1
         assert rows[1] == ("demo", "get_weather")          # tool
         assert rows[2] == ("unknown", "unknown")           # turn 2 — fixed
     finally:
-        _reset_ctx()
+        _reset_ctx_for_test_isolation()
