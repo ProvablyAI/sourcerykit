@@ -344,6 +344,15 @@ Outcome semantics:
 - **`CAUGHT`** — at least one claim disagreed with the indexed value or a proof failed.
 - **`ERROR`** — the evaluator could not run (missing config, Provably backend unreachable, transient server error). Not evidence of tampering — the system was unhealthy, not the agent.
 
+#### Getting `CAUGHT` and you don't expect to be?
+
+`CAUGHT` means the indexed value the evaluator pulled from `provably_intercepts` doesn't match the claim. In practice when this surprises you, it's almost always one of:
+
+1. **The tool body never ran.** `@function_tool` (or any agent-framework decorator) only registers the function — you still need an agent loop (e.g. `Runner.run(...)`) to invoke it. Bare LLM calls don't execute tools.
+2. **`intercept_context(...)` was called without `with`.** It's a context manager; a bare call is a no-op (see the function's docstring).
+3. **`agent_id` mismatch.** The `agent_id` you pass to `intercept_context(...)` inside the tool must match the `intercept_agent_id` you pass to `build_handoff_payload(...)` (default `"fetch_and_claim"`). Mismatch → the lookup misses → empty `request_payload`.
+4. **Wrong row-id helper.** Use `get_intercept_row_id(agent_id, action_name)` to pick the row tagged with your action. `take_last_intercept_row_id()` returns the **globally** last insert (typically the final LLM POST), which is rarely what you want.
+
 Comparison modes (the `VerificationMode` type):
 
 | Mode | Comparison |

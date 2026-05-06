@@ -88,6 +88,13 @@ def intercept_context(
     on exit, so the tag does not leak into surrounding LLM calls running in the same
     :class:`asyncio.Task`.
 
+    .. important::
+       **Must be used as a ``with`` statement.** A bare call like
+       ``intercept_context(agent_id="demo", action_name="get_weather")`` is a no-op
+       (returns a context-manager object that is immediately discarded; the body never
+       runs and no ContextVar is set). Subsequent intercepts will be tagged
+       ``("unknown", "unknown")``.
+
     Use this for any HTTP emitted from inside an agent framework's tool function::
 
         @function_tool
@@ -99,6 +106,10 @@ def intercept_context(
 
     Args:
         agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
+            **Must match** the ``intercept_agent_id`` you later pass to
+            :func:`provably.build_handoff_payload` (default ``"fetch_and_claim"``);
+            otherwise the (agent_id, action_name) lookup misses and the claim ends up
+            with no recorded request payload.
         action_name: Action name; recorded in ``provably_intercepts.action_name``.
         intercept_index: Per-action sequence number used by the simulation hook to address a
             specific intercept (e.g. "mutate the second response of action X"). Default ``0``.
