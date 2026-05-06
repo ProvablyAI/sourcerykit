@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 import jsonschema
@@ -31,7 +32,7 @@ def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
 
     try:
         at_path = _get_by_json_path(indexed_root, claim.json_path)
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
         return {**base, "result": "CAUGHT", "detail": f"json_path: {exc}"}
 
     base["indexed_at_path"] = canonical_json(at_path)
@@ -96,20 +97,60 @@ def _eval_range_threshold(claim: HandoffClaim, at_path: Any, base: dict[str, Any
     return {**base, "result": "PASS"}
 
 
-def _normalize_json_path(path: str) -> str:
-    """Strip JSONPath / Relaxed JSON Pointer prefixes so we only walk plain dot paths.
+_BRACKET_INDEX_RE = re.compile(r"\[(\d+)\]")
 
-    Examples: ``"$.userId"`` → ``"userId"``; ``"$"`` / ``""`` → ``""`` (root); ``"a.b"`` unchanged.
+
+def _normalize_json_path(path: str) -> str:
+    """Strip JSONPath / Relaxed JSON Pointer prefixes and split bracket indices into their
+    own segments so the dot-tokenizer can walk them.
+
+    Examples:
+      - ``"$.userId"`` → ``"userId"``
+      - ``"$"`` / ``""`` → ``""`` (root)
+      - ``"a.b"`` → ``"a.b"`` (unchanged)
+      - ``"items[0].subject"`` → ``"items.[0].subject"`` (bracket lifted to its own segment)
+      - ``"[0].status"`` → ``"[0].status"`` (leading-dot stripped)
     """
     p = (path or "").strip()
     if not p or p == "$":
         return ""
     if p.startswith("$."):
-        return p[2:].strip()
-    if p.startswith("$"):
+        p = p[2:].strip()
+    elif p.startswith("$"):
         # e.g. "$['x']" not supported; bare "$x" is treated as path after $
-        return p[1:].lstrip(".").strip()
+        p = p[1:].lstrip(".").strip()
+    # Lift bracket indices into standalone dot segments so ``items[0]`` becomes
+    # ``items.[0]`` and ``items[0][1]`` becomes ``items.[0].[1]``. The empty-segment
+    # filter in ``_get_by_json_path`` swallows any double-dots this introduces.
+    p = _BRACKET_INDEX_RE.sub(r".[\1]", p).lstrip(".")
     return p
+
+
+def _step_into(cursor: Any, segment: str) -> Any:
+    """Walk one segment.
+
+    - ``[N]`` (bracket form) against a list → ``cursor[N]``.
+    - Numeric segment against a list → ``cursor[N]`` (fallback for ``items.0.foo``).
+    - Any other segment against a dict → ``cursor[segment]``.
+    """
+    bracket = _BRACKET_INDEX_RE.fullmatch(segment)
+    if bracket and isinstance(cursor, list):
+        idx = int(bracket.group(1))
+        if idx >= len(cursor):
+            raise IndexError(f"index {idx} out of range (list has {len(cursor)} elements)")
+        return cursor[idx]
+    if isinstance(cursor, list) and segment.isdigit():
+        idx = int(segment)
+        if idx >= len(cursor):
+            raise IndexError(f"index {idx} out of range (list has {len(cursor)} elements)")
+        return cursor[idx]
+    if isinstance(cursor, dict):
+        if segment not in cursor:
+            raise KeyError(segment)
+        return cursor[segment]
+    raise KeyError(
+        f"expected dict or list at segment {segment!r}, got {type(cursor).__name__}"
+    )
 
 
 def _get_by_json_path(obj: Any, path: str) -> Any:
@@ -121,13 +162,7 @@ def _get_by_json_path(obj: Any, path: str) -> Any:
         segment = segment.strip()
         if not segment:
             continue
-        if not isinstance(cursor, dict):
-            raise KeyError(
-                f"expected dict at segment {segment!r}, got {type(cursor).__name__}"
-            )
-        if segment not in cursor:
-            raise KeyError(segment)
-        cursor = cursor[segment]
+        cursor = _step_into(cursor, segment)
     return cursor
 
 
