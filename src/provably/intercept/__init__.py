@@ -12,7 +12,6 @@ from .interceptor import (
     is_enabled,
     set_intercept_body_hook,
     set_intercept_url_allowlist,
-    set_interceptor_context,
     take_last_intercept_row_id,
 )
 from .interceptor import (
@@ -27,6 +26,5 @@ __all__ = [
     "is_enabled",
     "set_intercept_body_hook",
     "set_intercept_url_allowlist",
-    "set_interceptor_context",
     "take_last_intercept_row_id",
 ]

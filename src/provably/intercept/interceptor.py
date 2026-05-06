@@ -72,39 +72,15 @@ def set_intercept_url_allowlist(urls: list[str] | None) -> None:
         _url_allowlist.discard("")
 
 
-def set_interceptor_context(*, agent_id: str, action_name: str, intercept_index: int = 0) -> None:
-    """Bind per-call context that subsequent intercepts will tag onto their inserted rows.
-
-    Uses :class:`contextvars.ContextVar` so concurrent tasks/threads each see their own values.
-    Call this immediately before invoking the agent action whose HTTP traffic should be tagged.
-
-    .. warning::
-        **Fire-and-forget**: this setter never resets. Inside an async agent loop the
-        ContextVar persists past the tool boundary into subsequent LLM calls running in the
-        same :class:`asyncio.Task`, which causes those LLM calls to be tagged with the
-        tool's ``action_name``. Prefer :func:`intercept_context` for any code path that
-        runs inside an agent framework's tool execution.
-
-    Args:
-        agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
-        action_name: Action name; recorded in ``provably_intercepts.action_name``.
-        intercept_index: Per-action sequence number used by the simulation hook to address a
-            specific intercept (e.g. "mutate the second response of action X"). Default ``0``.
-    """
-    _ctx_agent_id.set(agent_id)
-    _ctx_action_name.set(action_name)
-    _ctx_intercept_index.set(intercept_index)
-
-
 @contextmanager
 def intercept_context(
     *, agent_id: str, action_name: str, intercept_index: int = 0
 ) -> Generator[None, None, None]:
     """Scoped tagging for HTTP traffic emitted inside the ``with`` block.
 
-    Drop-in replacement for :func:`set_interceptor_context` that auto-resets the
-    underlying :class:`contextvars.ContextVar` values on block exit, so the tag does not
-    leak into surrounding LLM calls in the same :class:`asyncio.Task`.
+    Sets the underlying :class:`contextvars.ContextVar` values on enter and resets them
+    on exit, so the tag does not leak into surrounding LLM calls running in the same
+    :class:`asyncio.Task`.
 
     Use this for any HTTP emitted from inside an agent framework's tool function::
 
@@ -113,7 +89,7 @@ def intercept_context(
             with intercept_context(agent_id="demo", action_name="get_weather"):
                 return requests.get(...).json()
 
-    Nesting is supported: the prior values are restored on exit, not cleared.
+    Nesting is supported: prior values are restored on exit, not cleared.
 
     Args:
         agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
