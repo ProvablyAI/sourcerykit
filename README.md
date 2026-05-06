@@ -216,7 +216,6 @@ Full product docs: [provably.ai/docs](https://provably.ai/docs).
 | `PROVABLY_RUST_BE_URL` | `initialize_runtime`, evaluator | yes |
 | `POSTGRES_URL` | intercept storage, trusted endpoints, handoff preprocess | yes |
 | `PROVABLY_APP_UI_URL` | optional UI deep-links | no |
-| `CLUSTER_B_URL` | `default_cluster_b_url()` helper only | no |
 | `PROVABLY_QUERY_RESOLVE_MAX_WAIT_S` | max seconds to wait for a query record to appear (default 15) | no |
 
 `POSTGRES_URL` is a hard dependency today. Three SDK modules open Postgres
@@ -307,11 +306,11 @@ on any non-2xx response.
 interceptor's in-memory state — no manual claim construction needed:
 
 ```python
-from provably import build_handoff_payload, post_handoff, default_cluster_b_url
+from provably import build_handoff_payload, post_handoff
 
 # fetch_and_claim is the raw JSON dict the LLM emitted
 payload = build_handoff_payload(fetch_and_claim, run_id="run-001")
-post_handoff(default_cluster_b_url(), payload)
+post_handoff("https://your-verifier.example.com", payload)
 ```
 
 `claim_contract` generates the system-prompt text that tells an LLM how to
@@ -447,7 +446,7 @@ from provably import (
     HandoffPayload, HandoffClaim, HandoffProofAction, HandoffProofBundle,
     BenchmarkRow, Outcome, VerificationMode,
     # handoff transport
-    post_handoff, default_cluster_b_url,
+    post_handoff,
     # handoff builders
     build_handoff_payload, DEFAULT_HANDOFF_TASK,
     claim_contract, default_instructions, field_descriptions,

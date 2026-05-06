@@ -67,9 +67,9 @@ post_handoff(
 There is no retry, no batching, no fallback. Failures bubble up as
 `httpx.HTTPError` / `httpx.HTTPStatusError`.
 
-`default_cluster_b_url()` is a small convenience that returns
-`os.getenv("CLUSTER_B_URL", "http://localhost:8082")` with whitespace and
-trailing-slash trimming. Use it where it helps; ignore it otherwise.
+The `receiver_url` is supplied by the caller — the SDK does not read it from the
+environment or assume any default. Configuration of where YOUR verifier lives
+belongs in your application, not the SDK.
 
 ## Eval comparison modes
 

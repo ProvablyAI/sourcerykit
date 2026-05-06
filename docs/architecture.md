@@ -21,7 +21,7 @@ src/provably/
     __init__.py
     client.py             initialize_runtime
     types.py              HandoffPayload v2, HandoffClaim, etc.
-    transport.py          post_handoff, default_cluster_b_url
+    transport.py          post_handoff
     evaluator.py          evaluate_handoff, extract_indexed_from_query_record
     eval_modes.py         the four verification modes
     json_utils.py         canonical_json
