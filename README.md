@@ -1,4 +1,4 @@
-# provably-sdk
+# Verifiable Data AgentKit
 
 [![status: v0.2](https://img.shields.io/badge/status-v0.2-blue)](CHANGELOG.md)
 [![python: 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
