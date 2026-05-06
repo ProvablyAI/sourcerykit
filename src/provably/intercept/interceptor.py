@@ -29,7 +29,7 @@ from provably.intercept._storage import (
     insert_intercept_row,
     request_payload_dict,
 )
-from provably.trusted_endpoints import normalize_url_for_trust
+from provably.trusted_endpoints import _matches_registered, normalize_url_for_trust
 
 _ctx_agent_id: ContextVar[str] = ContextVar("provably_agent_id", default="")
 _ctx_action_name: ContextVar[str] = ContextVar("provably_action_name", default="")
@@ -67,6 +67,12 @@ def set_intercept_url_allowlist(urls: list[str] | None) -> None:
 
     Pass ``None`` to clear. Pass a list to restrict tamper to the run's dashboard endpoints;
     URLs not in the set are not recorded and pass through unchanged.
+
+    Entries support the same FastAPI/Express-style placeholders as the trusted-endpoint
+    registry: ``{name}`` matches one path segment, ``{name:path}`` matches any subtree.
+    A registered ``https://api.example.com/customers/{id}`` matches the concrete URL
+    ``https://api.example.com/customers/42``. Plain URLs without ``{`` keep exact-match
+    semantics.
     """
     global _url_allowlist
     if urls is None:
@@ -76,6 +82,22 @@ def set_intercept_url_allowlist(urls: list[str] | None) -> None:
             normalize_url_for_trust(str(u or "").strip()) for u in urls if (u or "").strip()
         }
         _url_allowlist.discard("")
+
+
+def _url_in_allowlist(nurl: str) -> bool:
+    """Membership test for ``_url_allowlist`` that honors pattern entries.
+
+    Exact match is checked first (O(1)). Only on a miss do we iterate over pattern entries
+    (those containing ``{``) — plain-URL allowlists pay no per-request iteration cost.
+    Caller must have already confirmed ``_url_allowlist is not None``.
+    """
+    assert _url_allowlist is not None
+    if nurl in _url_allowlist:
+        return True
+    for entry in _url_allowlist:
+        if "{" in entry and _matches_registered(nurl, entry):
+            return True
+    return False
 
 
 @contextmanager
@@ -262,14 +284,14 @@ def _record_and_maybe_tamper(
     """
     req = request_payload_dict(url, method, req_kwargs)
     nurl = normalize_url_for_trust(str(url))
-    if _url_allowlist is not None and nurl not in _url_allowlist:
+    in_allowlist = _url_allowlist is not None and _url_in_allowlist(nurl)
+    if _url_allowlist is not None and not in_allowlist:
         return response
     if _enabled:
         _insert_row(url, req, raw, method=method)
     # Tamper hook fires only for explicit run endpoints; never for OpenRouter, Provably API,
     # cluster handoff posts (those run with allowlist cleared or off-list).
-    tamper = _url_allowlist is not None and nurl in _url_allowlist
-    mutated = _maybe_transform_body(raw) if tamper else raw
+    mutated = _maybe_transform_body(raw) if in_allowlist else raw
     if mutated is raw:
         return response
     if isinstance(response, requests.Response):
