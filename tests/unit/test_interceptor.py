@@ -243,6 +243,59 @@ def test_trust_gate_fires_on_post(monkeypatch: Any) -> None:
     assert trust_calls[0][1] == "https://untrusted.example/api"
 
 
+# ---------------------------------------------------------------------------
+# aiohttp coverage (soft dependency — only installs when aiohttp is importable)
+# ---------------------------------------------------------------------------
+
+aiohttp = pytest.importorskip("aiohttp")
+
+
+async def test_aiohttp_session_request_intercepted(monkeypatch: Any, fake_server: Any) -> None:
+    """aiohttp.ClientSession().get(url) records exactly one row via the _request patch."""
+    fake_server.respond("GET", "/aiohttp-data", status=200, body={"from_aiohttp": True})
+    rows: list[dict[str, Any]] = []
+    _setup_interceptor(monkeypatch, rows)
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{fake_server.base_url}/aiohttp-data") as response:
+            assert response.status == 200
+            data = await response.json()
+            assert data == {"from_aiohttp": True}
+
+    assert len(rows) == 1, f"Expected 1 row, got {len(rows)}: {rows}"
+    assert rows[0]["method"] == "GET"
+    assert rows[0]["raw"] == {"from_aiohttp": True}
+
+
+async def test_aiohttp_post_with_json_body_intercepted(monkeypatch: Any, fake_server: Any) -> None:
+    """POSTing JSON via aiohttp records request payload correctly."""
+    fake_server.respond("POST", "/echo", status=200, body={"ok": True})
+    rows: list[dict[str, Any]] = []
+    _setup_interceptor(monkeypatch, rows)
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{fake_server.base_url}/echo", json={"k": "v"}) as response:
+            assert response.status == 200
+
+    assert len(rows) == 1
+    assert rows[0]["method"] == "POST"
+    assert rows[0]["request"]["json"] == {"k": "v"}
+
+
+async def test_aiohttp_self_egress_skips_recording(monkeypatch: Any, fake_server: Any) -> None:
+    """Inside provably_self_egress(): aiohttp call records nothing."""
+    fake_server.respond("GET", "/data", status=200, body={"v": 9})
+    rows: list[dict[str, Any]] = []
+    _setup_interceptor(monkeypatch, rows)
+
+    with provably_self_egress():
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{fake_server.base_url}/data") as _resp:
+                pass
+
+    assert rows == []
+
+
 def test_trust_gate_fires_on_delete(monkeypatch: Any) -> None:
     """DELETE to an untrusted URL raises RuntimeError('BLOCKED: ...') — all-methods coverage."""
     trust_calls: list[str] = []
