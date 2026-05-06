@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from functools import lru_cache
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -11,6 +13,58 @@ if TYPE_CHECKING:
     from provably.handoff.types import HandoffPayload
 
 _DDL_DONE = False
+
+# ---------------------------------------------------------------------------
+# Pattern matching
+#
+# A registered URL may contain FastAPI/Express-style path placeholders so a single
+# entry can authorize a family of concrete URLs:
+#
+#   {name}        — matches one path segment (no '/'). E.g. /customers/{id} matches
+#                   /customers/123 but NOT /customers/123/orders.
+#   {name:path}   — matches any subtree, including '/' separators. E.g.
+#                   /customers/{rest:path} matches both /customers/123 and
+#                   /customers/123/orders.
+#
+# Plain URLs (no '{' character) keep exact-match semantics — no behavior change for
+# existing entries.
+# ---------------------------------------------------------------------------
+
+_PLACEHOLDER_RE = re.compile(r"\{[^}/]+(?::path)?\}")
+
+
+@lru_cache(maxsize=512)
+def _compile_pattern(registered: str) -> re.Pattern[str] | None:
+    """Compile a registered URL into a regex if it has placeholders, else return None.
+
+    Cache keeps regex compilation off the hot per-request path.
+    """
+    if "{" not in registered:
+        return None
+    parts: list[str] = []
+    cursor = 0
+    has_placeholder = False
+    for match in _PLACEHOLDER_RE.finditer(registered):
+        parts.append(re.escape(registered[cursor : match.start()]))
+        is_path = ":path" in match.group(0)
+        parts.append(".+?" if is_path else "[^/]+?")
+        cursor = match.end()
+        has_placeholder = True
+    if not has_placeholder:
+        return None
+    parts.append(re.escape(registered[cursor:]))
+    try:
+        return re.compile(f"^{''.join(parts)}$")
+    except re.error:
+        return None
+
+
+def _matches_registered(claim_url: str, registered: str) -> bool:
+    """``True`` when ``claim_url`` exactly matches ``registered`` or matches its pattern."""
+    if claim_url == registered:
+        return True
+    pattern = _compile_pattern(registered)
+    return pattern is not None and pattern.match(claim_url) is not None
 
 
 def normalize_url_for_trust(url: str) -> str:
@@ -74,7 +128,13 @@ def ensure_trusted_endpoints_table(conn: psycopg2.extensions.connection) -> None
 
 
 def is_trusted_endpoint(url: str, org_id: str, conn: psycopg2.extensions.connection) -> bool:
-    """Return whether ``url`` is currently allowlisted for ``org_id``; normalizes URL before look-up."""
+    """Return whether ``url`` is currently allowlisted for ``org_id``.
+
+    Two-phase lookup: exact match first (fast path, single indexed query), then a
+    pattern-match scan over only the rows containing ``{`` in their ``normalized_url``.
+    Plain URLs without placeholders never enter the slow path, so existing exact-match
+    registries see no perf regression.
+    """
     if not url or not org_id:
         return False
     norm = normalize_url_for_trust(url)
@@ -82,6 +142,7 @@ def is_trusted_endpoint(url: str, org_id: str, conn: psycopg2.extensions.connect
         return False
     _ensure_trusted_table(conn)
     with conn.cursor() as cur:
+        # Fast path: exact match.
         cur.execute(
             """
             SELECT 1 FROM trusted_endpoints
@@ -90,7 +151,21 @@ def is_trusted_endpoint(url: str, org_id: str, conn: psycopg2.extensions.connect
             """,
             (org_id, norm),
         )
-        return cur.fetchone() is not None
+        if cur.fetchone() is not None:
+            return True
+        # Slow path: pattern entries only.
+        cur.execute(
+            """
+            SELECT normalized_url FROM trusted_endpoints
+            WHERE org_id = %s AND entry_type = 'endpoint' AND revoked_at IS NULL
+              AND normalized_url LIKE '%%{%%'
+            """,
+            (org_id,),
+        )
+        for (registered,) in cur.fetchall():
+            if _matches_registered(norm, str(registered or "")):
+                return True
+    return False
 
 
 def list_trusted_endpoints(
@@ -208,7 +283,15 @@ def check_claim_endpoints_are_trusted(
 
     registry = {n for url in hp.trusted_endpoint_registry if (n := normalize_url_for_trust(str(url)))}
     if registry:
-        missing = list(dict.fromkeys(u for u in claim_urls if u not in registry))
+        pattern_entries = [r for r in registry if "{" in r]
+        missing: list[str] = []
+        for claim_url in claim_urls:
+            if claim_url in registry:
+                continue
+            if any(_matches_registered(claim_url, entry) for entry in pattern_entries):
+                continue
+            missing.append(claim_url)
+        missing = list(dict.fromkeys(missing))
         if missing:
             raise ValueError(f"handoff has endpoints missing from trusted snapshot: {', '.join(missing)}")
 
