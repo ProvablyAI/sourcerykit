@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -83,6 +84,13 @@ def set_interceptor_context(*, agent_id: str, action_name: str, intercept_index:
     Uses :class:`contextvars.ContextVar` so concurrent tasks/threads each see their own values.
     Call this immediately before invoking the agent action whose HTTP traffic should be tagged.
 
+    .. warning::
+        **Fire-and-forget**: this setter never resets. Inside an async agent loop the
+        ContextVar persists past the tool boundary into subsequent LLM calls running in the
+        same :class:`asyncio.Task`, which causes those LLM calls to be tagged with the
+        tool's ``action_name``. Prefer :func:`intercept_context` for any code path that
+        runs inside an agent framework's tool execution.
+
     Args:
         agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
         action_name: Action name; recorded in ``provably_intercepts.action_name``.
@@ -92,6 +100,42 @@ def set_interceptor_context(*, agent_id: str, action_name: str, intercept_index:
     _ctx_agent_id.set(agent_id)
     _ctx_action_name.set(action_name)
     _ctx_intercept_index.set(intercept_index)
+
+
+@contextmanager
+def intercept_context(
+    *, agent_id: str, action_name: str, intercept_index: int = 0
+) -> Generator[None, None, None]:
+    """Scoped tagging for HTTP traffic emitted inside the ``with`` block.
+
+    Drop-in replacement for :func:`set_interceptor_context` that auto-resets the
+    underlying :class:`contextvars.ContextVar` values on block exit, so the tag does not
+    leak into surrounding LLM calls in the same :class:`asyncio.Task`.
+
+    Use this for any HTTP emitted from inside an agent framework's tool function::
+
+        @function_tool
+        def get_temperature():
+            with intercept_context(agent_id="demo", action_name="get_weather"):
+                return requests.get(...).json()
+
+    Nesting is supported: the prior values are restored on exit, not cleared.
+
+    Args:
+        agent_id: Logical agent identifier; recorded in ``provably_intercepts.agent_id``.
+        action_name: Action name; recorded in ``provably_intercepts.action_name``.
+        intercept_index: Per-action sequence number used by the simulation hook to address a
+            specific intercept (e.g. "mutate the second response of action X"). Default ``0``.
+    """
+    t_agent = _ctx_agent_id.set(agent_id)
+    t_action = _ctx_action_name.set(action_name)
+    t_index = _ctx_intercept_index.set(intercept_index)
+    try:
+        yield
+    finally:
+        _ctx_intercept_index.reset(t_index)
+        _ctx_action_name.reset(t_action)
+        _ctx_agent_id.reset(t_agent)
 
 
 def take_last_intercept_row_id() -> int | None:
