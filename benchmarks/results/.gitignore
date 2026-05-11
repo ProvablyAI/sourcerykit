@@ -1,0 +1,2 @@
+# Generated perf snapshots — attach to PRs or keep tagged baselines only.
+*.json

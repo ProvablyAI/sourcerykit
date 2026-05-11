@@ -1,0 +1,35 @@
+name: benchmarks
+
+on:
+  workflow_dispatch:
+
+jobs:
+  perf-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install project
+        run: uv sync --extra dev
+
+      - name: Run perf suite
+        env:
+          PERF_GIT_REF: ${{ github.sha }}
+          PERF_PYTHON: "3.11"
+        run: |
+          mkdir -p benchmarks/results
+          uv run python benchmarks/run_suite.py --out benchmarks/results/perf-${{ github.sha }}.json
+
+      - name: Upload JSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-json-${{ github.sha }}
+          path: benchmarks/results/perf-${{ github.sha }}.json
