@@ -85,7 +85,7 @@ def run_preprocess(org_id: str, middleware_id: str, table_id: str) -> None:
     """Kick preprocess for the intercepts table and poll until it completes."""
     path = f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
     _log.info("preprocess_started")
-    post_json(path, {})
+    post_json(path, {"force": True})
     retried_force = False
     while True:
         status = _preprocess_status(get_json(path))
@@ -99,7 +99,7 @@ def run_preprocess(org_id: str, middleware_id: str, table_id: str) -> None:
             post_json(path, {"force": True})
             retried_force = True
             continue
-        time.sleep(2)
+        time.sleep(0.3)
 
 
 def wait_for_proof_completed(org_id: str, query_id: str, timeout_s: float = 180.0) -> None:
@@ -114,7 +114,7 @@ def wait_for_proof_completed(org_id: str, query_id: str, timeout_s: float = 180.
                 return
             if status == "failed":
                 raise RuntimeError(f"Proof generation failed: {proof}")
-        time.sleep(1.5)
+        time.sleep(0.1)
     raise TimeoutError(f"Proof still not Completed for query {query_id} after {timeout_s}s")
 
 
