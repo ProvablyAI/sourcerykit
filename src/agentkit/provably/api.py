@@ -33,34 +33,36 @@ class ProvablyAPI:
     # Middlewares
     # ------------------------------------------------------------------
 
-    def create_middleware(self) -> dict[str, Any]:
-        return http.post(f"{self._org()}/middlewares/provably")
+    async def create_middleware(self) -> dict[str, Any]:
+        return await http.post(f"{self._org()}/middlewares/provably")
 
     # ------------------------------------------------------------------
     # Databases
     # ------------------------------------------------------------------
 
-    def onboard_database(self, middleware_id: str, body: dict[str, Any]) -> httpx.Response:
-        return http.post(f"{self._org()}/middlewares/{middleware_id}/databases", body)
+    async def onboard_database(self, middleware_id: str, body: dict[str, Any]) -> httpx.Response:
+        return await http.post(f"{self._org()}/middlewares/{middleware_id}/databases", body)
 
-    def list_databases(self, middleware_id: str) -> Any:
-        return http.get(f"{self._org()}/middlewares/{middleware_id}/databases")
+    async def list_databases(self, middleware_id: str) -> Any:
+        return await http.get(f"{self._org()}/middlewares/{middleware_id}/databases")
 
-    def list_databases_for_org(self) -> Any:
-        return http.get(f"{self._org()}/databases")
+    async def list_databases_for_org(self) -> Any:
+        return await http.get(f"{self._org()}/databases")
 
     # ------------------------------------------------------------------
     # Schemas / Tables / Columns
     # ------------------------------------------------------------------
 
-    def list_schemas(self, middleware_id: str, database_id: str) -> Any:
-        return http.get(f"{self._org()}/middlewares/{middleware_id}/databases/{database_id}/schemas")
+    async def list_schemas(self, middleware_id: str, database_id: str) -> Any:
+        return await http.get(f"{self._org()}/middlewares/{middleware_id}/databases/{database_id}/schemas")
 
-    def list_tables(self, middleware_id: str, database_id: str, schema_id: str) -> Any:
-        return http.get(f"{self._org()}/middlewares/{middleware_id}/databases/{database_id}/schemas/{schema_id}/tables")
+    async def list_tables(self, middleware_id: str, database_id: str, schema_id: str) -> Any:
+        return await http.get(
+            f"{self._org()}/middlewares/{middleware_id}/databases/{database_id}/schemas/{schema_id}/tables"
+        )
 
-    def list_columns(self, middleware_id: str, database_id: str, schema_id: str, table_id: str) -> Any:
-        return http.get(
+    async def list_columns(self, middleware_id: str, database_id: str, schema_id: str, table_id: str) -> Any:
+        return await http.get(
             f"{self._org()}/middlewares/{middleware_id}"
             f"/databases/{database_id}/schemas/{schema_id}/tables/{table_id}/columns"
         )
@@ -69,57 +71,57 @@ class ProvablyAPI:
     # Data
     # ------------------------------------------------------------------
 
-    def get_data(self) -> Any:
-        return http.get(f"{self._org()}/data")
+    async def get_data(self) -> Any:
+        return await http.get(f"{self._org()}/data")
 
     # ------------------------------------------------------------------
     # Collections
     # ------------------------------------------------------------------
 
-    def list_collections(self) -> Any:
-        return http.get(f"{self._org()}/collections")
+    async def list_collections(self) -> Any:
+        return await http.get(f"{self._org()}/collections")
 
-    def create_collection(self, body: dict[str, Any]) -> httpx.Response:
-        return http.post(f"{self._org()}/collections", body)
+    async def create_collection(self, body: dict[str, Any]) -> httpx.Response:
+        return await http.post(f"{self._org()}/collections", body)
 
     # ------------------------------------------------------------------
     # Integrations
     # ------------------------------------------------------------------
 
-    def create_integration(self, body: dict[str, Any]) -> dict[str, Any]:
-        return http.post(f"{self._org()}/integrations", body)
+    async def create_integration(self, body: dict[str, Any]) -> dict[str, Any]:
+        return await http.post(f"{self._org()}/integrations", body)
 
-    def list_integrations(self) -> Any:
-        return http.get(f"{self._org()}/integrations")
+    async def list_integrations(self) -> Any:
+        return await http.get(f"{self._org()}/integrations")
 
     # ------------------------------------------------------------------
     # Preprocess
     # ------------------------------------------------------------------
 
-    def start_preprocess(self, middleware_id: str, table_id: str) -> dict[str, Any]:
-        return http.post(
+    async def start_preprocess(self, middleware_id: str, table_id: str) -> dict[str, Any]:
+        return await http.post(
             f"{self._org()}/middlewares/{middleware_id}/tables/{table_id}/preprocess",
             {"force": True},
         )
 
-    def get_preprocess_status(self, middleware_id: str, table_id: str) -> dict[str, Any]:
-        return http.get(f"{self._org()}/middlewares/{middleware_id}/tables/{table_id}/preprocess")
+    async def get_preprocess_status(self, middleware_id: str, table_id: str) -> dict[str, Any]:
+        return await http.get(f"{self._org()}/middlewares/{middleware_id}/tables/{table_id}/preprocess")
 
     # ------------------------------------------------------------------
     # Queries / Proofs
     # ------------------------------------------------------------------
 
-    def run_query(self, middleware_id: str, collection_id: str, sql: str) -> dict[str, Any]:
-        return http.post(
+    async def run_query(self, middleware_id: str, collection_id: str, sql: str) -> dict[str, Any]:
+        return await http.post(
             f"{self._org()}/middlewares/{middleware_id}/query",
             {"query": sql, "require_proof": True, "collection_id": collection_id},
         )
 
-    def get_query(self, query_id: str) -> dict[str, Any]:
-        return http.get(f"{self._org()}/queries/{query_id}")
+    async def get_query(self, query_id: str) -> dict[str, Any]:
+        return await http.get(f"{self._org()}/queries/{query_id}")
 
-    def generate_proof(self, query_id: str) -> dict[str, Any]:
-        return http.post(f"{self._org()}/queries/{query_id}/generate_proof")
+    async def generate_proof(self, query_id: str) -> dict[str, Any]:
+        return await http.post(f"{self._org()}/queries/{query_id}/generate_proof")
 
     # ------------------------------------------------------------------
     # URL helpers

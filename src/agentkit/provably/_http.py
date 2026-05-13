@@ -19,7 +19,7 @@ class ProvablyHTTPClient:
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
-        self._client = httpx.Client()
+        self._client = httpx.AsyncClient()
 
         s = settings or get_settings()
 
@@ -29,14 +29,14 @@ class ProvablyHTTPClient:
             "Content-Type": "application/json",
         }
 
-    def _request(self, method: str, path: str, *, timeout: float = 60.0, **kwargs: Any) -> httpx.Response:
+    async def _request(self, method: str, path: str, *, timeout: float = 60.0, **kwargs: Any) -> httpx.Response:
         with provably_self_egress():
-            return self._client.request(
+            return await self._client.request(
                 method, f"{self.base_url}{path}", headers=self._headers, timeout=timeout, **kwargs
             )
 
-    def _fetch(self, method: str, path: str, **kwargs: Any) -> Any:
-        resp = self._request(method, path, **kwargs)
+    async def _fetch(self, method: str, path: str, **kwargs: Any) -> Any:
+        resp = await self._request(method, path, **kwargs)
         if resp.is_error:
             _log.error("http_error", status=resp.status_code, body=resp.text[:2000])
             raise httpx.HTTPStatusError(
@@ -46,11 +46,11 @@ class ProvablyHTTPClient:
             )
         return resp.json() if resp.content else None
 
-    def get(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
-        return self._fetch("GET", path, params=params)
+    async def get(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
+        return await self._fetch("GET", path, params=params)
 
-    def post(self, path: str, payload: dict[str, Any] | None = None) -> Any:
-        return self._fetch("POST", path, json=payload or {})
+    async def post(self, path: str, payload: dict[str, Any] | None = None) -> Any:
+        return await self._fetch("POST", path, json=payload or {})
 
 
 # Global singleton instance
