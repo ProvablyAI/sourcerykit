@@ -7,6 +7,7 @@ Wraps a standard logger with structlog to support contextvars (like run_id) and 
 import logging
 
 import structlog
+from structlog.typing import FilteringBoundLogger
 
 _stdlib_logger = logging.getLogger("agentkit")
 _stdlib_logger.addHandler(logging.NullHandler())
@@ -14,7 +15,7 @@ _stdlib_logger.addHandler(logging.NullHandler())
 logger = structlog.wrap_logger(_stdlib_logger)
 
 
-def get_logger(name: str | None = None):
+def get_logger(name: str | None = None) -> FilteringBoundLogger:
     """
     Returns a structured named logger.
     If name is None, it returns the base 'agentkit' logger.
