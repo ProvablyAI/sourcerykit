@@ -6,10 +6,10 @@ import httpx
 import pytest
 import requests
 
-import provably.intercept._storage as storage
-import provably.intercept.interceptor as interceptor
-from provably.intercept._responses import RequestsJsonOverride
-from provably.intercept._self_egress import provably_self_egress
+import agentkit.intercept._storage as storage
+import agentkit.intercept.interceptor as interceptor
+from agentkit.intercept._responses import RequestsJsonOverride
+from agentkit.intercept._self_egress import provably_self_egress
 
 
 def test_insert_row_receives_raw_before_mutation(monkeypatch: Any) -> None:

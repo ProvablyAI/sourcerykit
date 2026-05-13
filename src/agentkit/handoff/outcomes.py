@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from provably.handoff.types import HandoffPayload, Outcome
+from agentkit.handoff.types import HandoffPayload, Outcome
 
 __all__ = ["aggregate_outcome", "outcome_from_trace"]
 

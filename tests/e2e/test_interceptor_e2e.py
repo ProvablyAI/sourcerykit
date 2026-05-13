@@ -19,8 +19,8 @@ import httpx
 import pytest
 import requests
 
-import provably
-import provably.intercept.interceptor as interceptor
+import agentkit
+import agentkit.intercept.interceptor as interceptor
 from tests.e2e.conftest import FakeHttpServer
 
 
@@ -52,12 +52,12 @@ def test_simulation_hook_overrides_response_body(
 
     url = f"{fake_server.base_url}/data"
     interceptor.set_intercept_url_allowlist([url])
-    provably.set_intercept_body_hook(hook)
+    agentkit.set_intercept_body_hook(hook)
     try:
         resp = requests.get(url)
         assert resp.json() == {"user_edited": True}
     finally:
-        provably.set_intercept_body_hook(None)
+        agentkit.set_intercept_body_hook(None)
         interceptor.set_intercept_url_allowlist(None)
 
     assert patched_interceptor[0]["raw"] == {"original": True}
@@ -72,11 +72,11 @@ def test_disable_stops_recording(
     requests.get(f"{fake_server.base_url}/data")
     assert len(patched_interceptor) == 1
 
-    provably.disable()
+    agentkit.disable()
     try:
         requests.get(f"{fake_server.base_url}/data")
     finally:
-        provably.enable()
+        agentkit.enable()
 
     assert len(patched_interceptor) == 1
 

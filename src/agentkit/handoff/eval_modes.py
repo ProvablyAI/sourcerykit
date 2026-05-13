@@ -8,8 +8,8 @@ from typing import Any
 
 import jsonschema
 
-from provably.handoff.json_utils import canonical_json
-from provably.handoff.types import HandoffClaim
+from agentkit.handoff.json_utils import canonical_json
+from agentkit.handoff.types import HandoffClaim
 
 __all__ = ["evaluate_claim"]
 

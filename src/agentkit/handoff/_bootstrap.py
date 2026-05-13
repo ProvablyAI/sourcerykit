@@ -6,16 +6,16 @@ import os
 from typing import Any
 from urllib.parse import urlparse
 
-from provably.handoff._discovery import (
+from agentkit.handoff._discovery import (
     discover_intercepts_table,
     resolve_existing_collection_id,
     resolve_existing_database_id,
     resolve_intercepts_collection_uuid,
 )
-from provably.handoff._http import get_json, log_failed_response, org_id, post_json, post_raw
-from provably.handoff._preprocess import ensure_preprocess_intercept_padding
-from provably.handoff._resources import extract_id, provably_database_host_field
-from provably.log import get_logger
+from agentkit.handoff._http import get_json, log_failed_response, org_id, post_json, post_raw
+from agentkit.handoff._preprocess import ensure_preprocess_intercept_padding
+from agentkit.handoff._resources import extract_id, provably_database_host_field
+from agentkit.log import get_logger
 
 _log = get_logger(__name__)
 

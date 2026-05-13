@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from provably.handoff.evaluator import evaluate_handoff
-from provably.handoff.types import HandoffClaim, HandoffPayload
+from agentkit.handoff.evaluator import evaluate_handoff
+from agentkit.handoff.types import HandoffClaim, HandoffPayload
 from tests.e2e.conftest import FakeHttpServer
 
 

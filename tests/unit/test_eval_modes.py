@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from provably.handoff.eval_modes import _get_by_json_path, _normalize_json_path, evaluate_claim
-from provably.handoff.types import HandoffClaim
+from agentkit.handoff.eval_modes import _get_by_json_path, _normalize_json_path, evaluate_claim
+from agentkit.handoff.types import HandoffClaim
 
 
 def test_normalize_jsonpath_prefix() -> None:

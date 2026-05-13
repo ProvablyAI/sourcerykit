@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from provably.handoff.guide import (
+from agentkit.handoff.guide import (
     DEFAULT_INSTRUCTIONS,
     FIELD_DESCRIPTIONS,
     FIELD_DESCRIPTIONS_OFF,

@@ -27,11 +27,11 @@ import requests as requests_lib
 from agents import Agent, Runner, function_tool, set_default_openai_api, set_default_openai_client
 from openai import AsyncOpenAI
 
-import provably.intercept._storage as _storage_module
-import provably.intercept.interceptor as _interceptor_module
-from provably.handoff.evaluator import evaluate_handoff
-from provably.handoff.types import HandoffClaim, HandoffPayload
-from provably.trusted_endpoints import normalize_url_for_trust
+import agentkit.intercept._storage as _storage_module
+import agentkit.intercept.interceptor as _interceptor_module
+from agentkit.handoff.evaluator import evaluate_handoff
+from agentkit.handoff.types import HandoffClaim, HandoffPayload
+from agentkit.trusted_endpoints import normalize_url_for_trust
 from tests.e2e.conftest import FakeHttpServer, FakeResponse
 
 # ---------------------------------------------------------------------------

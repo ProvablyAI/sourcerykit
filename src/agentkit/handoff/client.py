@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import os
 
-from provably.handoff._bootstrap import (
+from agentkit.handoff._bootstrap import (
     cache,
     cached_integration_api_key,
     ensure_bootstrap_cached,
     runtime_ready,
 )
-from provably.handoff._preprocess import (
+from agentkit.handoff._preprocess import (
     ensure_preprocess_intercept_padding,
     run_preprocess,
 )

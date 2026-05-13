@@ -1,13 +1,13 @@
 """Provably SDK: runtime init + HTTP intercept + handoff transport + evaluator + trusted-endpoint registry."""
 
-from provably.handoff.client import initialize_runtime
-from provably.handoff.contract import claim_contract
-from provably.handoff.evaluator import evaluate_handoff, extract_indexed_from_query_record
-from provably.handoff.guide import default_instructions, field_descriptions
-from provably.handoff.outcomes import aggregate_outcome, outcome_from_trace
-from provably.handoff.payload_builder import DEFAULT_HANDOFF_TASK, build_handoff_payload
-from provably.handoff.transport import post_handoff
-from provably.handoff.types import (
+from agentkit.handoff.client import initialize_runtime
+from agentkit.handoff.contract import claim_contract
+from agentkit.handoff.evaluator import evaluate_handoff, extract_indexed_from_query_record
+from agentkit.handoff.guide import default_instructions, field_descriptions
+from agentkit.handoff.outcomes import aggregate_outcome, outcome_from_trace
+from agentkit.handoff.payload_builder import DEFAULT_HANDOFF_TASK, build_handoff_payload
+from agentkit.handoff.transport import post_handoff
+from agentkit.handoff.types import (
     BenchmarkRow,
     HandoffClaim,
     HandoffPayload,
@@ -16,7 +16,7 @@ from provably.handoff.types import (
     Outcome,
     VerificationMode,
 )
-from provably.intercept import (
+from agentkit.intercept import (
     disable,
     enable,
     init_interceptor,
@@ -26,8 +26,8 @@ from provably.intercept import (
     set_intercept_url_allowlist,
     take_last_intercept_row_id,
 )
-from provably.runtime import configure_indexing
-from provably.trusted_endpoints import (
+from agentkit.runtime import configure_indexing
+from agentkit.trusted_endpoints import (
     check_claim_endpoints_are_trusted,
     ensure_trusted_endpoints_table,
     is_trusted_endpoint,

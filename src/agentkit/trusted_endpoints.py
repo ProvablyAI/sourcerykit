@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import psycopg2
 
 if TYPE_CHECKING:
-    from provably.handoff.types import HandoffPayload
+    from agentkit.handoff.types import HandoffPayload
 
 _DDL_DONE = False
 

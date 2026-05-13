@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import httpx
 
-from provably.handoff.types import HandoffPayload
-from provably.intercept._self_egress import provably_self_egress
-from provably.log import get_logger
+from agentkit.handoff.types import HandoffPayload
+from agentkit.intercept._self_egress import provably_self_egress
+from agentkit.log import get_logger
 
 _log = get_logger(__name__)
 

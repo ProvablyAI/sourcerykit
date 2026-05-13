@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from provably.handoff.client import initialize_runtime
-from provably.intercept import disable, enable, init_interceptor
+from agentkit.handoff.client import initialize_runtime
+from agentkit.intercept import disable, enable, init_interceptor
 
 __all__ = ["configure_indexing"]
 

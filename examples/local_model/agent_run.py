@@ -33,12 +33,12 @@ import psycopg2
 import requests
 from dotenv import load_dotenv
 
-import provably.runtime as _prt
-from provably.handoff.evaluator import evaluate_handoff
-from provably.handoff.payload_builder import build_handoff_payload
-from provably.intercept import take_last_intercept_row_id
-from provably.intercept.interceptor import intercept_context
-from provably.trusted_endpoints import (
+import agentkit.runtime as _prt
+from agentkit.handoff.evaluator import evaluate_handoff
+from agentkit.handoff.payload_builder import build_handoff_payload
+from agentkit.intercept import take_last_intercept_row_id
+from agentkit.intercept.interceptor import intercept_context
+from agentkit.trusted_endpoints import (
     ensure_trusted_endpoints_table,
     normalize_url_for_trust,
 )

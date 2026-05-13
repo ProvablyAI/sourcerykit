@@ -3,15 +3,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, cast
 
-from provably.common.env import get_env_str
-from provably.handoff import client as handoff_client
-from provably.handoff._bootstrap import cache, runtime_ready
-from provably.handoff._query_records import create_query_record_for_intercept
-from provably.handoff.guide import default_instructions, field_descriptions
-from provably.handoff.types import HandoffClaim, HandoffPayload, VerificationMode
-from provably.intercept import get_intercept_row_id, is_enabled, load_latest_intercept_payload
-from provably.log import get_logger
-from provably.trusted_endpoints import load_trusted_endpoint_urls
+from agentkit.common.env import get_env_str
+from agentkit.handoff import client as handoff_client
+from agentkit.handoff._bootstrap import cache, runtime_ready
+from agentkit.handoff._query_records import create_query_record_for_intercept
+from agentkit.handoff.guide import default_instructions, field_descriptions
+from agentkit.handoff.types import HandoffClaim, HandoffPayload, VerificationMode
+from agentkit.intercept import get_intercept_row_id, is_enabled, load_latest_intercept_payload
+from agentkit.log import get_logger
+from agentkit.trusted_endpoints import load_trusted_endpoint_urls
 
 _log = get_logger(__name__)
 

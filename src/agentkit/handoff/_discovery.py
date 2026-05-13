@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from provably.handoff._http import get_json
-from provably.handoff._resources import (
+from agentkit.handoff._http import get_json
+from agentkit.handoff._resources import (
     DEFAULT_INTERCEPT_COLUMNS,
     INTERCEPTS_TABLE,
     extract_id,

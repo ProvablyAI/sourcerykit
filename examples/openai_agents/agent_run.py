@@ -29,12 +29,12 @@ import requests
 from agents import Agent, Runner, function_tool, set_default_openai_api, set_default_openai_client
 from openai import AsyncOpenAI
 
-import provably.runtime as _prt
-from provably.handoff.client import cached_integration_api_key
-from provably.handoff.evaluator import evaluate_handoff
-from provably.handoff.types import HandoffClaim, HandoffPayload
-from provably.intercept import set_interceptor_context, take_last_intercept_row_id
-from provably.trusted_endpoints import (
+import agentkit.runtime as _prt
+from agentkit.handoff.client import cached_integration_api_key
+from agentkit.handoff.evaluator import evaluate_handoff
+from agentkit.handoff.types import HandoffClaim, HandoffPayload
+from agentkit.intercept import set_interceptor_context, take_last_intercept_row_id
+from agentkit.trusted_endpoints import (
     ensure_trusted_endpoints_table,
     load_trusted_endpoint_urls,
     normalize_url_for_trust,

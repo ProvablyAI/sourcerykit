@@ -18,11 +18,11 @@ the evaluator (and the dashboard) compares against the LLM's claim.
 
 from __future__ import annotations
 
-from provably.handoff._http import org_id as env_org_id
-from provably.handoff._http import post_json, query_record_page_url
-from provably.handoff._preprocess import wait_for_proof_completed
-from provably.handoff._resources import extract_id
-from provably.log import get_logger
+from agentkit.handoff._http import org_id as env_org_id
+from agentkit.handoff._http import post_json, query_record_page_url
+from agentkit.handoff._preprocess import wait_for_proof_completed
+from agentkit.handoff._resources import extract_id
+from agentkit.log import get_logger
 
 _log = get_logger(__name__)
 

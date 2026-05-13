@@ -16,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import get_args
 
-from provably.handoff.types import HandoffClaim, VerificationMode
+from agentkit.handoff.types import HandoffClaim, VerificationMode
 
 __all__ = ["claim_contract"]
 

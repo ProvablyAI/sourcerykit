@@ -23,12 +23,12 @@ from typing import Any
 
 import httpx
 
-from provably.handoff.eval_modes import evaluate_claim
-from provably.handoff.json_utils import canonical_json
-from provably.handoff.types import HandoffClaim, HandoffPayload
-from provably.intercept._self_egress import provably_self_egress
-from provably.log import get_logger
-from provably.trusted_endpoints import check_claim_endpoints_are_trusted
+from agentkit.handoff.eval_modes import evaluate_claim
+from agentkit.handoff.json_utils import canonical_json
+from agentkit.handoff.types import HandoffClaim, HandoffPayload
+from agentkit.intercept._self_egress import provably_self_egress
+from agentkit.log import get_logger
+from agentkit.trusted_endpoints import check_claim_endpoints_are_trusted
 
 __all__ = ["evaluate_handoff", "extract_indexed_from_query_record"]
 

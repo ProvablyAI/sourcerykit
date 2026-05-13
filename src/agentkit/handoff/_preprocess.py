@@ -10,8 +10,8 @@ from typing import Any
 
 import psycopg2
 
-from provably.handoff._http import get_json, post_json
-from provably.log import get_logger
+from agentkit.handoff._http import get_json, post_json
+from agentkit.log import get_logger
 
 _log = get_logger(__name__)
 
@@ -72,7 +72,7 @@ def preprocess_after_intercept_write() -> None:
 
     No-op when bootstrap has not finished (no cached middleware / integration key).
     """
-    from provably.handoff._bootstrap import cache, runtime_ready
+    from agentkit.handoff._bootstrap import cache, runtime_ready
 
     if not runtime_ready():
         return

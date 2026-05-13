@@ -9,10 +9,10 @@ from typing import Any
 
 import psycopg2
 
-from provably.handoff._preprocess import preprocess_after_intercept_write
-from provably.intercept._self_egress import is_self_egress
-from provably.log import get_logger
-from provably.trusted_endpoints import ensure_trusted_endpoints_table, is_trusted_endpoint
+from agentkit.handoff._preprocess import preprocess_after_intercept_write
+from agentkit.intercept._self_egress import is_self_egress
+from agentkit.log import get_logger
+from agentkit.trusted_endpoints import ensure_trusted_endpoints_table, is_trusted_endpoint
 
 _log = get_logger(__name__)
 _DDL_DONE = False

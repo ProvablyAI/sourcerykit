@@ -18,18 +18,18 @@ try:
 except ImportError:
     _aiohttp = None  # type: ignore[assignment]
 
-from provably.intercept._reentry import already_recording, recording_scope
-from provably.intercept._responses import (
+from agentkit.intercept._reentry import already_recording, recording_scope
+from agentkit.intercept._responses import (
     HttpxJsonOverride,
     RequestsJsonOverride,
     extract_raw,
 )
-from provably.intercept._self_egress import is_self_egress
-from provably.intercept._storage import (
+from agentkit.intercept._self_egress import is_self_egress
+from agentkit.intercept._storage import (
     insert_intercept_row,
     request_payload_dict,
 )
-from provably.trusted_endpoints import _matches_registered, normalize_url_for_trust
+from agentkit.trusted_endpoints import _matches_registered, normalize_url_for_trust
 
 _ctx_agent_id: ContextVar[str] = ContextVar("provably_agent_id", default="")
 _ctx_action_name: ContextVar[str] = ContextVar("provably_action_name", default="")

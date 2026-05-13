@@ -10,7 +10,7 @@ from urllib.parse import urlparse, urlunparse
 
 import requests
 
-from provably.log import get_logger
+from agentkit.log import get_logger
 
 _log = get_logger(__name__)
 _SESSION = requests.Session()
@@ -26,7 +26,7 @@ def _request(method: str, path: str, **kwargs: Any) -> requests.Response:
     ``provably.intercept`` → ``interceptor`` → ``_storage`` → ``handoff._preprocess``
     → ``handoff._http``.
     """
-    from provably.intercept._self_egress import provably_self_egress  # noqa: PLC0415
+    from agentkit.intercept._self_egress import provably_self_egress  # noqa: PLC0415
 
     with provably_self_egress():
         return _SESSION.request(method, f"{base_url()}{path}", headers=headers(), **kwargs)
