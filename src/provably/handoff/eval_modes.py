@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any
+from typing import Any, assert_never
 
 import jsonschema
 
@@ -43,7 +43,7 @@ def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
         return _eval_schema_type(claim, at_path, base)
     if mode == "range_threshold":
         return _eval_range_threshold(claim, at_path, base)
-    return {**base, "result": "CAUGHT", "detail": f"unknown verification_mode: {mode}"}
+    assert_never(mode)
 
 
 def _base_verdict(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:

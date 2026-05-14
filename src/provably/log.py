@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -35,6 +36,11 @@ def configure_logging() -> None:
     )
 
 
-def get_logger(name: str | None = None):
-    """Return a bound structlog logger; pass ``__name__`` from the caller for module-scoped logs."""
+def get_logger(name: str | None = None) -> Any:
+    """Return a bound structlog logger; pass ``__name__`` from the caller for module-scoped logs.
+
+    The return type is :class:`~typing.Any` because :func:`structlog.get_logger` returns a
+    dynamically-bound logger whose surface is stub-only and not consistently typed across
+    structlog versions; callers should treat it as a duck-typed logger.
+    """
     return structlog.get_logger(name)

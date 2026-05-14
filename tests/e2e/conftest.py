@@ -58,6 +58,8 @@ class FakeHttpServer:
     def base_url(self) -> str:
         assert self._httpd is not None, "server not started"
         host, port = self._httpd.server_address[:2]
+        if isinstance(host, bytes):
+            host = host.decode("ascii")
         return f"http://{host}:{port}"
 
     def route(self, method: str, path: str, handler: Handler) -> None:
@@ -148,7 +150,7 @@ def patched_interceptor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]
     """
     rows: list[dict[str, Any]] = []
 
-    def fake_insert(_url: str, request_payload: dict, raw: Any, *, method: str = "GET") -> None:
+    def fake_insert(_url: str, request_payload: dict[str, Any], raw: Any, *, method: str = "GET") -> None:
         rows.append({"url": _url, "method": method, "request": request_payload, "raw": raw})
 
     monkeypatch.setattr(_interceptor_module, "_insert_row", fake_insert)

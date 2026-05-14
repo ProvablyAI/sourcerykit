@@ -105,7 +105,7 @@ def test_extract_resultset_raw_response_matches_intercept_body() -> None:
 
 
 def _mock_httpx_client(
-    get_response_json: dict | list[dict],
+    get_response_json: dict[str, Any] | list[dict[str, Any]],
     *,
     post_raises: Exception | None = None,
     post_status: int = 200,

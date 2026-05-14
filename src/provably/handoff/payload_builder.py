@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any
 
 from provably.common.env import get_env_str
 from provably.handoff import client as handoff_client
@@ -117,7 +117,7 @@ def _build_claims(
     ids: list[str] = []
 
     claim_rows: list[
-        tuple[dict[str, Any], str, Any, dict[str, Any] | None, Any]
+        tuple[dict[str, Any], str, Any, dict[str, Any], Any]
     ] = []
     for raw in raw_claims:
         if not isinstance(raw, dict):
@@ -200,7 +200,7 @@ def _build_claim(
 def _coerce_verification_mode(raw: Any) -> VerificationMode:
     mode = str(raw or "verbatim").strip()
     if mode in _VERIFICATION_MODES:
-        return cast(VerificationMode, mode)
+        return mode
     return "verbatim"
 
 

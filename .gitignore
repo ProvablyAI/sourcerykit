@@ -54,6 +54,3 @@ Thumbs.db
 .env
 .env.*
 !.env.example
-
-# uv
-uv.lock

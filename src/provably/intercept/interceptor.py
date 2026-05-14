@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import threading
-from collections.abc import Callable, Generator
+from collections.abc import Awaitable, Callable, Generator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Any
+from typing import Any, cast
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -200,15 +200,18 @@ def init_interceptor() -> None:
     httpx.get = _wrap_call(_orig["httpx_get"], "GET")
     httpx.post = _wrap_call(_orig["httpx_post"], "POST")
     # Lower-level instance method patches (cover async, Client(), Session())
-    requests.Session.send = _wrap_session_send(_orig["requests_session_send"])
-    httpx.Client.send = _wrap_client_send(_orig["httpx_client_send"])
-    httpx.AsyncClient.send = _wrap_async_client_send(_orig["httpx_async_client_send"])
+    # Monkey-patching third-party libraries is the whole point of this module — silence
+    # mypy's `method-assign` check at the patch sites (the policy decision is documented
+    # in CONTEXT.md).
+    requests.Session.send = _wrap_session_send(_orig["requests_session_send"])  # type: ignore[method-assign]
+    httpx.Client.send = _wrap_client_send(_orig["httpx_client_send"])  # type: ignore[method-assign]
+    httpx.AsyncClient.send = _wrap_async_client_send(_orig["httpx_async_client_send"])  # type: ignore[method-assign,assignment]
     # Soft-dep: aiohttp is not a hard dependency of this SDK. When present, patch the
     # central ClientSession._request choke point that every aiohttp call routes through
     # (LiteLLM's default transport, optional Google GenAI / Google ADK paths, etc.).
     if _aiohttp is not None:
         _orig["aiohttp_session_request"] = _aiohttp.ClientSession._request
-        _aiohttp.ClientSession._request = _wrap_aiohttp_request(_orig["aiohttp_session_request"])
+        _aiohttp.ClientSession._request = _wrap_aiohttp_request(_orig["aiohttp_session_request"])  # type: ignore[method-assign,assignment]
     _initialized = True
     _enabled = True
 
@@ -302,7 +305,7 @@ def _record_and_maybe_tamper(
     return response
 
 
-def _wrap_call(orig_fn, method: str):
+def _wrap_call(orig_fn: Callable[..., Any], method: str) -> Callable[..., Any]:
     """Wrap a module-level convenience function (e.g. httpx.get, requests.post).
 
     Sets ``recording_scope`` BEFORE calling the original function so that any
@@ -312,10 +315,9 @@ def _wrap_call(orig_fn, method: str):
     ``already_recording()`` is now False again) to do the actual recording.
     """
 
-    def wrapped(url, *args, **kwargs):
+    def wrapped(url: Any, *args: Any, **kwargs: Any) -> Any:
         with recording_scope():
             response = orig_fn(url, *args, **kwargs)
-        # recording_scope has exited; _attach will record this call
         return _attach(response, str(url), method, dict(kwargs))
 
     return wrapped
@@ -357,36 +359,61 @@ def _requests_prepared_to_kwargs(req: requests.PreparedRequest) -> dict[str, Any
         raw_params = parse_qs(parsed.query, keep_blank_values=True)
         # Flatten single-value lists to scalars (matches typical kwargs["params"] shape)
         kwargs["params"] = {k: (v[0] if len(v) == 1 else v) for k, v in raw_params.items()}
-    _decode_body_into_kwargs(kwargs, req.body, (req.headers or {}).get("Content-Type", "") or "")
+    content_type = req.headers.get("Content-Type", "") if req.headers else ""
+    _decode_body_into_kwargs(kwargs, req.body, content_type or "")
     return kwargs
 
 
-def _wrap_client_send(orig_send):
+def _wrap_client_send(
+    orig_send: Callable[..., httpx.Response],
+) -> Callable[..., httpx.Response]:
     """Wrap httpx.Client.send to record responses via _attach."""
 
-    def wrapped(self, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+    def wrapped(self: httpx.Client, request: httpx.Request, **kwargs: Any) -> httpx.Response:
         response = orig_send(self, request, **kwargs)
-        return _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request))
+        return cast(
+            httpx.Response,
+            _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request)),
+        )
 
     return wrapped
 
 
-def _wrap_async_client_send(orig_send):
+def _wrap_async_client_send(
+    orig_send: Callable[..., Awaitable[httpx.Response]],
+) -> Callable[..., Awaitable[httpx.Response]]:
     """Wrap httpx.AsyncClient.send to record responses via _attach."""
 
-    async def wrapped(self, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+    async def wrapped(
+        self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any
+    ) -> httpx.Response:
         response = await orig_send(self, request, **kwargs)
-        return _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request))
+        return cast(
+            httpx.Response,
+            _attach(response, str(request.url), request.method, _httpx_request_to_kwargs(request)),
+        )
 
     return wrapped
 
 
-def _wrap_session_send(orig_send):
+def _wrap_session_send(
+    orig_send: Callable[..., requests.Response],
+) -> Callable[..., requests.Response]:
     """Wrap requests.Session.send to record responses via _attach."""
 
-    def wrapped(self, request: requests.PreparedRequest, **kwargs: Any) -> requests.Response:
+    def wrapped(
+        self: requests.Session, request: requests.PreparedRequest, **kwargs: Any
+    ) -> requests.Response:
         response = orig_send(self, request, **kwargs)
-        return _attach(response, str(request.url), request.method or "GET", _requests_prepared_to_kwargs(request))
+        return cast(
+            requests.Response,
+            _attach(
+                response,
+                str(request.url),
+                request.method or "GET",
+                _requests_prepared_to_kwargs(request),
+            ),
+        )
 
     return wrapped
 
@@ -399,7 +426,9 @@ def _aiohttp_kwargs_to_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in kwargs.items() if k in _AIOHTTP_KWARG_KEYS and v is not None}
 
 
-def _wrap_aiohttp_request(orig_request):
+def _wrap_aiohttp_request(
+    orig_request: Callable[..., Awaitable[Any]],
+) -> Callable[..., Awaitable[Any]]:
     """Wrap aiohttp.ClientSession._request — the central method every aiohttp call routes through.
 
     Async wrapper: awaits the original to get a ClientResponse, then awaits ``response.read()``
@@ -410,7 +439,7 @@ def _wrap_aiohttp_request(orig_request):
     response is returned as-is. Recording works in full.
     """
 
-    async def wrapped(self, method: str, str_or_url: Any, **kwargs: Any) -> Any:
+    async def wrapped(self: Any, method: str, str_or_url: Any, **kwargs: Any) -> Any:
         response = await orig_request(self, method, str_or_url, **kwargs)
         if is_self_egress() or already_recording():
             return response

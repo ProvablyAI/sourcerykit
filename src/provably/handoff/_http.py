@@ -194,9 +194,10 @@ def post_json_with_transient_retry(
         if not text:
             return {}
         try:
-            return last.json()
+            parsed = last.json()
         except ValueError:
             return {}
+        return parsed if isinstance(parsed, dict) else {}
     assert last is not None
     last.raise_for_status()
     return {}

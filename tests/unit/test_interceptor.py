@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -102,9 +103,11 @@ def _attach_with_pattern_allowlist(
     monkeypatch.setattr(
         interceptor, "_insert_row", lambda url, *_a, **_k: recorded.append(url)
     )
-    monkeypatch.setattr(
-        interceptor, "_maybe_transform_body", lambda raw: tampered.append(raw) or raw
-    )
+    def _record_tamper(raw: Any) -> Any:
+        tampered.append(raw)
+        return raw
+
+    monkeypatch.setattr(interceptor, "_maybe_transform_body", _record_tamper)
     monkeypatch.setattr(interceptor, "_enabled", True)
     try:
         interceptor.set_intercept_url_allowlist(allowlist_entries)
@@ -191,10 +194,12 @@ def test_allowlist_plain_url_still_uses_exact_match(monkeypatch: Any) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_fake_insert(rows: list[dict[str, Any]]):
+def _make_fake_insert(
+    rows: list[dict[str, Any]],
+) -> Callable[..., None]:
     """Return a fake _insert_row that appends to ``rows``."""
 
-    def fake_insert(url: str, request_payload: dict, raw: Any, *, method: str = "GET") -> None:
+    def fake_insert(url: str, request_payload: dict[str, Any], raw: Any, *, method: str = "GET") -> None:
         rows.append({"url": url, "method": method, "request": request_payload, "raw": raw})
 
     return fake_insert

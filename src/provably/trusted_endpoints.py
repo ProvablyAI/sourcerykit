@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import psycopg2
@@ -173,7 +173,7 @@ def list_trusted_endpoints(
     org_id: str,
     *,
     excluded_urls: set[str] | None = None,
-    metadata_seeds: list[dict] | None = None,
+    metadata_seeds: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, str]]:
     """Return active trusted endpoints for ``org_id`` ordered most-recent-first.
 
@@ -205,7 +205,7 @@ def list_trusted_endpoints(
         )
         rows = cur.fetchall()
     blocked = excluded_urls or set()
-    metadata_by_url: dict[str, dict] = {}
+    metadata_by_url: dict[str, dict[str, Any]] = {}
     if metadata_seeds:
         metadata_by_url = {
             normalize_url_for_trust(str(seed.get("url", ""))): seed for seed in metadata_seeds

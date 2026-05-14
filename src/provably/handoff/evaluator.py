@@ -360,8 +360,6 @@ def _timing_from_query_record(record: dict[str, Any]) -> dict[str, float]:
     dashboard can sum TPT/TVT per claim.
     """
     out: dict[str, float] = {}
-    if not isinstance(record, dict):
-        return out
 
     proof_keys = (
         "proof_time_ms",
