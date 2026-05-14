@@ -2,9 +2,31 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from urllib.parse import urlparse
+
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from agentkit.config import get_settings
+
+
+@dataclass
+class ConnectionInfo:
+    name: str
+    username: str
+    password: str
+    provider: str
+    uri: str
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "username": self.username,
+            "password": self.password,
+            "provider": self.provider,
+            "uri": self.uri,
+        }
+
 
 # Internal singleton to ensure we only ever create one engine per process
 _ENGINE: AsyncEngine | None = None
@@ -44,3 +66,25 @@ def get_engine() -> AsyncEngine:
     )
 
     return _ENGINE
+
+
+def get_connection_info() -> ConnectionInfo:
+    """
+    Return the parsed connection details of the configured PostgreSQL URL.
+    """
+    url = get_settings().postgres_url
+    parsed = urlparse(url)
+
+    provider = parsed.scheme.split("+", 1)[0]
+
+    host = parsed.hostname or ""
+    port = parsed.port
+    uri = f"{host}:{port}" if port else host
+
+    return ConnectionInfo(
+        name=parsed.path.lstrip("/"),
+        username=parsed.username or "",
+        password=parsed.password or "",
+        provider=provider,
+        uri=uri,
+    )
