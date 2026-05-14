@@ -40,8 +40,16 @@ class ProvablyService:
             return uuid.UUID(str(result["id"]))
 
     async def get_middleware_id(self) -> uuid.UUID:
-        """Register a new database with the middleware; log errors but return the raw response
-        so the caller can inspect the status code (e.g. to detect 400 already-exists)."""
+        """Find and return the ID of the existing Provably middleware.
+
+        Returns:
+            uuid.UUID: The ID of the middleware named 'Provably Middleware'.
+
+        Raises:
+            ValueError: If no middleware with that name exists.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
 
         async with provably_error_handler("get_middleware_id"):
             middlewares = await api.list_middlewares()
@@ -58,16 +66,40 @@ class ProvablyService:
 
     # Will create database, schema and table
     async def create_database(self, middleware_id: uuid.UUID, database: ConnectionInfo) -> uuid.UUID:
-        """Register a new database with the middleware; log errors but return the raw response
-        so the caller can inspect the status code (e.g. to detect 400 already-exists)."""
+        """Register a new database with the middleware.
+
+        Args:
+            middleware_id: The ID of the middleware to attach the database to.
+            database: Connection details for the database to register.
+
+        Returns:
+            uuid.UUID: The ID of the newly created database.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+            ProvablyDataError: If the response is malformed.
+        """
 
         async with provably_error_handler("create_database"):
             result = await api.create_database(middleware_id, database.to_dict())
             return uuid.UUID(str(result["id"]))
 
     async def get_database_id(self, middleware_id: uuid.UUID, database: ConnectionInfo) -> uuid.UUID:
-        """Register a new database with the middleware; log errors but return the raw response
-        so the caller can inspect the status code (e.g. to detect 400 already-exists)."""
+        """Find and return the ID of an existing database by name.
+
+        Args:
+            middleware_id: The ID of the middleware owning the database.
+            database: Connection info whose name is used to locate the database.
+
+        Returns:
+            uuid.UUID: The ID of the matching database.
+
+        Raises:
+            ValueError: If no database with the given name exists in the middleware.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
 
         async with provably_error_handler("get_database_id"):
             databases = await api.list_databases(middleware_id)
@@ -90,7 +122,23 @@ class ProvablyService:
         table_id: uuid.UUID,
         columns: list[uuid.UUID],
     ) -> uuid.UUID:
-        """Create a collection; log errors but return the raw response for caller inspection."""
+        """Create a new query collection for the intercepts table.
+
+        Args:
+            middleware_id: The ID of the middleware owning the table.
+            database_id: The ID of the database containing the table.
+            schema_id: The ID of the schema containing the table.
+            table_id: The ID of the table to base the collection on.
+            columns: List of column IDs to enable for the collection.
+
+        Returns:
+            uuid.UUID: The ID of the newly created collection.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+            ProvablyDataError: If the response is malformed.
+        """
 
         collection = {
             "name": PROVABLY_INTERCEPTS_TABLE,
@@ -112,6 +160,16 @@ class ProvablyService:
             return uuid.UUID(str(result["id"]))
 
     async def get_collection_id(self) -> uuid.UUID:
+        """Find and return the ID of the existing intercepts collection.
+
+        Returns:
+            uuid.UUID: The ID of the collection named after the intercepts table.
+
+        Raises:
+            ValueError: If no matching collection is found.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_collection_id"):
             collections = await api.list_collections()
 
@@ -130,6 +188,20 @@ class ProvablyService:
     async def get_database_schema_id_and_table_id(
         self, middleware_id: uuid.UUID, database: ConnectionInfo
     ) -> dict[str, uuid.UUID]:
+        """Locate the schema and table IDs for the intercepts table within a database.
+
+        Args:
+            middleware_id: The ID of the middleware owning the database.
+            database: Connection info used to identify the target database by name.
+
+        Returns:
+            dict[str, uuid.UUID]: A dict with keys ``schema_id`` and ``table_id``.
+
+        Raises:
+            ValueError: If the middleware, database, or table cannot be found.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_data"):
             data = await api.get_data()
             middlewares = data.get("middlewares", [])
@@ -162,6 +234,18 @@ class ProvablyService:
     # ------------------------------------------------------------------
 
     async def get_columns_from_collection(self, collection_id: uuid.UUID) -> dict[str, Any]:
+        """Retrieve all columns associated with a collection.
+
+        Args:
+            collection_id: The ID of the collection to inspect.
+
+        Returns:
+            dict[str, Any]: The raw columns response from the API.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_columns_from_database"):
             columns = await api.list_columns_from_collection(collection_id)
             return columns
@@ -173,6 +257,22 @@ class ProvablyService:
         schema_id: uuid.UUID,
         table_id: uuid.UUID,
     ) -> list[uuid.UUID]:
+        """Retrieve the column IDs for a specific table.
+
+        Args:
+            middleware_id: The ID of the middleware owning the database.
+            database_id: The ID of the database containing the table.
+            schema_id: The ID of the schema containing the table.
+            table_id: The ID of the table whose columns to retrieve.
+
+        Returns:
+            list[uuid.UUID]: List of column IDs.
+
+        Raises:
+            ValueError: If any column is missing a valid ``id`` field.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_columns_from_database"):
             columns = await api.list_columns_from_database(middleware_id, database_id, schema_id, table_id)
 
@@ -186,6 +286,19 @@ class ProvablyService:
     # ------------------------------------------------------------------
 
     async def create_integration(self, collection_id: uuid.UUID) -> uuid.UUID:
+        """Register a new agent integration for the intercepts collection.
+
+        Args:
+            collection_id: The ID of the collection to associate with the integration.
+
+        Returns:
+            uuid.UUID: The ID of the newly created integration.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+            ProvablyDataError: If the response is malformed.
+        """
         integration = {
             "description": PROVABLY_INTERCEPTS_TABLE,
             "is_enabled": True,
@@ -200,6 +313,16 @@ class ProvablyService:
             return uuid.UUID(str(result["id"]))
 
     async def get_integration_intercepts_id(self) -> str:
+        """Find the intercepts integration and return its API key.
+
+        Returns:
+            str: The API key for the intercepts integration.
+
+        Raises:
+            ValueError: If the integration is not found or the API key is missing.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_integration_intercepts_id"):
             integrations = await api.list_integrations()
 
@@ -217,6 +340,21 @@ class ProvablyService:
             return str(api_key)
 
     async def get_integration_intercepts_api_key(self, integration_id: uuid.UUID, collection_id: uuid.UUID) -> str:
+        """Validate an integration and return its API key.
+
+        Args:
+            integration_id: The ID of the integration to look up.
+            collection_id: The collection ID that must be associated with the integration.
+
+        Returns:
+            str: The API key of the integration.
+
+        Raises:
+            ValueError: If the integration name mismatches, the collection is not associated,
+                or the API key is missing.
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
         async with provably_error_handler("get_integration_intercepts_api_key"):
             integration = await api.get_integration_by_id(integration_id)
 
@@ -244,6 +382,20 @@ class ProvablyService:
     # ------------------------------------------------------------------
 
     async def start_preprocess(self, middleware_id: uuid.UUID, table_id: uuid.UUID) -> uuid.UUID:
+        """Start a preprocessing job for a table.
+
+        Args:
+            middleware_id: The ID of the middleware owning the table.
+            table_id: The ID of the table to preprocess.
+
+        Returns:
+            uuid.UUID: The ID of the started preprocessing job.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+            ProvablyDataError: If the response is malformed.
+        """
         async with provably_error_handler("start_preprocess"):
             result = await api.start_preprocess(middleware_id, table_id)
             return uuid.UUID(str(result["id"]))
@@ -289,7 +441,21 @@ class ProvablyService:
     # ------------------------------------------------------------------
 
     async def run_query(self, middleware_id: uuid.UUID, collection_id: uuid.UUID, sql: str) -> dict:
-        async with provably_error_handler("start_preprocess"):
+        """Run a SQL query through a middleware and request a proof.
+
+        Args:
+            middleware_id: The ID of the middleware to execute the query against.
+            collection_id: The ID of the collection to associate the query with.
+            sql: The SQL query string to execute.
+
+        Returns:
+            dict: The raw JSON response from the API.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_error_handler("run_query"):
             result = await api.run_query(middleware_id, collection_id, sql)
             return result
 
@@ -330,6 +496,14 @@ class ProvablyService:
     # ------------------------------------------------------------------
 
     def query_record_url(self, query_record_id: uuid.UUID) -> str:
+        """Build the Provably Data Admin URL for a query record.
+
+        Args:
+            query_record_id: The ID of the query record.
+
+        Returns:
+            str: The full URL to the query record in the Provably admin UI.
+        """
         return api.query_record_url(query_record_id)
 
 
