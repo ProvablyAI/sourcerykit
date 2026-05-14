@@ -481,12 +481,21 @@ class ProvablyService:
             async with provably_error_handler("get_proof_completed"):
                 data = await api.get_query(query_id)
 
-            # Check if the proof has been generated
-            if data.get("proof") is not None:
-                _log.info("proof_received", query_id=str(query_id))
-                return data
+            proof = data.get("proof")
 
-            _log.debug("proof_pending", query_id=str(query_id))
+            # If proof is not null, check the internal status
+            if proof:
+                status = proof.get("status")
+                if status == "Completed":
+                    _log.info("proof_generation_success", query_id=str(query_id))
+                    return data
+
+                if status == "Failed":
+                    _log.error("proof_generation_failed", query_id=str(query_id))
+                    raise RuntimeError(f"Provably proof generation failed for query {query_id}")
+
+            # If status is 'Pending' (or proof is still null), we continue waiting
+            _log.debug("proof_generation_pending", query_id=str(query_id))
             await asyncio.sleep(0.1)
 
         raise TimeoutError(f"Timed out waiting for proof {query_id} after {timeout}s")
