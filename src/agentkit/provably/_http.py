@@ -36,21 +36,38 @@ class ProvablyHTTPClient:
             )
 
     async def _fetch(self, method: str, path: str, **kwargs: Any) -> Any:
-        resp = await self._request(method, path, **kwargs)
-        if resp.is_error:
-            _log.error("http_error", status=resp.status_code, body=resp.text[:2000])
-            raise httpx.HTTPStatusError(
-                f"HTTP {resp.status_code}: {resp.text[:200]}",
-                request=resp.request,
-                response=resp,
-            )
-        return resp.json() if resp.content else None
+        try:
+            response = await self._request(method, path, **kwargs)
+            response.raise_for_status()
 
-    async def get(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
+            if not response.content:
+                return {}
+
+            return response.json()
+
+        except httpx.HTTPStatusError as e:
+            # 400/500 errors from the server
+            _log.error(
+                "API rejected request: %s | Status: %s | Body: %s",
+                path,
+                e.response.status_code,
+                e.response.text[:500],
+            )
+            raise
+        except httpx.RequestError as e:
+            # network issues
+            _log.error("Network connectivity issue: %s | Error: %s", path, str(e))
+            raise
+        except httpx.HTTPError as e:
+            # unexpected issues
+            _log.exception("Unexpected error during request to %s | Error: %s", path, str(e))
+            raise
+
+    async def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         return await self._fetch("GET", path, params=params)
 
-    async def post(self, path: str, payload: dict[str, Any] | None = None) -> Any:
-        return await self._fetch("POST", path, json=payload or {})
+    async def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self._fetch("POST", path, json=json or {})
 
 
 # Global singleton instance
