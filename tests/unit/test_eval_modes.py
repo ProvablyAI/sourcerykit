@@ -95,7 +95,7 @@ def test_field_extraction_pass_with_array_index() -> None:
     assert v["result"] == "PASS", v
 
 
-def test_field_extraction_caught_when_index_out_of_range() -> None:
+def test_field_extraction_error_when_index_out_of_range() -> None:
     claim = HandoffClaim(
         action_name="list_open_tickets",
         claimed_value="open",
@@ -104,7 +104,7 @@ def test_field_extraction_caught_when_index_out_of_range() -> None:
         json_path="[7].status",
     )
     v = evaluate_claim(claim, [{"status": "open"}])
-    assert v["result"] == "CAUGHT"
+    assert v["result"] == "ERROR"
     assert "out of range" in v["detail"]
 
 
@@ -125,7 +125,7 @@ def test_schema_type_passes_with_dollar_path() -> None:
     assert v["indexed_at_path"] == "1"
 
 
-def test_schema_type_missing_path_is_caught() -> None:
+def test_schema_type_missing_path_is_error() -> None:
     claim = HandoffClaim(
         action_name="endpoint_0",
         claimed_value=None,
@@ -135,4 +135,4 @@ def test_schema_type_missing_path_is_caught() -> None:
         expected_json_schema={"type": "boolean"},
     )
     v = evaluate_claim(claim, {"id": 1})
-    assert v["result"] == "CAUGHT"
+    assert v["result"] == "ERROR"
