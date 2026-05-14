@@ -8,8 +8,6 @@
 - **Queries & Proofs** — run queries, generate proofs, poll status
 """
 
-from __future__ import annotations
-
 import uuid
 from typing import Any
 

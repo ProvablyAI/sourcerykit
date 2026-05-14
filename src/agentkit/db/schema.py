@@ -1,7 +1,5 @@
 """SQLAlchemy Core table definitions."""
 
-from __future__ import annotations
-
 from sqlalchemy import (
     Column,
     MetaData,

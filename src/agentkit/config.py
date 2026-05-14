@@ -1,7 +1,5 @@
 """Settings — all env vars used by agentkit."""
 
-from __future__ import annotations
-
 import functools
 import os
 from dataclasses import dataclass
