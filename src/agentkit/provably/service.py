@@ -438,7 +438,7 @@ class ProvablyService:
     # Queries / Proofs
     # ------------------------------------------------------------------
 
-    async def run_query(self, middleware_id: uuid.UUID, collection_id: uuid.UUID, sql: str) -> dict:
+    async def run_query(self, middleware_id: uuid.UUID, collection_id: uuid.UUID, sql: str) -> uuid.UUID:
         """Run a SQL query through a middleware and request a proof.
 
         Args:
@@ -455,9 +455,9 @@ class ProvablyService:
         """
         async with provably_error_handler("run_query"):
             result = await api.run_query(middleware_id, collection_id, sql)
-            return result
+            return uuid.UUID(str(result["id"]))
 
-    async def get_proof_completed(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
+    async def wait_for_proof_computation(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
         """
         Polls the query status until it reaches a terminal state (completed or failed).
 
@@ -476,7 +476,7 @@ class ProvablyService:
         start_time = asyncio.get_event_loop().time()
 
         while (asyncio.get_event_loop().time() - start_time) < timeout:
-            async with provably_error_handler("get_proof_completed"):
+            async with provably_error_handler("wait_for_proof_computation"):
                 data = await api.get_query(query_id)
 
             proof = data.get("proof")
@@ -498,20 +498,82 @@ class ProvablyService:
 
         raise TimeoutError(f"Timed out waiting for proof {query_id} after {timeout}s")
 
+    async def verify_proof(self, query_id: uuid.UUID):
+        """Run a SQL query through a middleware and request a proof.
+
+        Args:
+            middleware_id: The ID of the middleware to execute the query against.
+            collection_id: The ID of the collection to associate the query with.
+            sql: The SQL query string to execute.
+
+        Returns:
+            dict: The raw JSON response from the API.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_error_handler("run_query"):
+            await api.verify_proof(query_id)
+
+    async def wait_for_proof_verification(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
+        """
+        Polls the query until the proof verification_status reaches 'Verified'.
+
+        Args:
+            query_id: The identifier for the query.
+            timeout: Maximum seconds to wait for verification.
+
+        Returns:
+            dict[str, Any]: The full response containing the Verified ProofInfo.
+
+        Raises:
+            RuntimeError: If verification_status becomes 'Failed'.
+            TimeoutError: If verification doesn't complete within the timeout.
+        """
+        start_time = asyncio.get_event_loop().time()
+
+        while (asyncio.get_event_loop().time() - start_time) < timeout:
+            async with provably_error_handler("wait_for_proof_verification"):
+                data = await api.get_query(query_id)
+
+            proof = data.get("proof")
+
+            # If proof is not null, check the internal status
+            if proof:
+                v_status = proof.get("verification_status")
+                if v_status == "Verified":
+                    _log.info("proof_verification_success", query_id=str(query_id))
+                    return data
+
+                if v_status == "Failed":
+                    _log.error("proof_verification_failed", query_id=str(query_id))
+                    raise RuntimeError(f"Provably proof verification failed for query {query_id}")
+
+            # If status is 'Unverified' or 'Verifying', continue polling
+            _log.debug(
+                "proof_verification_pending",
+                query_id=str(query_id),
+                status=proof.get("verification_status") if proof else "null",
+            )
+            await asyncio.sleep(0.1)
+
+        raise TimeoutError(f"Verification for query {query_id} timed out after {timeout}s")
+
     # ------------------------------------------------------------------
     # URL helpers
     # ------------------------------------------------------------------
 
-    def query_record_url(self, query_record_id: uuid.UUID) -> str:
+    def query_record_url(self, query_id: uuid.UUID) -> str:
         """Build the Provably Data Admin URL for a query record.
 
         Args:
-            query_record_id: The ID of the query record.
+            query_id: The ID of the query record.
 
         Returns:
             str: The full URL to the query record in the Provably admin UI.
         """
-        return api.query_record_url(query_record_id)
+        return api.query_record_url(query_id)
 
 
 # Shared singleton

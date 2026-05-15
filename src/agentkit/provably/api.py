@@ -300,6 +300,25 @@ class ProvablyAPI:
         path = f"{self._org_path()}/queries/{query_id}"
         return await http.get(path)
 
+    async def verify_proof(self, query_id: uuid.UUID) -> dict[str, Any]:
+        """
+        Request verification for an existing query proof.
+
+        Args:
+            query_id: The unique identifier of the query whose proof needs
+                verification.
+
+        Returns:
+            dict[str, Any]: A response confirming the verification
+                task has been successfully initiated.
+
+        Raises:
+            ProvablyAPIError: If the query does not exist or verification
+                cannot be initiated.
+        """
+        path = f"{self._org_path()}/queries/{query_id}/verify"
+        return await http.post(path, {})
+
     # ------------------------------------------------------------------
     # URL helpers
     # ------------------------------------------------------------------
