@@ -1,7 +1,5 @@
 """Per-claim evaluation for each HandoffClaim verification_mode."""
 
-from __future__ import annotations
-
 import math
 import re
 from typing import Any
@@ -9,9 +7,7 @@ from typing import Any
 import jsonschema
 
 from agentkit.handoff.json_utils import canonical_json
-from agentkit.handoff.types import HandoffClaim
-
-__all__ = ["evaluate_claim"]
+from agentkit.schemas.handoff import HandoffClaim
 
 
 def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
@@ -148,9 +144,7 @@ def _step_into(cursor: Any, segment: str) -> Any:
         if segment not in cursor:
             raise KeyError(segment)
         return cursor[segment]
-    raise KeyError(
-        f"expected dict or list at segment {segment!r}, got {type(cursor).__name__}"
-    )
+    raise KeyError(f"expected dict or list at segment {segment!r}, got {type(cursor).__name__}")
 
 
 def _get_by_json_path(obj: Any, path: str) -> Any:
