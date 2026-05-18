@@ -1,7 +1,8 @@
 """SQLAlchemy Core DML statements for the ``provably_intercepts`` table."""
 
-from sqlalchemy import insert, select
+from sqlalchemy import and_, insert, select
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql.selectable import Select
 
 from agentkit.db.schema import provably_intercepts
 
@@ -9,7 +10,6 @@ _PG = postgresql.dialect()
 
 
 def insert_intercept(
-    *,
     agent_id: str,
     action_name: str,
     source_url: str,
@@ -56,3 +56,16 @@ def select_intercepts_by_action(action_name: str) -> str:
     """
     stmt = select(provably_intercepts).where(provably_intercepts.c.action_name == action_name)
     return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string
+
+
+def select_intercepts_by_id_and_action(row_id: str, action_name: str) -> Select:
+    """Return a Select construct that fetches all rows matching ``row_id`` and ``action_name``.
+
+    Equivalent raw SQL::
+
+        SELECT * FROM provably_intercepts
+        WHERE action_name = :action_name AND id = :row_id
+    """
+    return select(provably_intercepts).where(
+        and_(provably_intercepts.c.action_name == action_name, provably_intercepts.c.id == row_id)
+    )
