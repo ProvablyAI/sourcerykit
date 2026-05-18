@@ -1,0 +1,128 @@
+import asyncio
+from typing import Any
+from urllib.parse import urlparse
+
+from agentkit.config import get_settings
+from agentkit.db.engine import get_engine
+from agentkit.db.trusted_endpoints import (
+    insert_trusted_endpoint as db_insert_trusted_endpoint,
+)
+from agentkit.db.trusted_endpoints import (
+    select_active_trusted_endpoints,
+    select_trusted_endpoint_prefix,
+)
+from agentkit.handoff.types import HandoffPayload
+
+
+def sanitize_and_extract_trusted_url(raw_url: str) -> str:
+    """
+    Parses a raw URL string and extracts only the scheme and netloc (domain).
+    """
+    clean_url = raw_url.strip()
+    if not clean_url.startswith(("http://", "https://")):
+        clean_url = "https://" + clean_url
+
+    parsed = urlparse(clean_url)
+
+    if not parsed.netloc:
+        raise ValueError("Invalid URL structure: Could not determine the host domain.")
+
+    normalized_path = parsed.path.rstrip("/")
+
+    return f"{parsed.scheme}://{parsed.netloc}{normalized_path}"
+
+
+async def is_endpoint_trusted(url: str) -> bool:
+    """
+    Validates if a given URL is registered as an active trusted endpoint
+    for the current organization.
+    """
+    # Sanitize input to isolate the scheme + netloc
+    parsed_url = sanitize_and_extract_trusted_url(url)
+
+    org_id = get_settings().org_id
+    engine = get_engine()
+
+    # Build SELECT statement
+    stmt = select_trusted_endpoint_prefix(org_id, parsed_url)
+
+    # Execute
+    async with engine.connect() as conn:
+        result = await conn.execute(stmt)
+        return bool(result.scalar())
+
+
+async def insert_trusted_endpoint(url: str, display_label: str | None = None) -> None:
+    """Insert an active trusted endpoint for the configured org, ignoring conflicts."""
+
+    # Sanitize the URL string
+    clean_url = sanitize_and_extract_trusted_url(url)
+
+    org_id = get_settings().org_id
+    engine = get_engine()
+
+    # Insert statement
+    stmt = db_insert_trusted_endpoint(org_id, clean_url, display_label)
+
+    async with engine.begin() as conn:
+        await conn.execute(stmt)
+
+
+async def list_all_trusted_endpoints_detailed() -> list[dict[str, Any]]:
+    """
+    Return all active trusted endpoints formatted with metadata and risk tracking.
+    """
+    org_id = get_settings().org_id
+    engine = get_engine()
+
+    # Compile the SELECT statement
+    stmt = select_active_trusted_endpoints(org_id)
+
+    # Execute
+    async with engine.connect() as conn:
+        result = await conn.execute(stmt)
+        rows = result.fetchall()
+
+    detailed_list = []
+    for row in rows:
+        detailed_list.append(
+            {
+                "url": row.normalized_url,
+                "label": row.display_label or row.normalized_url,
+                "policy_version": row.policy_version or "v1",
+                "created_by": row.created_by or "system",
+                "category": "custom",
+                "risk_level": "unknown",
+                "description": f"Managed endpoint enforced under policy {row.policy_version}",
+            }
+        )
+
+    return detailed_list
+
+
+async def verify_claim_endpoints(
+    payload: HandoffPayload,
+):
+    """
+    Validates that all URLs within the payload claims are authorized prefixes.
+
+    Raises:
+        ValueError: If one or more endpoint URLs fail the authorization guard.
+    """
+
+    # Extract and clean unique claim URLs
+    claim_urls = {claim.request_payload["url"].strip() for claim in payload.claims if claim.request_payload.get("url")}
+
+    if not claim_urls:
+        return
+
+    # Check authorization for all URLs
+    results = await asyncio.gather(*(is_endpoint_trusted(url) for url in claim_urls))
+
+    # Filter out the failures
+    untrusted_found = [url for url, is_authorized in zip(claim_urls, results) if not is_authorized]
+
+    # Raise an exception if any unauthorized endpoints were caught
+    if untrusted_found:
+        # _log.warning("untrusted_endpoints_intercepted", urls=untrusted_found)
+        raise ValueError(f"handoff has untrusted endpoints: {', '.join(untrusted_found)}")
