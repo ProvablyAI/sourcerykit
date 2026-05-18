@@ -11,7 +11,7 @@ from agentkit.db.trusted_endpoints import (
     select_active_trusted_endpoints,
     select_trusted_endpoint_prefix,
 )
-from agentkit.handoff.types import HandoffPayload
+from agentkit.schemas.handoff import HandoffPayload
 
 
 def sanitize_and_extract_trusted_url(raw_url: str) -> str:
