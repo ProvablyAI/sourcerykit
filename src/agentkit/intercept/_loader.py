@@ -1,64 +1,43 @@
 """Read helpers for the ``provably_intercepts`` table."""
 
-from __future__ import annotations
-
 import json
 from typing import Any
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
-_SELECT_LATEST_INTERCEPT_SQL = """
-SELECT raw_response, request_payload FROM provably_intercepts
-WHERE agent_id = %s AND action_name = %s
-ORDER BY created_at DESC
-LIMIT 1
-"""
+from agentkit.db.engine import get_engine
+from agentkit.db.intercepts import select_intercepts_by_id_and_action
 
 
-def load_latest_intercept_payload(
-    pg_url: str,
-    action_name: str,
-    *,
+async def load_latest_intercept_payload(
     agent_id: str,
+    action_name: str,
 ) -> tuple[dict[str, Any], Any]:
     """Return ``(request_payload, response_payload)`` for the most recent matching row.
 
-    Both payloads are JSON-decoded when stored as strings; missing rows or empty ``pg_url``
-    return ``({}, None)``.
+    Both payloads are JSON-decoded when stored as strings; missing rows return ``({}, None)``.
     """
-    if not pg_url:
-        return {}, None
-    conn = psycopg2.connect(pg_url)
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(_SELECT_LATEST_INTERCEPT_SQL, (agent_id, action_name))
-            row = cur.fetchone()
-            if not row:
-                return {}, None
-            return (
-                _parse_request_payload(row.get("request_payload")),
-                _parse_json_maybe(row["raw_response"]),
-            )
-    finally:
-        conn.close()
+    engine = get_engine()
+    stmt = select_intercepts_by_id_and_action(agent_id, action_name)
+
+    async with engine.connect() as conn:
+        result = await conn.execute(stmt)
+        row = result.fetchone()
+
+        if not row:
+            return {}, None
+
+        # Clean, modern named attribute access provided by SQLAlchemy Core rows
+        request = _parse_json(row.request_payload, fallback={})
+        response = _parse_json(row.raw_response, fallback=None)
+
+        return request, response
 
 
-def _parse_json_maybe(raw: Any) -> Any:
-    if isinstance(raw, str):
+def _parse_json(value: Any, fallback: Any) -> Any:
+    """Safely decodes JSON strings, falling back to a default value if malformed or null."""
+    if isinstance(value, str) and value.strip():
         try:
-            return json.loads(raw)
+            return json.loads(value)
         except json.JSONDecodeError:
-            return raw
-    return raw
-
-
-def _parse_request_payload(raw_payload: Any) -> dict[str, Any]:
-    if isinstance(raw_payload, str):
-        try:
-            return json.loads(raw_payload) if raw_payload else {}
-        except json.JSONDecodeError:
-            return {}
-    if isinstance(raw_payload, dict):
-        return raw_payload
-    return {}
+            return fallback
+    # If the database driver or SQLAlchemy already deserialized it into a dict/list
+    return value if value is not None else fallback
