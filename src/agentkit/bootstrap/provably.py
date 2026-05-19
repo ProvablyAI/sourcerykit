@@ -12,12 +12,8 @@ _log = get_logger(__name__)
 
 
 @dataclass
-class _Bootstrap:
-    """Holds the resolved Provably resource IDs obtained during bootstrapping.
-
-    Each field is populated by `bootstrap()` and remains cached for the
-    lifetime of the process.
-    """
+class ProvablyBootstrapCache:
+    """Holds the resolved Provably resource IDs cached for the process lifetime."""
 
     middleware_id: UUID | None = field(default=None)
     database_id: UUID | None = field(default=None)
@@ -25,13 +21,8 @@ class _Bootstrap:
     table_id: UUID | None = field(default=None)
     collection_id: UUID | None = field(default=None)
 
-    async def bootstrap(self) -> None:
-        """Resolve or create all required Provably resources and cache their IDs.
-
-        For each resource the strategy is: attempt to fetch the existing ID
-        first; if the service returns a `ProvablyError` (resource not found),
-        create it instead.
-        """
+    async def run_handshake(self) -> None:
+        """Resolve or create all required Provably resources."""
         # --- Middleware --------------------------------------------------
         try:
             self.middleware_id = await service.get_middleware_id()
@@ -67,4 +58,4 @@ class _Bootstrap:
 
 
 # Module-level singleton.
-_BOOTSTRAP = _Bootstrap()
+_BOOTSTRAP_INSTANCE = ProvablyBootstrapCache()
