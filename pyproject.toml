@@ -27,6 +27,7 @@ dependencies = [
     "requests>=2.31",
     "sqlalchemy>=2.0",
     "structlog>=24.1",
+    "msgspec>=0.18.0",
 ]
 
 [project.optional-dependencies]
