@@ -1,5 +1,5 @@
+from agentkit.bootstrap import get_bootstrap
 from agentkit.db import select_intercept_by_id, select_intercepts_by_action
-from agentkit.handoff._bootstrap import _BOOTSTRAP
 from agentkit.logger import get_logger
 from agentkit.provably import service
 
@@ -19,8 +19,13 @@ async def create_query_record_for_intercept(
     else:
         query = select_intercepts_by_action(action_name)
 
-    if _BOOTSTRAP.middleware_id is not None and _BOOTSTRAP.collection_id is not None:
-        query_id = await service.run_query(_BOOTSTRAP.middleware_id, _BOOTSTRAP.collection_id, query)
+    provably = get_bootstrap()
+
+    middleware_id = provably.middleware_id
+    collection_id = provably.collection_id
+
+    if middleware_id is not None and collection_id is not None:
+        query_id = await service.run_query(middleware_id, collection_id, query)
         await service.wait_for_proof_computation(query_id)
         query_url = service.query_record_url(query_id)
         return query_url
