@@ -6,7 +6,7 @@ from typing import Any
 import jsonschema
 import msgspec
 
-from agentkit.schemas.handoff import HandoffClaim
+from agentkit.schemas import HandoffClaim, Outcome
 
 # Pre-initialize the msgspec encoder once at module level to reuse its internal buffers
 _encoder = msgspec.json.Encoder(order="sorted")
@@ -39,13 +39,13 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
         answer = canonical_json(row_response)
         base["indexed"] = answer
         ok = base["claimed"] == answer
-        return {**base, "result": "PASS" if ok else "CAUGHT"}
+        return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
 
     # Extract target node by path strings
     try:
         at_path = _get_by_json_path(row_response, json_path)
     except (KeyError, IndexError, TypeError, ValueError) as e:
-        return {**base, "result": "CAUGHT", "detail": f"json_path: {e}"}
+        return {**base, "result": Outcome.CAUGHT, "detail": f"json_path: {e}"}
 
     # Lazily
     base["indexed"] = canonical_json(row_response)
@@ -54,29 +54,33 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
     match verification_mode:
         case "field_extraction":
             ok = base["claimed"] == base["indexed_at_path"]
-            return {**base, "result": "PASS" if ok else "CAUGHT"}
+            return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
 
         case "schema_type":
             if not (schema := claim.expected_json_schema):
-                return {**base, "result": "CAUGHT", "detail": "expected_json_schema is required for schema_type"}
+                return {**base, "result": Outcome.CAUGHT, "detail": "expected_json_schema is required for schema_type"}
             try:
                 jsonschema.validate(at_path, schema)
-                return {**base, "result": "PASS"}
+                return {**base, "result": Outcome.PASS}
             except (jsonschema.ValidationError, jsonschema.SchemaError) as e:
-                return {**base, "result": "CAUGHT", "detail": getattr(e, "message", str(e))}
+                return {**base, "result": Outcome.CAUGHT, "detail": getattr(e, "message", str(e))}
 
         case "range_threshold":
             if claim.range_min is None and claim.range_max is None:
-                return {**base, "result": "CAUGHT", "detail": "range_threshold requires range_min and/or range_max"}
+                return {
+                    **base,
+                    "result": Outcome.CAUGHT,
+                    "detail": "range_threshold requires range_min and/or range_max",
+                }
             try:
                 value = _coerce_number(at_path)
             except (TypeError, ValueError) as exc:
-                return {**base, "result": "CAUGHT", "detail": f"indexed value not numeric: {exc}"}
+                return {**base, "result": Outcome.CAUGHT, "detail": f"indexed value not numeric: {exc}"}
 
             if claim.range_min is not None and value < float(claim.range_min):
-                return {**base, "result": "CAUGHT", "detail": f"value {value} below range_min {claim.range_min}"}
+                return {**base, "result": Outcome.CAUGHT, "detail": f"value {value} below range_min {claim.range_min}"}
             if claim.range_max is not None and value > float(claim.range_max):
-                return {**base, "result": "CAUGHT", "detail": f"value {value} above range_max {claim.range_max}"}
+                return {**base, "result": Outcome.CAUGHT, "detail": f"value {value} above range_max {claim.range_max}"}
 
             try:
                 num_match = math.isclose(_coerce_number(claimed_value), value, rel_tol=0.0, abs_tol=1e-9)
@@ -84,11 +88,15 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
                 num_match = False
 
             if not num_match:
-                return {**base, "result": "CAUGHT", "detail": "claimed_value does not match indexed numeric at path"}
-            return {**base, "result": "PASS"}
+                return {
+                    **base,
+                    "result": Outcome.CAUGHT,
+                    "detail": "claimed_value does not match indexed numeric at path",
+                }
+            return {**base, "result": Outcome.PASS}
 
         case _:
-            return {**base, "result": "CAUGHT", "detail": f"unknown verification_mode: {verification_mode}"}
+            return {**base, "result": Outcome.CAUGHT, "detail": f"unknown verification_mode: {verification_mode}"}
 
 
 def _get_by_json_path(obj: Any, path: str) -> Any:

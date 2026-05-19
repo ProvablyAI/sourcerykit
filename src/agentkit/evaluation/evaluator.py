@@ -6,7 +6,7 @@ from agentkit.intercept._self_egress import provably_self_egress
 from agentkit.logger import get_logger
 from agentkit.provably import service
 from agentkit.provably.answer_model import QueryAnswer
-from agentkit.schemas import HandoffPayload
+from agentkit.schemas import HandoffPayload, Outcome
 from agentkit.trusted_endpoints.trusted_endpoints import verify_claim_endpoints
 
 _log = get_logger(__name__)
@@ -20,7 +20,7 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
     try:
         await verify_claim_endpoints(payload)
     except ValueError as e:
-        return {"outcome": "CAUGHT", "per_claim": [], "errors": [f"trust gate: {e}"]}
+        return {"outcome": Outcome.CAUGHT, "per_claim": [], "errors": [f"trust gate: {e}"]}
 
     per_claim: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -54,13 +54,13 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
 def _resolve_outcome(per_claim: list[dict[str, Any]], errors: list[str]) -> str:
     """Computes the overall payload resolution state based on individual claim verdicts."""
     if errors:
-        return "ERROR"
+        return Outcome.ERROR
     results = {str(c.get("result") or "").upper() for c in per_claim}
-    if "CAUGHT" in results:
-        return "CAUGHT"
-    if "ERROR" in results:
-        return "ERROR"
-    return "PASS"
+    if Outcome.CAUGHT in results:
+        return Outcome.CAUGHT
+    if Outcome.ERROR in results:
+        return Outcome.ERROR
+    return Outcome.PASS
 
 
 def _coerce_query_result_to_indexed_value(value: Any) -> Any:
