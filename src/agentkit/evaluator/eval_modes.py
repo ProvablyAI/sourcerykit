@@ -6,7 +6,7 @@ from typing import Any
 import jsonschema
 import msgspec
 
-from agentkit.schemas import HandoffClaim, Outcome
+from agentkit.schemas import HandoffClaim, Outcome, VerificationMode
 
 # Pre-initialize the msgspec encoder once at module level to reuse its internal buffers
 _encoder = msgspec.json.Encoder(order="sorted")
@@ -35,7 +35,7 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
     }
 
     # Verbatim matching
-    if verification_mode == "verbatim":
+    if verification_mode == VerificationMode.VERBATIM:
         answer = canonical_json(row_response)
         base["indexed"] = answer
         ok = base["claimed"] == answer
@@ -52,11 +52,11 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
     base["indexed_at_path"] = canonical_json(at_path)
 
     match verification_mode:
-        case "field_extraction":
+        case VerificationMode.FIELD_EXTRACTION:
             ok = base["claimed"] == base["indexed_at_path"]
             return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
 
-        case "schema_type":
+        case VerificationMode.SCHEMA_TYPE:
             if not (schema := claim.expected_json_schema):
                 return {**base, "result": Outcome.CAUGHT, "detail": "expected_json_schema is required for schema_type"}
             try:
@@ -65,7 +65,7 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
             except (jsonschema.ValidationError, jsonschema.SchemaError) as e:
                 return {**base, "result": Outcome.CAUGHT, "detail": getattr(e, "message", str(e))}
 
-        case "range_threshold":
+        case VerificationMode.RANGE_THRESHOLD:
             if claim.range_min is None and claim.range_max is None:
                 return {
                     **base,
