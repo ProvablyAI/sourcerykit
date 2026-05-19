@@ -1,26 +1,10 @@
 """Pydantic models for handoff payloads (verifier, dashboard, etc.)."""
 
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Outcome = Literal["PASS", "CAUGHT", "ERROR"]
-"""Final verdict for a handoff evaluation.
-
-- ``"PASS"``   — every claim matched its proven indexed value and every proof verified.
-- ``"CAUGHT"`` — at least one claim disagreed with the indexed value or a proof failed.
-- ``"ERROR"``  — the evaluator could not run (missing config, Provably backend unreachable,
-  transient 5xx).  Not evidence of tampering; the system was unhealthy, not the agent.
-"""
-
-VerificationMode = Literal["verbatim", "field_extraction", "schema_type", "range_threshold"]
-"""How a claim's ``claimed_value`` is compared against the indexed query record.
-
-- ``verbatim``: canonical-JSON equality of the entire indexed value.
-- ``field_extraction``: equality at ``json_path`` only.
-- ``schema_type``: JSON-Schema validation at ``json_path``.
-- ``range_threshold``: numeric bounds (``range_min``/``range_max``) at ``json_path``.
-"""
+from agentkit.schemas import Outcome, VerificationMode
 
 
 class HandoffClaim(BaseModel):
