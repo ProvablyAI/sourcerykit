@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from agentkit.evaluation.eval_modes import evaluate_claim
+from agentkit.evaluator.eval_modes import evaluate_claim
 from agentkit.intercept._self_egress import provably_self_egress
 from agentkit.logger import get_logger
 from agentkit.provably import service
