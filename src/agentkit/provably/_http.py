@@ -29,15 +29,18 @@ class ProvablyHTTPClient:
             "Content-Type": "application/json",
         }
 
-    async def _request(self, method: str, path: str, *, timeout: float = 60.0, **kwargs: Any) -> httpx.Response:
+    async def _request(
+        self, method: str, path: str, *, timeout: float = 60.0, api_key: str | None = None, **kwargs: Any
+    ) -> httpx.Response:
+        headers = self._headers if api_key is None else {**self._headers, "x-api-key": api_key}
         with provably_self_egress():
             return await self._client.request(
-                method, f"{self.base_url}{path}", headers=self._headers, timeout=timeout, **kwargs
+                method, f"{self.base_url}{path}", headers=headers, timeout=timeout, **kwargs
             )
 
-    async def _fetch(self, method: str, path: str, **kwargs: Any) -> Any:
+    async def _fetch(self, method: str, path: str, *, api_key: str | None = None, **kwargs: Any) -> Any:
         try:
-            response = await self._request(method, path, **kwargs)
+            response = await self._request(method, path, api_key=api_key, **kwargs)
             response.raise_for_status()
 
             if not response.content:
@@ -63,11 +66,11 @@ class ProvablyHTTPClient:
             _log.exception("Unexpected error during request to %s | Error: %s", path, str(e))
             raise
 
-    async def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        return await self._fetch("GET", path, params=params)
+    async def get(self, path: str, params: dict[str, Any] | None = None, *, api_key: str | None = None) -> Any:
+        return await self._fetch("GET", path, api_key=api_key, params=params)
 
-    async def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        return await self._fetch("POST", path, json=json or {})
+    async def post(self, path: str, json: dict[str, Any] | None = None, *, api_key: str | None = None) -> Any:
+        return await self._fetch("POST", path, api_key=api_key, json=json or {})
 
 
 # Global singleton instance

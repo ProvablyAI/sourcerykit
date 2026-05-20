@@ -310,7 +310,7 @@ class ProvablyService:
             result = await api.create_integration(integration)
             return uuid.UUID(str(result["id"]))
 
-    async def get_integration_intercepts_id(self) -> str:
+    async def get_integration_intercepts_api_key(self) -> str:
         """Find the intercepts integration and return its API key.
 
         Returns:
@@ -337,7 +337,9 @@ class ProvablyService:
 
             return str(api_key)
 
-    async def get_integration_intercepts_api_key(self, integration_id: uuid.UUID, collection_id: uuid.UUID) -> str:
+    async def get_integration_intercepts_api_key_by_id(
+        self, integration_id: uuid.UUID, collection_id: uuid.UUID
+    ) -> str:
         """Validate an integration and return its API key.
 
         Args:
@@ -498,13 +500,12 @@ class ProvablyService:
 
         raise TimeoutError(f"Timed out waiting for proof {query_id} after {timeout}s")
 
-    async def verify_proof(self, query_id: uuid.UUID):
+    async def verify_proof(self, query_id: uuid.UUID, integration_api_key: str):
         """Run a SQL query through a middleware and request a proof.
 
         Args:
-            middleware_id: The ID of the middleware to execute the query against.
-            collection_id: The ID of the collection to associate the query with.
-            sql: The SQL query string to execute.
+            query_id: The ID of the query whose proof to verify.
+            integration_api_key: The integration API key used to authenticate this request.
 
         Returns:
             dict: The raw JSON response from the API.
@@ -514,14 +515,17 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("run_query"):
-            await api.verify_proof(query_id)
+            await api.verify_proof(query_id, api_key=integration_api_key)
 
-    async def wait_for_proof_verification(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
+    async def wait_for_proof_verification(
+        self, query_id: uuid.UUID, integration_api_key: str, timeout: int = 60
+    ) -> dict[str, Any]:
         """
         Polls the query until the proof verification_status reaches 'Verified'.
 
         Args:
             query_id: The identifier for the query.
+            integration_api_key: The integration API key used to authenticate polling requests.
             timeout: Maximum seconds to wait for verification.
 
         Returns:
@@ -535,7 +539,7 @@ class ProvablyService:
 
         while (asyncio.get_event_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_verification"):
-                data = await api.get_query(query_id)
+                data = await api.get_query(query_id, api_key=integration_api_key)
 
             proof = data.get("proof")
 

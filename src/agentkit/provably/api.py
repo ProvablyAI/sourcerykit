@@ -287,26 +287,28 @@ class ProvablyAPI:
         path = f"{self._org_path()}/middlewares/{middleware_id}/query"
         return await http.post(path, {"query": sql, "require_proof": True, "collection_id": collection_id})
 
-    async def get_query(self, query_id: uuid.UUID) -> dict[str, Any]:
+    async def get_query(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """
         Retrieve a query record by ID.
 
         Args:
             query_id: The ID of the query to retrieve.
+            api_key: Optional API key override for this request.
 
         Returns:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/queries/{query_id}"
-        return await http.get(path)
+        return await http.get(path, api_key=api_key)
 
-    async def verify_proof(self, query_id: uuid.UUID) -> dict[str, Any]:
+    async def verify_proof(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """
         Request verification for an existing query proof.
 
         Args:
             query_id: The unique identifier of the query whose proof needs
                 verification.
+            api_key: Optional API key override for this request.
 
         Returns:
             dict[str, Any]: A response confirming the verification
@@ -317,7 +319,7 @@ class ProvablyAPI:
                 cannot be initiated.
         """
         path = f"{self._org_path()}/queries/{query_id}/verify"
-        return await http.post(path, {})
+        return await http.post(path, {}, api_key=api_key)
 
     # ------------------------------------------------------------------
     # URL helpers
