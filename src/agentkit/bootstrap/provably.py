@@ -20,6 +20,7 @@ class ProvablyBootstrapCache:
     schema_id: UUID | None = field(default=None)
     table_id: UUID | None = field(default=None)
     collection_id: UUID | None = field(default=None)
+    integration_key: str | None = field(default=None)
 
     async def run_handshake(self) -> None:
         """Resolve or create all required Provably resources."""
@@ -54,6 +55,15 @@ class ProvablyBootstrapCache:
             )
             self.collection_id = await service.create_collection(
                 self.middleware_id, self.database_id, self.schema_id, self.table_id, columns
+            )
+        # --- Integration -------------------------------------------------
+        try:
+            self.integration_key = await service.get_integration_intercepts_api_key()
+        except ProvablyError:
+            _log.info("integration_not_found_creating_new")
+            integration_id = await service.create_integration(self.collection_id)
+            self.integration_key = await service.get_integration_intercepts_api_key_by_id(
+                integration_id, self.collection_id
             )
 
 
