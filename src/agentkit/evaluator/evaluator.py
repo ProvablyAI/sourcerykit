@@ -15,7 +15,8 @@ _log = get_logger(__name__)
 async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
     """Validates trusted endpoints and verifies cryptographic proof loops for all payload claims."""
 
-    # TODO: add integration key for "external" agents
+    # TODO: Refactor. Not a good idea to pass the API key via the payload
+    api_key = payload.integration_api_key
 
     try:
         await verify_claim_endpoints(payload)
@@ -29,12 +30,12 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
         query_ids = [claim.query_id for claim in payload.claims]
 
         # Verify proofs concurrently
-        await asyncio.gather(*(service.verify_proof(qid) for qid in query_ids))
+        await asyncio.gather(*(service.verify_proof(qid, api_key) for qid in query_ids))
 
         # Evaluate claim verdicts
         for claim, query_id in zip(payload.claims, query_ids):
             try:
-                result = await service.wait_for_proof_verification(query_id)
+                result = await service.wait_for_proof_verification(query_id, api_key)
                 coerced_val = _coerce_query_result_to_indexed_value(result.get("result"))
 
                 verdict = {
@@ -46,7 +47,7 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
             except Exception as e:
                 _log.exception("failed_to_verify_claim_proof", query_id=query_id)
                 errors.append(f"verification_failed: {str(e)}")
-                raise
+                continue
 
     return {"outcome": _resolve_outcome(per_claim, errors), "per_claim": per_claim, "errors": errors}
 
