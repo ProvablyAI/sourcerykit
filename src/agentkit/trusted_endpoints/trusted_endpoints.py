@@ -100,6 +100,15 @@ async def list_all_trusted_endpoints_detailed() -> list[dict[str, Any]]:
     return detailed_list
 
 
+async def list_all_trusted_endpoints() -> list[str]:
+    """
+    Return all active trusted endpoints urls.
+    """
+
+    urls = await list_all_trusted_endpoints_detailed()
+    return [url["url"] for url in urls if "url" in url]
+
+
 async def verify_claim_endpoints(
     payload: HandoffPayload,
 ):
