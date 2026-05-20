@@ -8,6 +8,7 @@ from agentkit.handoff.guide import default_instructions, field_descriptions
 from agentkit.intercept import get_intercept_row_id, load_latest_intercept_payload
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffClaim, HandoffPayload, VerificationMode
+from agentkit.trusted_endpoints.trusted_endpoints import list_all_trusted_endpoints
 
 _log = get_logger(__name__)
 
@@ -28,8 +29,8 @@ async def build_handoff_payload(
     blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
 
     # Verify that Provably bootstrapping sequence successfully cleared
-    provably_cache = get_bootstrap()
-    if not provably_cache.collection_id:
+    provably = get_bootstrap()
+    if not provably.integration_key:
         raise RuntimeError("Provably infrastructure bootstrapping incomplete or uninitialized.")
 
     blob = dict(fetch_and_claim) if fetch_and_claim else {}
@@ -47,16 +48,18 @@ async def build_handoff_payload(
     guide = handoff_field_guide if handoff_field_guide is not None else field_descriptions()
     instr = instructions if instructions is not None else default_instructions()
 
+    trusted_endpoint_registry = await list_all_trusted_endpoints()
+
     return HandoffPayload(
         provably_mcp_url=settings.provably_mcp,
         provably_org_id=settings.org_id,
-        integration_api_key=settings.integration_key,
-        handoff_evaluate_url=settings.evaluate_url,
+        integration_api_key=provably.integration_key,
+        handoff_evaluate_url="",  # TODO: to be added after a2a communication management
         handoff_contract_version="2.0",
         handoff_field_guide=guide,
         instructions=instr,
         query_record_ids=query_ids,
-        trusted_endpoint_registry=settings.trusted_registry_urls,
+        trusted_endpoint_registry=trusted_endpoint_registry,
         run_id=run_id,
         claims=claims,
         verification_results=[],
