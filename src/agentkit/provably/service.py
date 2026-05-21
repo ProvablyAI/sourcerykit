@@ -301,7 +301,7 @@ class ProvablyService:
             "description": PROVABLY_INTERCEPTS_TABLE,
             "is_enabled": True,
             "name": PROVABLY_INTERCEPTS_TABLE,
-            "role": "owner",
+            "role": "developer",
             "type": "agent",
             "collections": [str(collection_id)],
         }
