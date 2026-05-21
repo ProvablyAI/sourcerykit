@@ -5,7 +5,6 @@ from uuid import UUID
 
 from agentkit.db import insert_intercept
 from agentkit.db.engine import get_engine
-from agentkit.handoff._preprocess import run_preprocess
 from agentkit.intercept._self_egress import is_self_egress
 from agentkit.logger import get_logger
 from agentkit.trusted_endpoints import is_endpoint_trusted
@@ -46,6 +45,8 @@ async def add_intercept_row(
         row = result.fetchone()
 
     _log.info("intercept_stored", agent_id=agent_id, action_name=action_name, url=url, method=method)
+    from agentkit.handoff._preprocess import run_preprocess  # noqa: PLC0415
+
     await run_preprocess()
 
     return row[0] if row else None

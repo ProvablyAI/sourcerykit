@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from agentkit.schemas import VerificationMode
+from agentkit.schemas.verification_mode import VerificationMode
 
 
 class HandoffClaim(BaseModel):

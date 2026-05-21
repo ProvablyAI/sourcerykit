@@ -1,7 +1,6 @@
 from agentkit.bootstrap.provably import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
 from agentkit.db.engine import get_engine
 from agentkit.db.schema import metadata
-from agentkit.handoff._preprocess import run_preprocess
 from agentkit.intercept import init_interceptor
 from agentkit.logger import get_logger
 
@@ -12,14 +11,16 @@ async def bootstrap_system() -> None:
     """System entry point called exactly once during container/server startup."""
     _log.info("system_bootstrap_started")
 
-    # 1. Initialize database schemas
+    # Initialize database schemas
     async with get_engine().begin() as conn:
         await conn.run_sync(metadata.create_all)
 
-    # 2. Initialize all required Provably resources
+    # Initialize all required Provably resources
     await _BOOTSTRAP_INSTANCE.run_handshake()
 
-    # 3. Run preprocess
+    # Run preprocess
+    from agentkit.handoff._preprocess import run_preprocess
+
     await run_preprocess()
 
     # 4. Initialize interceptor
