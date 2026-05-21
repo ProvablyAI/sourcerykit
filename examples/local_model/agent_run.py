@@ -28,72 +28,49 @@ import asyncio
 import copy
 import json
 import os
+import uuid
 
-import psycopg2
+import httpx
 import requests
 from dotenv import load_dotenv
 
-import agentkit.runtime as _prt
-from agentkit.handoff.evaluator import evaluate_handoff
-from agentkit.handoff.payload_builder import build_handoff_payload
-from agentkit.intercept import take_last_intercept_row_id
-from agentkit.intercept.interceptor import intercept_context
-from agentkit.trusted_endpoints import (
-    ensure_trusted_endpoints_table,
-    normalize_url_for_trust,
-)
-
 load_dotenv()
 
+from agentkit import (  # noqa: E402
+    async_intercept_context,
+    bootstrap_system,
+    build_handoff_payload,
+    evaluate_handoff,
+    insert_trusted_endpoint,
+    take_last_intercept_row_id,
+)
 
 _OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 _DEFAULT_MODEL_URL = "http://localhost:12434/engines/v1/chat/completions"
 _DEFAULT_MODEL = "huggingface.co/qwen/qwen3.5-0.8b-base"
 
 
-def _seed_trusted_endpoints() -> None:
-    """Insert trusted URLs into the DB (idempotent)."""
-    postgres_url = os.environ["POSTGRES_URL"]
-    org_id = os.environ["PROVABLY_ORG_ID"]
-    conn = psycopg2.connect(postgres_url)
-    try:
-        ensure_trusted_endpoints_table(conn)
-        with conn.cursor() as cur:
-            norm = normalize_url_for_trust(_OPEN_METEO_URL)
-            cur.execute(
-                """
-                INSERT INTO trusted_endpoints (org_id, normalized_url, display_label, entry_type)
-                VALUES (%s, %s, %s, 'endpoint')
-                ON CONFLICT (org_id, normalized_url) WHERE revoked_at IS NULL DO NOTHING
-                """,
-                (org_id, norm, _OPEN_METEO_URL),
-            )
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def get_current_temperature_london() -> dict:
+async def get_current_temperature_london() -> dict:
     """Fetch current London weather from Open-Meteo and record the intercept."""
-    with intercept_context(agent_id="demo", action_name="get_weather"):
-        response = requests.get(
-            _OPEN_METEO_URL,
-            params={"latitude": 51.5074, "longitude": -0.1278, "current": "temperature_2m"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        return response.json()
+    async with async_intercept_context(agent_id="demo", action_name="get_weather"):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                _OPEN_METEO_URL,
+                params={"latitude": 51.5074, "longitude": -0.1278, "current": "temperature_2m"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json()
 
 
 async def main(tamper: bool = False) -> None:
-    # Seed trusted endpoints BEFORE enabling indexing (trust gate fires on first insert).
-    print("Seeding trusted endpoints…")
-    _seed_trusted_endpoints()
+    await bootstrap_system()
 
-    _prt.configure_indexing(enable_indexing=True)
+    print("Seeding trusted endpoints…")
+    await insert_trusted_endpoint(_OPEN_METEO_URL)
 
     print("Calling weather tool…")
-    tool_output_value: dict = get_current_temperature_london()
+    tool_output_value: dict = await get_current_temperature_london()
     print(f"Tool output: {tool_output_value}")
 
     if take_last_intercept_row_id() is None:
@@ -129,7 +106,7 @@ async def main(tamper: bool = False) -> None:
         claimed_value.setdefault("current", {})["temperature_2m"] = fake_temp
         print(f"[TAMPER] Injecting fake temperature_2m={fake_temp} — expect CAUGHT\n")
 
-    payload = build_handoff_payload(
+    payload = await build_handoff_payload(
         {
             "reasoning": reasoning,
             "claims": [
@@ -140,16 +117,13 @@ async def main(tamper: bool = False) -> None:
                 }
             ],
         },
-        run_id="run-1",
+        run_id=uuid.uuid7(),
         intercept_agent_id="demo",
     )
 
     print("Evaluating handoff…")
-    eval_result = evaluate_handoff(
+    eval_result = await evaluate_handoff(
         payload,
-        provably_base_url=os.environ.get("PROVABLY_RUST_BE_URL", "").rstrip("/"),
-        postgres_url=os.environ["POSTGRES_URL"],
-        org_id_fallback=os.environ["PROVABLY_ORG_ID"],
     )
 
     print("\nEvaluation result:")
