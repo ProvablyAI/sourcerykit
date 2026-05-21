@@ -15,4 +15,4 @@ async def run_preprocess() -> None:
         await service.start_preprocess(middleware_id, table_id)
         await service.get_preprocess_completed(middleware_id, table_id)
     else:
-        raise
+        raise RuntimeError("Provably bootstrap incomplete: middleware_id and table_id are required")

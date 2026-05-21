@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from agentkit.bootstrap import get_bootstrap
 from agentkit.db import select_intercept_by_id, select_intercepts_by_action
 from agentkit.logger import get_logger
@@ -9,8 +11,8 @@ _log = get_logger(__name__)
 async def create_query_record_for_intercept(
     action_name: str,
     agent_id: str,
-    row_id: int | None = None,
-) -> str:
+    row_id: UUID | None = None,
+) -> tuple[UUID, str]:
     if not action_name or not agent_id:
         raise ValueError("create_query_record_for_intercept requires non-empty agent_id and action_name")
 
@@ -28,6 +30,6 @@ async def create_query_record_for_intercept(
         query_id = await service.run_query(middleware_id, collection_id, query)
         await service.wait_for_proof_computation(query_id)
         query_url = service.query_record_url(query_id)
-        return query_url
+        return query_id, query_url
     else:
-        raise
+        raise RuntimeError("Provably bootstrap incomplete: middleware_id and collection_id are required")
