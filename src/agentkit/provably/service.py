@@ -331,21 +331,25 @@ class ProvablyService:
         async with provably_error_handler("get_integration_intercepts_id"):
             integrations = await api.list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
 
-            # Find the integration with the matching name that has access to the collection
-            def _matches(item: dict) -> bool:
-                if item.get("name") != PROVABLY_INTERCEPTS_TABLE:
-                    return False
-                return str(collection_id) in [str(c) for c in item.get("collections", [])]
+            candidates = [i for i in integrations if i.get("name") == PROVABLY_INTERCEPTS_TABLE]
+            if not candidates:
+                raise ValueError(f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' was found.")
 
-            try:
-                match = next(item for item in integrations if _matches(item))
-            except StopIteration:
+            # collections and api_key are only present in get_integration_by_id
+            full_records = await asyncio.gather(
+                *(api.get_integration_by_id(uuid.UUID(str(c["id"]))) for c in candidates)
+            )
+
+            match = next(
+                (r for r in full_records if str(collection_id) in [str(c) for c in r.get("collections", [])]),
+                None,
+            )
+            if match is None:
                 raise ValueError(
                     f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' with access to "
                     f"collection {collection_id} was found."
                 )
 
-            # Extract and return the API key
             api_key = match.get("api_key")
             if not api_key:
                 raise ValueError(f"Integration '{PROVABLY_INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
