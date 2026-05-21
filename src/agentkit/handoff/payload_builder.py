@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -34,12 +35,6 @@ async def build_handoff_payload(
 
     blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
 
-    # Extract and resolve claim arrays
-    claims, query_urls, query_ids = await _build_claims(
-        blob,
-        intercept_agent_id,
-    )
-
     reasoning = str(blob.get("reasoning") or "")
     settings = get_settings()
 
@@ -47,7 +42,11 @@ async def build_handoff_payload(
     guide = field_guide if field_guide is not None else field_descriptions()
     instr = instructions if instructions is not None else default_instructions()
 
-    trusted_endpoint_registry = await list_all_trusted_endpoints()
+    # Run claim resolution and trusted-endpoint fetch concurrently
+    (claims, query_urls, query_ids), trusted_endpoint_registry = await asyncio.gather(
+        _build_claims(blob, intercept_agent_id),
+        list_all_trusted_endpoints(),
+    )
 
     return HandoffPayload(
         provably_mcp_url=settings.provably_mcp,
@@ -80,55 +79,52 @@ async def _build_claims(
     if not isinstance(raw_claims, list):
         return [], [], []
 
-    claims: list[HandoffClaim] = []
-    urls: list[str] = []
-    ids: list[uuid.UUID] = []
+    # Filter to valid claim dicts up-front
+    valid_raws = [raw for raw in raw_claims if isinstance(raw, dict) and str(raw.get("action_name") or "").strip()]
 
-    for raw in raw_claims:
-        if not isinstance(raw, dict):
-            continue
+    results = await asyncio.gather(*[_resolve_claim(raw, intercept_agent_id) for raw in valid_raws])
 
-        action_name = str(raw.get("action_name") or "").strip()
-        if not action_name:
-            continue
-
-        # Fetch underlying response blobs
-        request_payload, response_payload = await load_latest_intercept_payload(intercept_agent_id, action_name)
-        row_id = get_intercept_row_id(intercept_agent_id, action_name)
-
-        # Resolve tracking handles
-        qid, qurl = await create_query_record_for_intercept(
-            action_name,
-            agent_id=intercept_agent_id,
-            row_id=row_id,
-        )
-
-        ids.append(qid)
-        urls.append(qurl)
-
-        # Coerce verification mode dynamically using Enum
-        mode_raw = str(raw.get("verification_mode") or "").strip()
-        try:
-            verification_mode = VerificationMode(mode_raw)
-        except ValueError:
-            verification_mode = VerificationMode.VERBATIM
-
-        # Build and append model contract
-        schema = raw.get("expected_json_schema") if isinstance(raw.get("expected_json_schema"), dict) else None
-
-        claims.append(
-            HandoffClaim(
-                action_name=action_name,
-                claimed_value=raw.get("claimed_value"),
-                request_payload=request_payload,
-                response_payload=response_payload,
-                query_id=qid,
-                verification_mode=verification_mode,
-                json_path=str(raw.get("json_path") or ""),
-                expected_json_schema=schema,
-                range_min=raw.get("range_min"),
-                range_max=raw.get("range_max"),
-            )
-        )
+    claims = [r[0] for r in results]
+    urls = [r[1] for r in results]
+    ids = [r[2] for r in results]
 
     return claims, urls, ids
+
+
+async def _resolve_claim(
+    raw: dict[str, Any],
+    intercept_agent_id: str,
+) -> tuple[HandoffClaim, str, uuid.UUID]:
+    """Resolves a single raw claim dict into a HandoffClaim plus its tracking handles."""
+    action_name = str(raw.get("action_name") or "").strip()
+
+    # Fetch underlying response blobs and intercept row concurrently with proof query
+    row_id = get_intercept_row_id(intercept_agent_id, action_name)
+
+    (request_payload, response_payload), (qid, qurl) = await asyncio.gather(
+        load_latest_intercept_payload(intercept_agent_id, action_name),
+        create_query_record_for_intercept(action_name, agent_id=intercept_agent_id, row_id=row_id),
+    )
+
+    # Coerce verification mode dynamically using Enum
+    mode_raw = str(raw.get("verification_mode") or "").strip()
+    try:
+        verification_mode = VerificationMode(mode_raw)
+    except ValueError:
+        verification_mode = VerificationMode.VERBATIM
+
+    schema = raw.get("expected_json_schema") if isinstance(raw.get("expected_json_schema"), dict) else None
+
+    claim = HandoffClaim(
+        action_name=action_name,
+        claimed_value=raw.get("claimed_value"),
+        request_payload=request_payload,
+        response_payload=response_payload,
+        query_id=qid,
+        verification_mode=verification_mode,
+        json_path=str(raw.get("json_path") or ""),
+        expected_json_schema=schema,
+        range_min=raw.get("range_min"),
+        range_max=raw.get("range_max"),
+    )
+    return claim, qurl, qid
