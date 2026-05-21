@@ -313,68 +313,40 @@ class ProvablyService:
                 raise ValueError("create_integration response missing 'api_key'")
             return uuid.UUID(str(result["id"])), str(api_key)
 
-    async def get_integration_intercepts_api_key(self) -> str:
-        """Find the intercepts integration and return its API key.
+    async def get_integration_intercepts_api_key(self, collection_id: uuid.UUID) -> str:
+        """Find the intercepts integration, verify collection access, and return its API key.
+
+        Args:
+            collection_id: The collection ID the integration must have access to.
 
         Returns:
             str: The API key for the intercepts integration.
 
         Raises:
-            ValueError: If the integration is not found or the API key is missing.
+            ValueError: If the integration is not found, does not have access to the
+                collection, or the API key is missing.
             ProvablyAPIError: If the server rejects the request.
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_integration_intercepts_id"):
             integrations = await api.list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
 
-            # Find the integration with the matching name
+            # Find the integration with the matching name that has access to the collection
+            def _matches(item: dict) -> bool:
+                if item.get("name") != PROVABLY_INTERCEPTS_TABLE:
+                    return False
+                return str(collection_id) in [str(c) for c in item.get("collections", [])]
+
             try:
-                match = next(item for item in integrations if item.get("name") == PROVABLY_INTERCEPTS_TABLE)
+                match = next(item for item in integrations if _matches(item))
             except StopIteration:
-                raise ValueError(f"Integration with name '{PROVABLY_INTERCEPTS_TABLE}' not found.")
+                raise ValueError(
+                    f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' with access to "
+                    f"collection {collection_id} was found."
+                )
 
             # Extract and return the API key
             api_key = match.get("api_key")
-            if not api_key:
-                raise ValueError(f"Integration '{PROVABLY_INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
-
-            return str(api_key)
-
-    async def get_integration_intercepts_api_key_by_id(
-        self, integration_id: uuid.UUID, collection_id: uuid.UUID
-    ) -> str:
-        """Validate an integration and return its API key.
-
-        Args:
-            integration_id: The ID of the integration to look up.
-            collection_id: The collection ID that must be associated with the integration.
-
-        Returns:
-            str: The API key of the integration.
-
-        Raises:
-            ValueError: If the integration name mismatches, the collection is not associated,
-                or the API key is missing.
-            ProvablyAPIError: If the server rejects the request.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_error_handler("get_integration_intercepts_api_key"):
-            integration = await api.get_integration_by_id(integration_id)
-
-            # Validate the Integration Name
-            if integration.get("name") != PROVABLY_INTERCEPTS_TABLE:
-                raise ValueError(
-                    f"Integration {integration_id} name mismatch. "
-                    f"Expected '{PROVABLY_INTERCEPTS_TABLE}', got '{integration.get('name')}'"
-                )
-
-            # Check if the collection_id is associated with this integration
-            associated_collections = integration.get("collections", [])
-            if str(collection_id) not in [str(c) for c in associated_collections]:
-                raise ValueError(f"Collection {collection_id} not found in integration {integration_id}")
-
-            # Extract and return the API key
-            api_key = integration.get("api_key")
             if not api_key:
                 raise ValueError(f"Integration '{PROVABLY_INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
 

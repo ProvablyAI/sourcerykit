@@ -55,7 +55,7 @@ class ProvablyBootstrapCache:
             )
         # --- Integration -------------------------------------------------
         try:
-            self.integration_key = await service.get_integration_intercepts_api_key()
+            self.integration_key = await service.get_integration_intercepts_api_key(self.collection_id)
         except ProvablyError:
             _log.info("integration_not_found_creating_new")
             _, self.integration_key = await service.create_integration(self.collection_id)
