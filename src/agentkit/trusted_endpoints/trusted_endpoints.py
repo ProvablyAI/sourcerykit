@@ -106,7 +106,7 @@ async def list_all_trusted_endpoints() -> list[str]:
     """
 
     urls = await list_all_trusted_endpoints_detailed()
-    return [url["url"] for url in urls if "url" in url]
+    return [ep["url"] for ep in urls]
 
 
 async def verify_claim_endpoints(
@@ -133,5 +133,4 @@ async def verify_claim_endpoints(
 
     # Raise an exception if any unauthorized endpoints were caught
     if untrusted_found:
-        # _log.warning("untrusted_endpoints_intercepted", urls=untrusted_found)
         raise ValueError(f"handoff has untrusted endpoints: {', '.join(untrusted_found)}")
