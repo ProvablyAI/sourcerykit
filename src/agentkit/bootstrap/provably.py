@@ -40,16 +40,13 @@ class ProvablyBootstrapCache:
             self.database_id = await service.create_database(self.middleware_id, database)
 
         # --- Collection -------------------------------------------------
-        # Schema and table IDs are only needed when creating the collection,
-        # so they are resolved lazily inside the except branch.
+        ids = await service.get_database_schema_id_and_table_id(self.middleware_id, database)
+        self.schema_id = ids["schema_id"]
+        self.table_id = ids["table_id"]
         try:
             self.collection_id = await service.get_collection_id()
         except ProvablyError:
             _log.info("collection_not_found_creating_new")
-            ids = await service.get_database_schema_id_and_table_id(self.middleware_id, database)
-            self.schema_id = ids["schema_id"]
-            self.table_id = ids["table_id"]
-
             columns = await service.get_columns_from_database(
                 self.middleware_id, self.database_id, self.schema_id, self.table_id
             )
@@ -61,10 +58,7 @@ class ProvablyBootstrapCache:
             self.integration_key = await service.get_integration_intercepts_api_key()
         except ProvablyError:
             _log.info("integration_not_found_creating_new")
-            integration_id = await service.create_integration(self.collection_id)
-            self.integration_key = await service.get_integration_intercepts_api_key_by_id(
-                integration_id, self.collection_id
-            )
+            _, self.integration_key = await service.create_integration(self.collection_id)
 
 
 # Module-level singleton.
