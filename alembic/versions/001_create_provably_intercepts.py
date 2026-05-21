@@ -31,10 +31,6 @@ def upgrade() -> None:
             created_at      TIMESTAMP NOT NULL DEFAULT NOW()
         )
     """)
-    op.execute("""
-        CREATE INDEX IF NOT EXISTS ix_provably_intercepts_agent_action
-        ON provably_intercepts (agent_id, action_name)
-    """)
 
 
 def downgrade() -> None:
