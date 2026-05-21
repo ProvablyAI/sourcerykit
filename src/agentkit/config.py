@@ -2,6 +2,7 @@
 
 import functools
 import os
+import uuid
 from dataclasses import dataclass
 
 
@@ -12,7 +13,7 @@ class Settings:
     api_key: str
     """AGENTKIT_API_KEY — Provably API key."""
 
-    org_id: str
+    org_id: uuid.UUID
     """AGENTKIT_ORG_ID — Provably organisation ID."""
 
     postgres_url: str
@@ -32,7 +33,7 @@ class Settings:
         missing = []
         if not self.api_key:
             missing.append("AGENTKIT_API_KEY")
-        if not self.org_id:
+        if not self.org_id or self.org_id == uuid.NIL:
             missing.append("AGENTKIT_ORG_ID")
         if not self.postgres_url:
             missing.append("AGENTKIT_POSTGRES_URL")
@@ -59,7 +60,7 @@ def get_settings() -> Settings:
 
     return Settings(
         api_key=_url("AGENTKIT_API_KEY"),
-        org_id=_s("AGENTKIT_ORG_ID"),
+        org_id=uuid.UUID(_s("AGENTKIT_ORG_ID")) if _s("AGENTKIT_ORG_ID") else uuid.NIL,
         postgres_url=_url("AGENTKIT_POSTGRES_URL"),
         provably_app=_url("AGENTKIT_PROVABLY_APP_URL") or "https://app.provably.ai",
         provably_api=_url("AGENTKIT_PROVABLY_API_URL") or "https://api.provably.ai",
