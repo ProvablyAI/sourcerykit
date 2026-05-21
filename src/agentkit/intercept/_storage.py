@@ -1,6 +1,7 @@
 import hashlib
 import json
 from typing import Any
+from uuid import UUID
 
 from agentkit.db import insert_intercept
 from agentkit.db.engine import get_engine
@@ -12,7 +13,7 @@ from agentkit.trusted_endpoints import is_endpoint_trusted
 _log = get_logger(__name__)
 
 
-def hash_payload(raw: Any) -> str:
+def hash_payload(raw: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(raw, sort_keys=True).encode()).hexdigest()
 
 
@@ -20,10 +21,10 @@ async def add_intercept_row(
     url: str,
     method: str,
     request_payload: dict[str, Any],
-    raw: Any,
+    raw: dict[str, Any],
     agent_id: str,
     action_name: str,
-) -> int | None:
+) -> UUID | None:
     if is_self_egress():
         return None
 
@@ -35,15 +36,16 @@ async def add_intercept_row(
         agent_id,
         action_name,
         url,
-        json.dumps(request_payload, sort_keys=True),
-        json.dumps(raw),
+        request_payload,
+        raw,
         hash_payload(raw),
     )
 
     async with engine.begin() as conn:
-        await conn.execute(stmt)
+        result = await conn.execute(stmt)
+        row = result.fetchone()
 
     _log.info("intercept_stored", agent_id=agent_id, action_name=action_name, url=url, method=method)
     await run_preprocess()
 
-    # TODO: return row id
+    return row[0] if row else None
