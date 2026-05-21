@@ -1,5 +1,6 @@
 """Read helpers for the ``provably_intercepts`` table."""
 
+import json
 from typing import Any
 
 from agentkit.db.engine import get_engine
@@ -24,4 +25,6 @@ async def load_latest_intercept_payload(
         if not row:
             return {}, None
 
-        return row.request_payload or {}, row.raw_response
+        req = json.loads(row.request_payload) if row.request_payload else {}
+        resp = json.loads(row.raw_response) if row.raw_response else None
+        return req, resp
