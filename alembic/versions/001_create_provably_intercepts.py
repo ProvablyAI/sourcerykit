@@ -21,15 +21,19 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.execute("""
         CREATE TABLE IF NOT EXISTS provably_intercepts (
-            id          SERIAL PRIMARY KEY,
-            agent_id    TEXT NOT NULL,
-            action_name TEXT NOT NULL,
-            source_url  TEXT NOT NULL,
-            request_payload TEXT NOT NULL DEFAULT '{}',
-            raw_response    TEXT NOT NULL,
-            response_hash   TEXT NOT NULL,
-            created_at  TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT timezone('utc', now())
+            id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            agent_id        VARCHAR(255) NOT NULL,
+            action_name     VARCHAR(255) NOT NULL,
+            source_url      TEXT NOT NULL,
+            request_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+            raw_response    JSONB NOT NULL,
+            response_hash   VARCHAR(64) NOT NULL,
+            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
+    """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_provably_intercepts_agent_action
+        ON provably_intercepts (agent_id, action_name)
     """)
 
 

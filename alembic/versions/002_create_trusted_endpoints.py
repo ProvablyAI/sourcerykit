@@ -21,16 +21,21 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.execute("""
         CREATE TABLE IF NOT EXISTS trusted_endpoints (
-            id             SERIAL PRIMARY KEY,
-            org_id         TEXT NOT NULL,
-            entry_type     TEXT NOT NULL DEFAULT 'endpoint',
-            normalized_url TEXT NOT NULL,
-            display_label  TEXT,
-            policy_version TEXT DEFAULT 'v1',
-            created_at     TIMESTAMPTZ DEFAULT NOW(),
-            revoked_at     TIMESTAMPTZ,
-            created_by     TEXT
+            id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            org_id             UUID NOT NULL,
+            entry_type         VARCHAR(50) NOT NULL DEFAULT 'endpoint',
+            normalized_url     TEXT NOT NULL,
+            display_label      VARCHAR(255),
+            policy_version     VARCHAR(20) DEFAULT 'v1',
+            created_at         TIMESTAMPTZ DEFAULT NOW(),
+            revoked_at         TIMESTAMPTZ,
+            created_by         VARCHAR(255)
         )
+    """)
+    op.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uix_trusted_endpoints_org_url_active
+        ON trusted_endpoints (org_id, normalized_url)
+        WHERE revoked_at IS NULL
     """)
 
 
