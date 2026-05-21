@@ -2,8 +2,8 @@ from agentkit.bootstrap.provably import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCa
 from agentkit.db.engine import get_engine
 from agentkit.db.schema import metadata
 from agentkit.handoff._preprocess import run_preprocess
+from agentkit.intercept import init_interceptor
 from agentkit.logger import get_logger
-from provably import init_interceptor
 
 _log = get_logger(__name__)
 
