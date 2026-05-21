@@ -17,9 +17,15 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
 
     # TODO: Refactor. Not a good idea to pass the API key via the payload
     api_key = payload.integration_api_key
+    query_ids = [claim.query_id for claim in payload.claims]
 
     try:
-        await verify_claim_endpoints(payload)
+        with provably_self_egress():
+            # Overlap the endpoint trust check (DB) with proof verification submission (HTTP)
+            await asyncio.gather(
+                verify_claim_endpoints(payload),
+                asyncio.gather(*(service.verify_proof(qid, api_key) for qid in query_ids)),
+            )
     except ValueError as e:
         return {"outcome": Outcome.CAUGHT, "per_claim": [], "errors": [f"trust gate: {e}"]}
 
@@ -27,27 +33,25 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
     errors: list[str] = []
 
     with provably_self_egress():
-        query_ids = [claim.query_id for claim in payload.claims]
+        # Wait for all proof verifications concurrently
+        verification_results = await asyncio.gather(
+            *(service.wait_for_proof_verification(qid, api_key) for qid in query_ids),
+            return_exceptions=True,
+        )
 
-        # Verify proofs concurrently
-        await asyncio.gather(*(service.verify_proof(qid, api_key) for qid in query_ids))
+    for claim, result in zip(payload.claims, verification_results):
+        if isinstance(result, BaseException):
+            _log.exception("failed_to_verify_claim_proof", query_id=claim.query_id)
+            errors.append(f"verification_failed: {str(result)}")
+            continue
 
-        # Evaluate claim verdicts
-        for claim, query_id in zip(payload.claims, query_ids):
-            try:
-                result = await service.wait_for_proof_verification(query_id, api_key)
-                coerced_val = _coerce_query_result_to_indexed_value(result.get("result"))
-
-                verdict = {
-                    **evaluate_claim(claim, coerced_val),
-                    "query_id": str(query_id),
-                    **_extract_timings(result),
-                }
-                per_claim.append(verdict)
-            except Exception as e:
-                _log.exception("failed_to_verify_claim_proof", query_id=query_id)
-                errors.append(f"verification_failed: {str(e)}")
-                continue
+        coerced_val = _coerce_query_result_to_indexed_value(result.get("result"))
+        verdict = {
+            **evaluate_claim(claim, coerced_val),
+            "query_id": str(claim.query_id),
+            **_extract_timings(result),
+        }
+        per_claim.append(verdict)
 
     return {"outcome": _resolve_outcome(per_claim, errors), "per_claim": per_claim, "errors": errors}
 
