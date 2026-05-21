@@ -18,12 +18,6 @@ async def bootstrap_system() -> None:
     # Initialize all required Provably resources
     await _BOOTSTRAP_INSTANCE.run_handshake()
 
-    # Run preprocess
-    from agentkit.handoff._preprocess import run_preprocess
-
-    await run_preprocess()
-
-    # 4. Initialize interceptor
     init_interceptor()
     _log.info("system_bootstrap_completed")
 

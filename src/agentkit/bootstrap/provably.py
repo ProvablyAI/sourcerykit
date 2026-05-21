@@ -24,41 +24,57 @@ class ProvablyBootstrapCache:
 
     async def run_handshake(self) -> None:
         """Resolve or create all required Provably resources."""
-        # --- Middleware --------------------------------------------------
-        try:
-            self.middleware_id = await service.get_middleware_id()
-        except ProvablyError:
-            _log.info("middleware_not_found_creating_new")
-            self.middleware_id = await service.create_middleware()
+        self.middleware_id = await self._resolve_middleware()
 
-        # --- Database ---------------------------------------------------
-        database = get_connection_info()
-        try:
-            self.database_id = await service.get_database_id(self.middleware_id, database)
-        except ProvablyError:
-            _log.info("database_not_found_creating_new")
-            self.database_id = await service.create_database(self.middleware_id, database)
+        connection_info = get_connection_info()
+        self.database_id = await self._resolve_database(connection_info)
 
-        # --- Collection -------------------------------------------------
-        ids = await service.get_database_schema_id_and_table_id(self.middleware_id, database)
+        ids = await service.get_database_schema_id_and_table_id(self.middleware_id, connection_info)
         self.schema_id = ids["schema_id"]
         self.table_id = ids["table_id"]
+
+        self.collection_id = await self._resolve_collection()
+        self.integration_key = await self._resolve_integration_key()
+
+    async def _resolve_middleware(self) -> UUID:
         try:
-            self.collection_id = await service.get_collection_id()
+            return await service.get_middleware_id()
+        except ProvablyError:
+            _log.info("middleware_not_found_creating_new")
+            return await service.create_middleware()
+
+    async def _resolve_database(self, database) -> UUID:
+        assert self.middleware_id is not None
+        try:
+            return await service.get_database_id(self.middleware_id, database)
+        except ProvablyError:
+            _log.info("database_not_found_creating_new")
+            return await service.create_database(self.middleware_id, database)
+
+    async def _resolve_collection(self) -> UUID:
+        assert self.middleware_id is not None
+        assert self.database_id is not None
+        assert self.schema_id is not None
+        assert self.table_id is not None
+        try:
+            return await service.get_collection_id()
         except ProvablyError:
             _log.info("collection_not_found_creating_new")
             columns = await service.get_columns_from_database(
                 self.middleware_id, self.database_id, self.schema_id, self.table_id
             )
-            self.collection_id = await service.create_collection(
+            return await service.create_collection(
                 self.middleware_id, self.database_id, self.schema_id, self.table_id, columns
             )
-        # --- Integration -------------------------------------------------
+
+    async def _resolve_integration_key(self) -> str:
+        assert self.collection_id is not None
         try:
-            self.integration_key = await service.get_integration_intercepts_api_key(self.collection_id)
+            return await service.get_integration_intercepts_api_key(self.collection_id)
         except ProvablyError:
             _log.info("integration_not_found_creating_new")
-            _, self.integration_key = await service.create_integration(self.collection_id)
+            _, key = await service.create_integration(self.collection_id)
+            return key
 
 
 # Module-level singleton.
