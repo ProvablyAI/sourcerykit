@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Mapping
 from typing import Any
 
@@ -12,28 +13,26 @@ from agentkit.trusted_endpoints.trusted_endpoints import list_all_trusted_endpoi
 
 _log = get_logger(__name__)
 
-DEFAULT_HANDOFF_TASK: str = "Handoff verification via handoff_evaluate_url."
+DEFAULT_HANDOFF_TASK: str = "Handoff verification via evaluate_url."
 
 
 async def build_handoff_payload(
     fetch_and_claim: Mapping[str, Any] | dict[str, Any] | None,
     *,
-    run_id: str | None = None,
+    run_id: uuid.UUID | None = None,
     task: str = DEFAULT_HANDOFF_TASK,
     intercept_agent_id: str = "fetch_and_claim",
-    handoff_field_guide: dict[str, str] | None = None,
+    field_guide: dict[str, str] | None = None,
     instructions: str | None = None,
 ) -> HandoffPayload:
     """Builds the complete signed metadata payload container for external verification runs."""
-
-    blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
 
     # Verify that Provably bootstrapping sequence successfully cleared
     provably = get_bootstrap()
     if not provably.integration_key:
         raise RuntimeError("Provably infrastructure bootstrapping incomplete or uninitialized.")
 
-    blob = dict(fetch_and_claim) if fetch_and_claim else {}
+    blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
 
     # Extract and resolve claim arrays
     claims, query_urls, query_ids = await _build_claims(
@@ -45,7 +44,7 @@ async def build_handoff_payload(
     settings = get_settings()
 
     # Determine guide structures cleanly using ternary operators
-    guide = handoff_field_guide if handoff_field_guide is not None else field_descriptions()
+    guide = field_guide if field_guide is not None else field_descriptions()
     instr = instructions if instructions is not None else default_instructions()
 
     trusted_endpoint_registry = await list_all_trusted_endpoints()
@@ -54,16 +53,15 @@ async def build_handoff_payload(
         provably_mcp_url=settings.provably_mcp,
         provably_org_id=settings.org_id,
         integration_api_key=provably.integration_key,
-        handoff_evaluate_url="",  # TODO: to be added after a2a communication management
-        handoff_contract_version="2.0",
-        handoff_field_guide=guide,
+        evaluate_url="",  # TODO: to be added after a2a communication management
+        field_guide=guide,
         instructions=instr,
-        query_record_ids=query_ids,
+        query_ids=query_ids,
         trusted_endpoint_registry=trusted_endpoint_registry,
         run_id=run_id,
         claims=claims,
         verification_results=[],
-        query_record_urls=query_urls,
+        query_urls=query_urls,
         task=task,
         reasoning=reasoning,
     )
@@ -72,7 +70,7 @@ async def build_handoff_payload(
 async def _build_claims(
     fetch_and_claim_json: Any,
     intercept_agent_id: str,
-) -> tuple[list[HandoffClaim], list[str], list[str]]:
+) -> tuple[list[HandoffClaim], list[str], list[uuid.UUID]]:
     """Aggregates, resolves intercept IDs, and emits tracking metadata."""
 
     if not isinstance(fetch_and_claim_json, dict):
@@ -84,7 +82,7 @@ async def _build_claims(
 
     claims: list[HandoffClaim] = []
     urls: list[str] = []
-    ids: list[str] = []
+    ids: list[uuid.UUID] = []
 
     for raw in raw_claims:
         if not isinstance(raw, dict):
@@ -95,11 +93,11 @@ async def _build_claims(
             continue
 
         # Fetch underlying response blobs
-        request_payload, response_payload = await load_latest_intercept_payload(action_name, intercept_agent_id)
+        request_payload, response_payload = await load_latest_intercept_payload(intercept_agent_id, action_name)
         row_id = get_intercept_row_id(intercept_agent_id, action_name)
 
         # Resolve tracking handles
-        qid, qurl = "", ""
+        qid, qurl = uuid.NIL, ""
         try:
             qid, qurl = await create_query_record_for_intercept(
                 action_name,
@@ -132,7 +130,7 @@ async def _build_claims(
                 claimed_value=raw.get("claimed_value"),
                 request_payload=request_payload,
                 response_payload=response_payload,
-                query_id=str(qid) if qid else "",
+                query_id=qid,
                 verification_mode=verification_mode,
                 json_path=str(raw.get("json_path") or ""),
                 expected_json_schema=schema,
