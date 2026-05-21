@@ -283,14 +283,14 @@ class ProvablyService:
     # Integrations
     # ------------------------------------------------------------------
 
-    async def create_integration(self, collection_id: uuid.UUID) -> uuid.UUID:
+    async def create_integration(self, collection_id: uuid.UUID) -> tuple[uuid.UUID, str]:
         """Register a new agent integration for the intercepts collection.
 
         Args:
             collection_id: The ID of the collection to associate with the integration.
 
         Returns:
-            uuid.UUID: The ID of the newly created integration.
+            tuple[uuid.UUID, str]: The ID and full API key of the newly created integration.
 
         Raises:
             ProvablyAPIError: If the server rejects the request.
@@ -308,7 +308,10 @@ class ProvablyService:
 
         async with provably_error_handler("create_integration"):
             result = await api.create_integration(integration)
-            return uuid.UUID(str(result["id"]))
+            api_key = result.get("api_key")
+            if not api_key:
+                raise ValueError("create_integration response missing 'api_key'")
+            return uuid.UUID(str(result["id"])), str(api_key)
 
     async def get_integration_intercepts_api_key(self) -> str:
         """Find the intercepts integration and return its API key.
@@ -322,7 +325,7 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_integration_intercepts_id"):
-            integrations = await api.list_integrations()
+            integrations = await api.list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
 
             # Find the integration with the matching name
             try:
@@ -457,7 +460,7 @@ class ProvablyService:
         """
         async with provably_error_handler("run_query"):
             result = await api.run_query(middleware_id, collection_id, sql)
-            return uuid.UUID(str(result["id"]))
+            return uuid.UUID(str(result["query_id"]))
 
     async def wait_for_proof_computation(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
         """

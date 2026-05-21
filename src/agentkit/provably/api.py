@@ -213,15 +213,19 @@ class ProvablyAPI:
         path = f"{self._org_path()}/integrations"
         return await http.post(path, body)
 
-    async def list_integrations(self) -> Any:
+    async def list_integrations(self, query: str | None = None) -> Any:
         """
         List all integrations for the configured org.
+
+        Args:
+            query: Optional search string to filter integrations by name.
 
         Returns:
             Any: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/integrations"
-        return await http.get(path)
+        params = {"query": query} if query is not None else None
+        return await http.get(path, params=params)
 
     async def get_integration_by_id(self, integration_id: uuid.UUID) -> Any:
         """
