@@ -31,7 +31,12 @@ def upgrade() -> None:
             created_at      TIMESTAMP NOT NULL DEFAULT NOW()
         )
     """)
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_provably_intercepts_agent_action
+        ON provably_intercepts (agent_id, action_name)
+    """)
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS ix_provably_intercepts_agent_action")
     op.execute("DROP TABLE IF EXISTS provably_intercepts")

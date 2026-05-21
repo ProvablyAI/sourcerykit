@@ -3,6 +3,7 @@
 from sqlalchemy import (
     VARCHAR,
     Column,
+    Index,
     MetaData,
     Table,
     Text,
@@ -37,6 +38,12 @@ provably_intercepts = Table(
     ),
 )
 
+Index(
+    "ix_provably_intercepts_agent_action",
+    provably_intercepts.c.agent_id,
+    provably_intercepts.c.action_name,
+)
+
 TRUSTED_ENDPOINTS_TABLE = "trusted_endpoints"
 
 trusted_endpoints = Table(
@@ -56,6 +63,14 @@ trusted_endpoints = Table(
     Column("created_at", TIMESTAMP(timezone=False), server_default=text("NOW()")),
     Column("revoked_at", TIMESTAMP(timezone=False)),
     Column("created_by", VARCHAR(255)),
+)
+
+Index(
+    "uix_trusted_endpoints_org_url_active",
+    trusted_endpoints.c.org_id,
+    trusted_endpoints.c.normalized_url,
+    postgresql_where=trusted_endpoints.c.revoked_at.is_(None),
+    unique=True,
 )
 
 

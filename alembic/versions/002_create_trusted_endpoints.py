@@ -32,7 +32,13 @@ def upgrade() -> None:
             created_by         VARCHAR(255)
         )
     """)
+    op.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS uix_trusted_endpoints_org_url_active
+        ON trusted_endpoints (org_id, normalized_url)
+        WHERE revoked_at IS NULL
+    """)
 
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS uix_trusted_endpoints_org_url_active")
     op.execute("DROP TABLE IF EXISTS trusted_endpoints")
