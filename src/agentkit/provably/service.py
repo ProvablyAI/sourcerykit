@@ -150,7 +150,7 @@ class ProvablyService:
             "is_general_sql_queries_enabled": True,
             "schema_id": str(schema_id),
             "table_id": str(table_id),
-            "enabled_columns": [str(c) for c in columns],
+            "enabled_columns": [{"id": str(c)} for c in columns],
         }
 
         async with provably_error_handler("create_collection"):
