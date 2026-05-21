@@ -40,7 +40,7 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
 
                 verdict = {
                     **evaluate_claim(claim, coerced_val),
-                    "query_record_id": query_id,
+                    "query_id": str(query_id),
                     **_extract_timings(result),
                 }
                 per_claim.append(verdict)

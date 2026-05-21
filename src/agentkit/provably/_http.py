@@ -43,10 +43,13 @@ class ProvablyHTTPClient:
             response = await self._request(method, path, api_key=api_key, **kwargs)
             response.raise_for_status()
 
-            if not response.content:
+            if not response.content or not response.content.strip():
                 return {}
 
-            return response.json()
+            try:
+                return response.json()
+            except ValueError:
+                return {}
 
         except httpx.HTTPStatusError as e:
             # 400/500 errors from the server
