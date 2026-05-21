@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "alembic>=1.13",
+    "greenlet>=3.0",
     "httpx>=0.26",
     "jsonschema>=4.0",
     "psycopg[binary]>=3.1",
