@@ -25,10 +25,10 @@ def upgrade() -> None:
             agent_id        VARCHAR(255) NOT NULL,
             action_name     VARCHAR(255) NOT NULL,
             source_url      TEXT NOT NULL,
-            request_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-            raw_response    JSONB NOT NULL,
+            request_payload TEXT NOT NULL DEFAULT '{}',
+            raw_response    TEXT NOT NULL,
             response_hash   VARCHAR(64) NOT NULL,
-            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            created_at      TIMESTAMP NOT NULL DEFAULT NOW()
         )
     """)
     op.execute("""

@@ -1,5 +1,6 @@
 """SQLAlchemy Core DML statements for the ``provably_intercepts`` table."""
 
+import json
 from uuid import UUID
 
 from sqlalchemy import and_, insert, select
@@ -34,8 +35,8 @@ def insert_intercept(
             agent_id=agent_id,
             action_name=action_name,
             source_url=source_url,
-            request_payload=request_payload,
-            raw_response=raw_response,
+            request_payload=json.dumps(request_payload),
+            raw_response=json.dumps(raw_response),
             response_hash=response_hash,
         )
         .returning(provably_intercepts.c.id)

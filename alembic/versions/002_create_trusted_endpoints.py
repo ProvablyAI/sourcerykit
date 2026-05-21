@@ -27,8 +27,8 @@ def upgrade() -> None:
             normalized_url     TEXT NOT NULL,
             display_label      VARCHAR(255),
             policy_version     VARCHAR(20) DEFAULT 'v1',
-            created_at         TIMESTAMPTZ DEFAULT NOW(),
-            revoked_at         TIMESTAMPTZ,
+            created_at         TIMESTAMP DEFAULT NOW(),
+            revoked_at         TIMESTAMP,
             created_by         VARCHAR(255)
         )
     """)

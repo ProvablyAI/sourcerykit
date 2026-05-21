@@ -9,7 +9,7 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP, UUID
+from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
 
 metadata = MetaData()
 
@@ -27,12 +27,12 @@ provably_intercepts = Table(
     Column("agent_id", VARCHAR(255), nullable=False),
     Column("action_name", VARCHAR(255), nullable=False),
     Column("source_url", Text, nullable=False),
-    Column("request_payload", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
-    Column("raw_response", JSONB, nullable=False),
+    Column("request_payload", Text, nullable=False, server_default=text("'{}'")),
+    Column("raw_response", Text, nullable=False),
     Column("response_hash", VARCHAR(64), nullable=False),
     Column(
         "created_at",
-        TIMESTAMP(timezone=True),
+        TIMESTAMP(timezone=False),
         nullable=False,
         server_default=text("NOW()"),
     ),
@@ -60,8 +60,8 @@ trusted_endpoints = Table(
     Column("normalized_url", Text, nullable=False),
     Column("display_label", VARCHAR(255)),
     Column("policy_version", VARCHAR(20), server_default=text("'v1'")),
-    Column("created_at", TIMESTAMP(timezone=True), server_default=text("NOW()")),
-    Column("revoked_at", TIMESTAMP(timezone=True)),
+    Column("created_at", TIMESTAMP(timezone=False), server_default=text("NOW()")),
+    Column("revoked_at", TIMESTAMP(timezone=False)),
     Column("created_by", VARCHAR(255)),
 )
 
