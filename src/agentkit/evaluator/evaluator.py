@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any
 
+from agentkit.config import get_settings
 from agentkit.evaluator.eval_modes import evaluate_claim
 from agentkit.intercept._self_egress import provably_self_egress
 from agentkit.logger import get_logger
@@ -15,8 +16,11 @@ _log = get_logger(__name__)
 async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
     """Validates trusted endpoints and verifies cryptographic proof loops for all payload claims."""
 
-    # TODO: Refactor. Not a good idea to pass the API key via the payload
-    api_key = payload.integration_api_key
+    # TODO: Refactor.
+    # Not a good idea to pass the API key via the payload (api_key = payload.integration_api_key)
+    # Use a new generated integration apikey with limited access
+    api_key = get_settings().api_key
+
     query_ids = [claim.query_id for claim in payload.claims]
 
     try:
