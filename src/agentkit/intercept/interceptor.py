@@ -1,7 +1,7 @@
 """HTTP intercept: record LLM provider responses into Postgres."""
 
-from collections.abc import Generator
-from contextlib import contextmanager
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from typing import Any
 from uuid import UUID
@@ -20,9 +20,9 @@ _last_intercept_row_id: UUID | None = None
 _action_row_ids: dict[tuple[str, str], UUID] = {}
 
 
-@contextmanager
-def intercept_context(*, agent_id: str, action_name: str) -> Generator[None, None, None]:
-    """Scoped tagging context manager for tracking HTTP traffic."""
+@asynccontextmanager
+async def async_intercept_context(*, agent_id: str, action_name: str) -> AsyncGenerator[None, None]:
+    """Scoped tagging context manager for tracking HTTP traffic (async)."""
     t_agent = _ctx_agent_id.set(agent_id)
     t_action = _ctx_action_name.set(action_name)
     try:
