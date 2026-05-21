@@ -3,13 +3,15 @@
 import json
 from uuid import UUID
 
-from sqlalchemy import and_, insert, select
+from sqlalchemy import and_, column, insert, select, text
+from sqlalchemy import table as sa_table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.selectable import Select
 
 from agentkit.db.schema import provably_intercepts
 
 _PG = postgresql.dialect()
+_t = sa_table(provably_intercepts.name, *[column(c.name) for c in provably_intercepts.c])
 
 
 def insert_intercept(
@@ -48,8 +50,8 @@ def select_intercept_by_id(row_id: UUID) -> str:
 
     SELECT * FROM provably_intercepts WHERE id = :row_id
     """
-    stmt = select(provably_intercepts).where(provably_intercepts.c.id == row_id)
-    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string
+    stmt = select(text("*")).select_from(_t).where(column(_t.c.id.name) == row_id)
+    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
 
 def select_intercepts_by_action(action_name: str) -> str:
@@ -57,8 +59,8 @@ def select_intercepts_by_action(action_name: str) -> str:
 
     SELECT * FROM provably_intercepts WHERE action_name = :action_name
     """
-    stmt = select(provably_intercepts).where(provably_intercepts.c.action_name == action_name)
-    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string
+    stmt = select(text("*")).select_from(_t).where(column(_t.c.action_name.name) == action_name)
+    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
 
 def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) -> Select:
