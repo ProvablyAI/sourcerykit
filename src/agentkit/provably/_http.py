@@ -3,10 +3,10 @@
 from typing import Any
 
 import httpx
-from config import Settings, get_settings
-from logger import get_logger
 
+from agentkit.config import Settings, get_settings
 from agentkit.intercept._self_egress import provably_self_egress
+from agentkit.logger import get_logger
 
 _log = get_logger(__name__)
 

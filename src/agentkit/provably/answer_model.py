@@ -24,10 +24,10 @@ class TabularData(BaseModel):
 
     def extract_value(self) -> Any:
         """Unpacks tabular results down to the core target payload."""
-        if not self.rows or not self.rows:
+        if not self.rows:
             return {"columns": self.columns, "rows": self.rows}
 
-        row0 = self.rows
+        row0 = self.rows[0]
         # Extracted column names are normalized to lowercase
         col_names = [str(c.get("name") or "").lower() for c in self.columns]
 
@@ -37,7 +37,7 @@ class TabularData(BaseModel):
 
         # Target 2: Single cell scalar
         if len(col_names) == 1 and len(row0) == 1:
-            return _safe_deserialize(row0)
+            return _safe_deserialize(row0[0])
 
         return {"columns": self.columns, "rows": self.rows}
 

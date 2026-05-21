@@ -44,9 +44,6 @@ class ProvablyAPI:
         """
         List all middlewares.
 
-        Args:
-            middleware_id: The ID of the middleware to query.
-
         Returns:
             Any: The raw JSON response from the API.
         """
@@ -285,7 +282,7 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/query"
-        return await http.post(path, {"query": sql, "require_proof": True, "collection_id": collection_id})
+        return await http.post(path, {"query": sql, "require_proof": True, "collection_id": str(collection_id)})
 
     async def get_query(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """

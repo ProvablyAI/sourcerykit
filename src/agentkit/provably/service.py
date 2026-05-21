@@ -141,16 +141,16 @@ class ProvablyService:
         collection = {
             "name": PROVABLY_INTERCEPTS_TABLE,
             "publicity_status": "private",
-            "middleware_id": middleware_id,
-            "database_id": database_id,
+            "middleware_id": str(middleware_id),
+            "database_id": str(database_id),
             "is_descriptions_generated": False,
             "entities": [],
             "integrations": [],
             "query_price": 0,
             "is_general_sql_queries_enabled": True,
-            "schema_id": schema_id,
-            "table_id": table_id,
-            "enabled_columns": columns,
+            "schema_id": str(schema_id),
+            "table_id": str(table_id),
+            "enabled_columns": [str(c) for c in columns],
         }
 
         async with provably_error_handler("create_collection"):
@@ -303,7 +303,7 @@ class ProvablyService:
             "name": PROVABLY_INTERCEPTS_TABLE,
             "role": "owner",
             "type": "agent",
-            "collections": [collection_id],
+            "collections": [str(collection_id)],
         }
 
         async with provably_error_handler("create_integration"):
@@ -407,16 +407,16 @@ class ProvablyService:
         Args:
             middleware_id: The ID of the middleware.
             table_id: The ID of the table being preprocessed.
-            timeout: maximum seconds to wait (default 10 minutes).
+            timeout: maximum seconds to wait (default 60 seconds).
 
         Raises:
             RuntimeError: If the status becomes 'error'.
             TimeoutError: If the process exceeds the timeout.
         """
 
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
-        while (asyncio.get_event_loop().time() - start_time) < timeout:
+        while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("get_preprocess_status"):
                 preprocess = await api.get_preprocess_status(middleware_id, table_id)
 
@@ -475,9 +475,9 @@ class ProvablyService:
             RuntimeError: If the query fails on the backend.
             TimeoutError: If the terminal state isn't reached within the timeout.
         """
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
-        while (asyncio.get_event_loop().time() - start_time) < timeout:
+        while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_computation"):
                 data = await api.get_query(query_id)
 
@@ -514,7 +514,7 @@ class ProvablyService:
             ProvablyAPIError: If the server rejects the request.
             ProvablyConnectionError: If the network is unreachable.
         """
-        async with provably_error_handler("run_query"):
+        async with provably_error_handler("verify_proof"):
             await api.verify_proof(query_id, api_key=integration_api_key)
 
     async def wait_for_proof_verification(
@@ -535,9 +535,9 @@ class ProvablyService:
             RuntimeError: If verification_status becomes 'Failed'.
             TimeoutError: If verification doesn't complete within the timeout.
         """
-        start_time = asyncio.get_event_loop().time()
+        start_time = asyncio.get_running_loop().time()
 
-        while (asyncio.get_event_loop().time() - start_time) < timeout:
+        while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_verification"):
                 data = await api.get_query(query_id, api_key=integration_api_key)
 
