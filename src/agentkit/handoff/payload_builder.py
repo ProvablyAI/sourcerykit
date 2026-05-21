@@ -97,19 +97,11 @@ async def _build_claims(
         row_id = get_intercept_row_id(intercept_agent_id, action_name)
 
         # Resolve tracking handles
-        qid, qurl = uuid.NIL, ""
-        try:
-            qid, qurl = await create_query_record_for_intercept(
-                action_name,
-                agent_id=intercept_agent_id,
-                row_id=row_id,
-            )
-        except Exception as e:
-            _log.warning(
-                "query_record_create_failed",
-                action_name=action_name,
-                error=str(e),
-            )
+        qid, qurl = await create_query_record_for_intercept(
+            action_name,
+            agent_id=intercept_agent_id,
+            row_id=row_id,
+        )
 
         ids.append(qid)
         urls.append(qurl)
