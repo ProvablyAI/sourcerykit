@@ -62,7 +62,7 @@ async def provably_error_handler(service: str):
     except (ValueError, TypeError, KeyError) as e:
         # Log data corruption or unexpected schema changes
         _log.error(f"provably_data_invalid_{service}", error=str(e))
-        raise ProvablyDataError(f"Provably API returned invalid data for {service_name}.") from e
+        raise ProvablyDataError(f"Provably API returned invalid data for {service_name}: {e}") from e
 
     except httpx.RequestError as e:
         # Log network-level failures
