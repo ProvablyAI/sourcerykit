@@ -1,5 +1,7 @@
 """SQLAlchemy Core DML statements for the ``provably_intercepts`` table."""
 
+from uuid import UUID
+
 from sqlalchemy import and_, insert, select
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.selectable import Select
@@ -13,8 +15,8 @@ def insert_intercept(
     agent_id: str,
     action_name: str,
     source_url: str,
-    request_payload: str,
-    raw_response: str,
+    request_payload: dict[str, object],
+    raw_response: dict[str, object],
     response_hash: str,
 ):
     """Return a SQLAlchemy Core INSERT statement for a new intercept row.
@@ -40,7 +42,7 @@ def insert_intercept(
     )
 
 
-def select_intercept_by_id(row_id: int) -> str:
+def select_intercept_by_id(row_id: UUID) -> str:
     """Return a SQL string that fetches a single row by primary key.
 
     SELECT * FROM provably_intercepts WHERE id = :row_id
@@ -58,14 +60,14 @@ def select_intercepts_by_action(action_name: str) -> str:
     return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string
 
 
-def select_intercepts_by_id_and_action(row_id: str, action_name: str) -> Select:
+def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) -> Select:
     """Return a Select construct that fetches all rows matching ``row_id`` and ``action_name``.
 
     Equivalent raw SQL::
 
         SELECT * FROM provably_intercepts
-        WHERE action_name = :action_name AND id = :row_id
+        WHERE action_name = :action_name AND agent_id = :agent_id
     """
     return select(provably_intercepts).where(
-        and_(provably_intercepts.c.action_name == action_name, provably_intercepts.c.id == row_id)
+        and_(provably_intercepts.c.action_name == action_name, provably_intercepts.c.agent_id == agent_id)
     )
