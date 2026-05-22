@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import and_, exists, literal, select
 from sqlalchemy.dialects.postgresql import insert
 
-from agentkit.db.schema import trusted_endpoints
+from agentkit.db._schema import trusted_endpoints
 
 _ACTIVE = and_(
     trusted_endpoints.c.entry_type == "endpoint",

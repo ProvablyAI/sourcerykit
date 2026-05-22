@@ -3,8 +3,8 @@ import json
 from typing import Any
 from uuid import UUID
 
-from agentkit.db.engine import get_engine
-from agentkit.db.intercepts import insert_intercept
+from agentkit.db._engine import get_engine
+from agentkit.db._intercepts import insert_intercept
 from agentkit.errors import AgentKitTrustError
 from agentkit.intercept._self_egress import is_self_egress
 from agentkit.logger import get_logger

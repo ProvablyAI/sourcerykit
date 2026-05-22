@@ -5,8 +5,8 @@ from typing import Any
 
 from agentkit.bootstrap.bootstrap import get_bootstrap
 from agentkit.config import get_settings
+from agentkit.handoff._guide import default_instructions, field_descriptions
 from agentkit.handoff._query_records import create_query_record_for_intercept
-from agentkit.handoff.guide import default_instructions, field_descriptions
 from agentkit.intercept._loader import load_latest_intercept_payload
 from agentkit.intercept.interceptor import get_intercept_row_id
 from agentkit.logger import get_logger

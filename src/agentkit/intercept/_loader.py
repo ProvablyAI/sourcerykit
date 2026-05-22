@@ -3,8 +3,8 @@
 import json
 from typing import Any
 
-from agentkit.db.engine import get_engine
-from agentkit.db.intercepts import select_intercepts_by_agent_id_and_action
+from agentkit.db._engine import get_engine
+from agentkit.db._intercepts import select_intercepts_by_agent_id_and_action
 from agentkit.errors import AgentKitStorageError
 from agentkit.logger import get_logger
 

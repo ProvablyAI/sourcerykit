@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from agentkit.bootstrap.bootstrap import get_bootstrap
-from agentkit.db.intercepts import select_intercept_by_id, select_intercepts_by_action
+from agentkit.db._intercepts import select_intercept_by_id, select_intercepts_by_action
 from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
 from agentkit.provably.service import service

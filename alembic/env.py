@@ -1,8 +1,8 @@
 import asyncio
 from logging.config import fileConfig
 
-from agentkit.db.engine import get_engine
-from agentkit.db.schema import metadata as target_metadata
+from agentkit.db._engine import get_engine
+from agentkit.db._schema import metadata as target_metadata
 from alembic import context
 
 # this is the Alembic Config object, which provides

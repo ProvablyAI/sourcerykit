@@ -3,6 +3,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from agentkit.config import get_settings
+from agentkit.db._engine import get_engine
 from agentkit.db._trusted_endpoints import (
     insert_trusted_endpoint as db_insert_trusted_endpoint,
 )
@@ -10,7 +11,6 @@ from agentkit.db._trusted_endpoints import (
     select_active_trusted_endpoints,
     select_trusted_endpoint_prefix,
 )
-from agentkit.db.engine import get_engine
 from agentkit.errors import AgentKitStorageError, AgentKitTrustError
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffPayload

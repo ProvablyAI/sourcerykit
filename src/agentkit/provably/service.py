@@ -6,11 +6,11 @@ import asyncio
 import uuid
 from typing import Any
 
-from agentkit.db.engine import ConnectionInfo
-from agentkit.db.schema import PROVABLY_INTERCEPTS_TABLE
+from agentkit.db._engine import ConnectionInfo
+from agentkit.db._schema import PROVABLY_INTERCEPTS_TABLE
 from agentkit.logger import get_logger
-from agentkit.provably.api import api
-from agentkit.provably.errors import provably_error_handler
+from agentkit.provably._api import api
+from agentkit.provably._errors import provably_error_handler
 
 _log = get_logger(__name__)
 

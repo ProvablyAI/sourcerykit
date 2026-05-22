@@ -8,7 +8,7 @@ from sqlalchemy import table as sa_table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.selectable import Select
 
-from agentkit.db.schema import provably_intercepts
+from agentkit.db._schema import provably_intercepts
 
 _PG = postgresql.dialect()
 _t = sa_table(provably_intercepts.name, *[column(c.name) for c in provably_intercepts.c])
