@@ -47,11 +47,6 @@ def get_intercept_row_id(agent_id: str, action_name: str) -> UUID | None:
     return _action_row_ids.get((agent_id, action_name))
 
 
-def clear_intercept_row_ids() -> None:
-    """Reset the tracking registry map completely at the end of each run."""
-    _action_row_ids.clear()
-
-
 async def _record(url: str, method: str, request_payload: dict[str, Any], raw: dict[str, Any]) -> None:
     """Persist an intercepted request/response pair and cache the returned row id."""
     agent_id = _ctx_agent_id.get()

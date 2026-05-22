@@ -72,8 +72,3 @@ Index(
     postgresql_where=trusted_endpoints.c.revoked_at.is_(None),
     unique=True,
 )
-
-
-def get_column_names(table: Table) -> list[str]:
-    """Return the list of column names for the given table."""
-    return list(table.columns.keys())
