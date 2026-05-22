@@ -72,8 +72,8 @@ async def _record(url: str, method: str, request_payload: dict[str, Any], raw: d
             _action_row_ids[(agent_id, action_name)] = row_id
             global _last_intercept_row_id
             _last_intercept_row_id = row_id
-    except Exception as e:
-        _log.warning("intercept_record_failed", agent_id=agent_id, action_name=action_name, error=str(e))
+    except Exception:
+        _log.exception("intercept_record_failed", agent_id=agent_id, action_name=action_name)
 
 
 def init_interceptor() -> None:
