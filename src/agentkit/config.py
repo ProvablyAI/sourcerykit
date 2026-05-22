@@ -41,7 +41,7 @@ class Settings:
             missing.append("AGENTKIT_POSTGRES_URL")
 
         if missing:
-            raise ValueError(
+            raise AgentKitConfigError(
                 f"AgentKit configuration error: Missing required values for {', '.join(missing)}. "
                 "Set these environment variables."
             )
@@ -65,9 +65,7 @@ def get_settings() -> Settings:
         try:
             _org_id = uuid.UUID(_raw_org_id)
         except ValueError as e:
-            raise AgentKitConfigError(
-                f"AGENTKIT_ORG_ID is not a valid UUID: {_raw_org_id!r}"
-            ) from e
+            raise AgentKitConfigError(f"AGENTKIT_ORG_ID is not a valid UUID: {_raw_org_id!r}") from e
     else:
         _org_id = uuid.NIL
 
