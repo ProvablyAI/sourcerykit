@@ -3,11 +3,12 @@ import uuid
 from collections.abc import Mapping
 from typing import Any
 
-from agentkit.bootstrap import get_bootstrap
+from agentkit.bootstrap.bootstrap import get_bootstrap
 from agentkit.config import get_settings
 from agentkit.handoff._query_records import create_query_record_for_intercept
 from agentkit.handoff.guide import default_instructions, field_descriptions
-from agentkit.intercept import get_intercept_row_id, load_latest_intercept_payload
+from agentkit.intercept._loader import load_latest_intercept_payload
+from agentkit.intercept.interceptor import get_intercept_row_id
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffClaim, HandoffPayload, VerificationMode
 from agentkit.trusted_endpoints.service import list_all_trusted_endpoints

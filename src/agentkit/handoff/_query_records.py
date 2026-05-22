@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from agentkit.bootstrap import get_bootstrap
-from agentkit.db import select_intercept_by_id, select_intercepts_by_action
+from agentkit.bootstrap.bootstrap import get_bootstrap
+from agentkit.db.intercepts import select_intercept_by_id, select_intercepts_by_action
 from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
-from agentkit.provably import service
+from agentkit.provably.service import service
 
 _log = get_logger(__name__)
 

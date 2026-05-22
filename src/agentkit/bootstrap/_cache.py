@@ -3,11 +3,11 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from agentkit.db import get_connection_info
+from agentkit.db.engine import get_connection_info
 from agentkit.errors import AgentKitBootstrapError, AgentKitError
 from agentkit.logger import get_logger
-from agentkit.provably import service
 from agentkit.provably.errors import ProvablyError
+from agentkit.provably.service import service
 
 _log = get_logger(__name__)
 

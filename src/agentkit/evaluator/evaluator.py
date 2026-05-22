@@ -6,8 +6,8 @@ from agentkit.errors import AgentKitError
 from agentkit.evaluator.eval_modes import evaluate_claim
 from agentkit.intercept._self_egress import provably_self_egress
 from agentkit.logger import get_logger
-from agentkit.provably import service
 from agentkit.provably.answer_model import QueryAnswer
+from agentkit.provably.service import service
 from agentkit.schemas import HandoffPayload, Outcome
 from agentkit.trusted_endpoints.service import verify_claim_endpoints
 

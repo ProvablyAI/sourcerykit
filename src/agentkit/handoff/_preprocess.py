@@ -1,7 +1,7 @@
-from agentkit.bootstrap import get_bootstrap
+from agentkit.bootstrap.bootstrap import get_bootstrap
 from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
-from agentkit.provably import service
+from agentkit.provably.service import service
 
 _log = get_logger(__name__)
 

@@ -1,8 +1,8 @@
-from agentkit.bootstrap.provably import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
+from agentkit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
 from agentkit.db.engine import get_engine
 from agentkit.db.schema import metadata
 from agentkit.errors import AgentKitBootstrapError, AgentKitError, AgentKitStorageError
-from agentkit.intercept import init_interceptor
+from agentkit.intercept.interceptor import init_interceptor
 from agentkit.logger import get_logger
 
 _log = get_logger(__name__)
