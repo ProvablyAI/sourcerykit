@@ -30,7 +30,7 @@ def sanitize_and_extract_trusted_url(raw_url: str) -> str:
 
     if not parsed.netloc:
         _log.warning("sanitize_url_invalid", raw_url=raw_url)
-        raise ValueError("Invalid URL structure: Could not determine the host domain.")
+        raise AgentKitTrustError("Invalid URL structure: Could not determine the host domain.")
 
     normalized_path = parsed.path.rstrip("/")
 

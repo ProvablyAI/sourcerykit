@@ -69,3 +69,7 @@ async def provably_error_handler(service: str):
         # Log network-level failures
         _log.error(f"provably_network_unreachable_{service}", error=str(e))
         raise ProvablyConnectionError(f"Could not reach Provably API to perform {service_name}.") from e
+
+    except Exception as e:
+        _log.error(f"provably_unexpected_error_{service}", error=str(e))
+        raise ProvablyError(f"Unexpected error during {service_name}: {e}") from e
