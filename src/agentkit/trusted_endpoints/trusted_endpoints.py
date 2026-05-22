@@ -11,7 +11,11 @@ from agentkit.db.trusted_endpoints import (
     select_active_trusted_endpoints,
     select_trusted_endpoint_prefix,
 )
+from agentkit.errors import AgentKitStorageError, AgentKitTrustError
+from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffPayload
+
+_log = get_logger(__name__)
 
 
 def sanitize_and_extract_trusted_url(raw_url: str) -> str:
@@ -25,6 +29,7 @@ def sanitize_and_extract_trusted_url(raw_url: str) -> str:
     parsed = urlparse(clean_url)
 
     if not parsed.netloc:
+        _log.warning("sanitize_url_invalid", raw_url=raw_url)
         raise ValueError("Invalid URL structure: Could not determine the host domain.")
 
     normalized_path = parsed.path.rstrip("/")
@@ -47,9 +52,13 @@ async def is_endpoint_trusted(url: str) -> bool:
     stmt = select_trusted_endpoint_prefix(org_id, parsed_url)
 
     # Execute
-    async with engine.connect() as conn:
-        result = await conn.execute(stmt)
-        return bool(result.scalar())
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(stmt)
+            return bool(result.scalar())
+    except Exception as e:
+        _log.error("is_endpoint_trusted_db_error", url=url, error=str(e))
+        raise AgentKitStorageError("Failed to query trusted endpoints") from e
 
 
 async def insert_trusted_endpoint(url: str, display_label: str | None = None) -> None:
@@ -64,8 +73,13 @@ async def insert_trusted_endpoint(url: str, display_label: str | None = None) ->
     # Insert statement
     stmt = db_insert_trusted_endpoint(org_id, clean_url, display_label)
 
-    async with engine.begin() as conn:
-        await conn.execute(stmt)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(stmt)
+        _log.info("trusted_endpoint_inserted", url=clean_url)
+    except Exception as e:
+        _log.error("insert_trusted_endpoint_db_error", url=clean_url, error=str(e))
+        raise AgentKitStorageError("Failed to insert trusted endpoint") from e
 
 
 async def list_all_trusted_endpoints_detailed() -> list[dict[str, Any]]:
@@ -79,9 +93,13 @@ async def list_all_trusted_endpoints_detailed() -> list[dict[str, Any]]:
     stmt = select_active_trusted_endpoints(org_id)
 
     # Execute
-    async with engine.connect() as conn:
-        result = await conn.execute(stmt)
-        rows = result.fetchall()
+    try:
+        async with engine.connect() as conn:
+            result = await conn.execute(stmt)
+            rows = result.fetchall()
+    except Exception as e:
+        _log.error("list_trusted_endpoints_db_error", error=str(e))
+        raise AgentKitStorageError("Failed to list trusted endpoints") from e
 
     detailed_list = []
     for row in rows:
@@ -133,4 +151,7 @@ async def verify_claim_endpoints(
 
     # Raise an exception if any unauthorized endpoints were caught
     if untrusted_found:
-        raise ValueError(f"handoff has untrusted endpoints: {', '.join(untrusted_found)}")
+        _log.warning("trust_gate_failed", untrusted_urls=untrusted_found)
+        raise AgentKitTrustError(f"handoff has untrusted endpoints: {', '.join(untrusted_found)}")
+
+    _log.info("trust_gate_passed", url_count=len(claim_urls))

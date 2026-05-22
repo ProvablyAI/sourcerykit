@@ -6,6 +6,10 @@ from urllib.parse import urlparse
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from agentkit.config import get_settings
+from agentkit.errors import AgentKitStorageError
+from agentkit.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 @dataclass
@@ -55,14 +59,19 @@ def get_engine() -> AsyncEngine:
     else:
         dsn = url
 
-    _ENGINE = create_async_engine(
-        dsn,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=20,
-        json_serializer=None,
-    )
+    try:
+        _ENGINE = create_async_engine(
+            dsn,
+            pool_pre_ping=True,
+            pool_size=10,
+            max_overflow=20,
+            json_serializer=None,
+        )
+    except Exception as e:
+        _log.error("db_engine_creation_failed", error=str(e))
+        raise AgentKitStorageError("Failed to create database engine") from e
 
+    _log.info("db_engine_created", provider="postgresql")
     return _ENGINE
 
 

@@ -1,4 +1,5 @@
 from agentkit.bootstrap import get_bootstrap
+from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
 from agentkit.provably import service
 
@@ -16,4 +17,5 @@ async def run_preprocess() -> None:
         await service.start_preprocess(middleware_id, table_id)
         await service.get_preprocess_completed(middleware_id, table_id)
     else:
-        raise RuntimeError("Provably bootstrap incomplete: middleware_id and table_id are required")
+        _log.error("preprocess_failed_incomplete_bootstrap")
+        raise AgentKitBootstrapError("Provably bootstrap incomplete: middleware_id and table_id are required")

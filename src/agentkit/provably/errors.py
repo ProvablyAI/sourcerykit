@@ -2,12 +2,13 @@ from contextlib import asynccontextmanager
 
 import httpx
 
+from agentkit.errors import AgentKitError
 from agentkit.logger import get_logger
 
 _log = get_logger(__name__)
 
 
-class ProvablyError(Exception):
+class ProvablyError(AgentKitError):
     """Base exception for all AgentKit Provably errors."""
 
     pass

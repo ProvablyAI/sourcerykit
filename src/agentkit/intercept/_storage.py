@@ -5,6 +5,7 @@ from uuid import UUID
 
 from agentkit.db import insert_intercept
 from agentkit.db.engine import get_engine
+from agentkit.errors import AgentKitTrustError
 from agentkit.intercept._self_egress import is_self_egress
 from agentkit.logger import get_logger
 from agentkit.trusted_endpoints import is_endpoint_trusted
@@ -27,7 +28,9 @@ async def add_intercept_row(
     if is_self_egress():
         return None
 
-    await is_endpoint_trusted(url)
+    trusted = await is_endpoint_trusted(url)
+    if not trusted:
+        raise AgentKitTrustError(f"endpoint not registered in trust registry: {url}")
 
     engine = get_engine()
 

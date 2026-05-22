@@ -5,6 +5,10 @@ from typing import Any
 
 from agentkit.db.engine import get_engine
 from agentkit.db.intercepts import select_intercepts_by_agent_id_and_action
+from agentkit.errors import AgentKitStorageError
+from agentkit.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 async def load_latest_intercept_payload(
@@ -25,6 +29,16 @@ async def load_latest_intercept_payload(
         if not row:
             return {}, None
 
-        req = json.loads(row.request_payload) if row.request_payload else {}
-        resp = json.loads(row.raw_response) if row.raw_response else None
+        try:
+            req = json.loads(row.request_payload) if row.request_payload else {}
+        except json.JSONDecodeError as e:
+            _log.error("intercept_request_payload_corrupt", agent_id=agent_id, action_name=action_name, error=str(e))
+            raise AgentKitStorageError("Stored request_payload is not valid JSON") from e
+
+        try:
+            resp = json.loads(row.raw_response) if row.raw_response else None
+        except json.JSONDecodeError as e:
+            _log.error("intercept_raw_response_corrupt", agent_id=agent_id, action_name=action_name, error=str(e))
+            raise AgentKitStorageError("Stored raw_response is not valid JSON") from e
+
         return req, resp

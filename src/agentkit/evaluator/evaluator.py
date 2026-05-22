@@ -2,6 +2,7 @@ import asyncio
 from typing import Any
 
 from agentkit.config import get_settings
+from agentkit.errors import AgentKitError
 from agentkit.evaluator.eval_modes import evaluate_claim
 from agentkit.intercept._self_egress import provably_self_egress
 from agentkit.logger import get_logger
@@ -30,7 +31,7 @@ async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
                 verify_claim_endpoints(payload),
                 asyncio.gather(*(service.verify_proof(qid, api_key) for qid in query_ids)),
             )
-    except ValueError as e:
+    except (ValueError, AgentKitError) as e:
         return {"outcome": Outcome.CAUGHT, "per_claim": [], "errors": [f"trust gate: {e}"]}
 
     per_claim: list[dict[str, Any]] = []

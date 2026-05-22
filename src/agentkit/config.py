@@ -5,6 +5,8 @@ import os
 import uuid
 from dataclasses import dataclass
 
+from agentkit.errors import AgentKitConfigError
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -58,9 +60,20 @@ def get_settings() -> Settings:
     def _url(name: str) -> str:
         return _s(name).rstrip("/")
 
+    _raw_org_id = _s("AGENTKIT_ORG_ID")
+    if _raw_org_id:
+        try:
+            _org_id = uuid.UUID(_raw_org_id)
+        except ValueError as e:
+            raise AgentKitConfigError(
+                f"AGENTKIT_ORG_ID is not a valid UUID: {_raw_org_id!r}"
+            ) from e
+    else:
+        _org_id = uuid.NIL
+
     return Settings(
         api_key=_url("AGENTKIT_API_KEY"),
-        org_id=uuid.UUID(_s("AGENTKIT_ORG_ID")) if _s("AGENTKIT_ORG_ID") else uuid.NIL,
+        org_id=_org_id,
         postgres_url=_url("AGENTKIT_POSTGRES_URL"),
         provably_app=_url("AGENTKIT_PROVABLY_APP_URL") or "https://app.provably.ai",
         provably_api=_url("AGENTKIT_PROVABLY_API_URL") or "https://api.provably.ai",

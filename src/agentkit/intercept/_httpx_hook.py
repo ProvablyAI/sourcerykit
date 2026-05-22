@@ -7,6 +7,9 @@ from typing import Any, cast
 import httpx
 
 from agentkit.intercept._self_egress import is_self_egress
+from agentkit.logger import get_logger
+
+_log = get_logger(__name__)
 
 _orig_async_client_send = None
 
@@ -52,8 +55,8 @@ def _make_async_wrapper(
             try:
                 full_text = b"".join(chunks).decode(errors="replace")
                 await record_fn(url, method, payload, {"stream_logged": full_text})
-            except Exception:
-                pass
+            except Exception as e:
+                _log.warning("httpx_stream_record_failed", url=url, error=str(e))
 
         response.aiter_bytes = wrapped_aiter
         return response
@@ -72,7 +75,8 @@ def _httpx_request_to_payload(req: httpx.Request) -> tuple[str, str, dict[str, A
         if "application/json" in req.headers.get("content-type", ""):
             try:
                 kwargs["json"] = json.loads(text)
-            except Exception:
+            except Exception as e:
+                _log.debug("httpx_request_json_parse_failed", error=str(e))
                 kwargs["data"] = text
         else:
             kwargs["data"] = text

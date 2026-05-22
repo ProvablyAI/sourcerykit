@@ -6,7 +6,10 @@ from typing import Any
 import jsonschema
 import msgspec
 
+from agentkit.logger import get_logger
 from agentkit.schemas import HandoffClaim, Outcome, VerificationMode
+
+_log = get_logger(__name__)
 
 # Pre-initialize the msgspec encoder once at module level to reuse its internal buffers
 _encoder = msgspec.json.Encoder(order="sorted")
@@ -16,7 +19,8 @@ def canonical_json(value: Any) -> str:
     """Returns a deterministic JSON string using msgspec's hyper-optimized C engine."""
     try:
         return _encoder.encode(value).decode("utf-8")
-    except Exception:
+    except Exception as e:
+        _log.debug("canonical_json_fallback", error=str(e))
         return str(value)
 
 

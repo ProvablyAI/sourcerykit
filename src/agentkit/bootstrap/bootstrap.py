@@ -1,6 +1,7 @@
 from agentkit.bootstrap.provably import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
 from agentkit.db.engine import get_engine
 from agentkit.db.schema import metadata
+from agentkit.errors import AgentKitBootstrapError, AgentKitError, AgentKitStorageError
 from agentkit.intercept import init_interceptor
 from agentkit.logger import get_logger
 
@@ -12,11 +13,21 @@ async def bootstrap_system() -> None:
     _log.info("system_bootstrap_started")
 
     # Initialize database schemas
-    async with get_engine().begin() as conn:
-        await conn.run_sync(metadata.create_all)
+    try:
+        async with get_engine().begin() as conn:
+            await conn.run_sync(metadata.create_all)
+    except Exception as e:
+        _log.error("bootstrap_db_schema_failed", error=str(e))
+        raise AgentKitStorageError("Failed to create database schema during bootstrap") from e
 
     # Initialize all required Provably resources
-    await _BOOTSTRAP_INSTANCE.run_handshake()
+    try:
+        await _BOOTSTRAP_INSTANCE.run_handshake()
+    except AgentKitError:
+        raise
+    except Exception as e:
+        _log.error("bootstrap_handshake_failed_unexpected", error=str(e))
+        raise AgentKitBootstrapError("Unexpected error during Provably handshake") from e
 
     init_interceptor()
     _log.info("system_bootstrap_completed")

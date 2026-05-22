@@ -2,6 +2,7 @@ from uuid import UUID
 
 from agentkit.bootstrap import get_bootstrap
 from agentkit.db import select_intercept_by_id, select_intercepts_by_action
+from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
 from agentkit.provably import service
 
@@ -33,4 +34,5 @@ async def create_query_record_for_intercept(
         query_url = service.query_record_url(query_id)
         return query_id, query_url
     else:
-        raise RuntimeError("Provably bootstrap incomplete: middleware_id and collection_id are required")
+        _log.error("query_record_failed_incomplete_bootstrap", action_name=action_name)
+        raise AgentKitBootstrapError("Provably bootstrap incomplete: middleware_id and collection_id are required")

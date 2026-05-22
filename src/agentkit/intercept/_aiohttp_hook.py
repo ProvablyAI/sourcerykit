@@ -7,6 +7,9 @@ from typing import Any, cast
 import aiohttp
 
 from agentkit.intercept._self_egress import is_self_egress
+from agentkit.logger import get_logger
+
+_log = get_logger(__name__)
 
 _orig_request = None
 _AIOHTTP_KWARG_KEYS = ("params", "json", "data")
@@ -49,7 +52,8 @@ def _make_aiohttp_wrapper(
             body_bytes = await response.read()
             text = body_bytes.decode(errors="replace") if body_bytes else ""
             raw = json.loads(text) if "application/json" in content_type and text else {"text": text}
-        except Exception:
+        except Exception as e:
+            _log.warning("aiohttp_body_parse_failed", url=url_str, error=str(e))
             raw = {"text": "non_json_or_exhausted_payload"}
 
         await record_fn(url_str, method, payload, raw)
