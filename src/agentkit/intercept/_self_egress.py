@@ -4,9 +4,7 @@ import contextvars
 from collections.abc import Generator
 from contextlib import contextmanager
 
-_self_egress: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "provably_self_egress", default=False
-)
+_self_egress: contextvars.ContextVar[bool] = contextvars.ContextVar("provably_self_egress", default=False)
 
 
 def is_self_egress() -> bool:
