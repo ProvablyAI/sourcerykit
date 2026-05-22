@@ -9,7 +9,7 @@ from agentkit.logger import get_logger
 from agentkit.provably import service
 from agentkit.provably.answer_model import QueryAnswer
 from agentkit.schemas import HandoffPayload, Outcome
-from agentkit.trusted_endpoints.trusted_endpoints import verify_claim_endpoints
+from agentkit.trusted_endpoints.service import verify_claim_endpoints
 
 _log = get_logger(__name__)
 

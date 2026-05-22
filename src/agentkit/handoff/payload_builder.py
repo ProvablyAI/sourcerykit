@@ -10,7 +10,7 @@ from agentkit.handoff.guide import default_instructions, field_descriptions
 from agentkit.intercept import get_intercept_row_id, load_latest_intercept_payload
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffClaim, HandoffPayload, VerificationMode
-from agentkit.trusted_endpoints.trusted_endpoints import list_all_trusted_endpoints
+from agentkit.trusted_endpoints.service import list_all_trusted_endpoints
 
 _log = get_logger(__name__)
 
