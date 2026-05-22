@@ -39,7 +39,8 @@ def _make_async_wrapper(
         if not is_stream:
             try:
                 raw = response.json()
-            except Exception:
+            except Exception as e:
+                _log.debug("httpx_response_json_parse_failed", url=url, error=str(e))
                 raw = {"text": response.text}
             await record_fn(url, method, payload, raw)
             return response

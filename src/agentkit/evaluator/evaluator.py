@@ -77,8 +77,8 @@ def _coerce_query_result_to_indexed_value(value: Any) -> Any:
     """Flattens QueryAnswer structure via deserialization."""
     try:
         return QueryAnswer.model_validate(value).flatten()
-    except Exception:
-        # Fall back to returning raw input if structural match fails
+    except Exception as e:
+        _log.debug("coerce_query_result_fallback", error=str(e))
         return value
 
 
