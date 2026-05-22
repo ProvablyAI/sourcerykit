@@ -28,6 +28,7 @@ async def build_handoff_payload(
 ) -> HandoffPayload:
     """Builds the complete signed metadata payload container for external verification runs."""
 
+    _log.info("build_handoff_payload_started")
     # Verify that Provably bootstrapping sequence successfully cleared
     provably = get_bootstrap()
     if not provably.integration_key:
@@ -47,6 +48,8 @@ async def build_handoff_payload(
         _build_claims(blob, intercept_agent_id),
         list_all_trusted_endpoints(),
     )
+
+    _log.info("build_handoff_payload_completed", claim_count=len(claims))
 
     return HandoffPayload(
         provably_mcp_url=settings.provably_mcp,
@@ -82,11 +85,25 @@ async def _build_claims(
     # Filter to valid claim dicts up-front
     valid_raws = [raw for raw in raw_claims if isinstance(raw, dict) and str(raw.get("action_name") or "").strip()]
 
-    results = await asyncio.gather(*[_resolve_claim(raw, intercept_agent_id) for raw in valid_raws])
+    results = await asyncio.gather(
+        *[_resolve_claim(raw, intercept_agent_id) for raw in valid_raws],
+        return_exceptions=True,
+    )
 
-    claims = [r[0] for r in results]
-    urls = [r[1] for r in results]
-    ids = [r[2] for r in results]
+    claims = []
+    urls = []
+    ids = []
+    for raw, r in zip(valid_raws, results):
+        if isinstance(r, BaseException):
+            _log.warning(
+                "claim_resolution_failed",
+                action_name=raw.get("action_name"),
+                error=str(r),
+            )
+            continue
+        claims.append(r[0])
+        urls.append(r[1])
+        ids.append(r[2])
 
     return claims, urls, ids
 

@@ -434,6 +434,7 @@ class ProvablyService:
             ProvablyAPIError: If the server rejects the request.
             ProvablyConnectionError: If the network is unreachable.
         """
+        _log.info("run_query_started", middleware_id=str(middleware_id), collection_id=str(collection_id))
         async with provably_error_handler("run_query"):
             result = await api.run_query(middleware_id, collection_id, sql)
             return uuid.UUID(str(result["query_id"]))
@@ -493,6 +494,7 @@ class ProvablyService:
             ProvablyAPIError: If the server rejects the request.
             ProvablyConnectionError: If the network is unreachable.
         """
+        _log.info("verify_proof_started", query_id=str(query_id))
         async with provably_error_handler("verify_proof"):
             await api.verify_proof(query_id, api_key=integration_api_key)
 

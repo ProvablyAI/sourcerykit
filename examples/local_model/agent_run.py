@@ -27,6 +27,7 @@ import argparse
 import asyncio
 import copy
 import json
+import logging
 import os
 import uuid
 
@@ -35,6 +36,9 @@ import requests
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 from agentkit import (  # noqa: E402
     async_intercept_context,

@@ -39,6 +39,7 @@ class ProvablyHTTPClient:
             )
 
     async def _fetch(self, method: str, path: str, *, api_key: str | None = None, **kwargs: Any) -> Any:
+        _log.debug("provably_api_request", method=method, path=path)
         try:
             response = await self._request(method, path, api_key=api_key, **kwargs)
             response.raise_for_status()
@@ -47,26 +48,32 @@ class ProvablyHTTPClient:
                 return {}
 
             try:
-                return response.json()
+                result = response.json()
+                _log.debug("provably_api_response_ok", method=method, path=path, status=response.status_code)
+                return result
             except ValueError:
+                _log.debug(
+                    "provably_api_response_not_json",
+                    method=method,
+                    path=path,
+                    body=response.text[:200],
+                )
                 return {}
 
         except httpx.HTTPStatusError as e:
-            # 400/500 errors from the server
             _log.error(
-                "API rejected request: %s | Status: %s | Body: %s",
-                path,
-                e.response.status_code,
-                e.response.text[:500],
+                "provably_api_rejected",
+                method=method,
+                path=path,
+                status_code=e.response.status_code,
+                body=e.response.text[:500],
             )
             raise
         except httpx.RequestError as e:
-            # network issues
-            _log.error("Network connectivity issue: %s | Error: %s", path, str(e))
+            _log.error("provably_api_network_error", method=method, path=path, error=str(e))
             raise
         except httpx.HTTPError as e:
-            # unexpected issues
-            _log.exception("Unexpected error during request to %s | Error: %s", path, str(e))
+            _log.error("provably_api_unexpected_error", method=method, path=path, error=str(e))
             raise
 
     async def get(self, path: str, params: dict[str, Any] | None = None, *, api_key: str | None = None) -> Any:

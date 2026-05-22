@@ -5,6 +5,10 @@ from typing import Any, Literal
 import msgspec
 from pydantic import BaseModel, Field, model_validator
 
+from agentkit.logger import get_logger
+
+_log = get_logger(__name__)
+
 __all__ = ["QueryAnswer", "TabularData", "AggregateAnswer", "ResultsetAnswer"]
 
 
@@ -13,7 +17,8 @@ def _safe_deserialize(cell: Any) -> Any:
     if isinstance(cell, str) and cell.strip().startswith(("{", "[")):
         try:
             return msgspec.json.decode(cell)
-        except Exception:
+        except Exception as e:
+            _log.debug("safe_deserialize_fallback", error=str(e))
             return cell
     return cell
 

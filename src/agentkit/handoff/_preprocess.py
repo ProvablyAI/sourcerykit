@@ -6,6 +6,7 @@ _log = get_logger(__name__)
 
 
 async def run_preprocess() -> None:
+    _log.info("preprocess_started")
     provably = get_bootstrap()
 
     middleware_id = provably.middleware_id

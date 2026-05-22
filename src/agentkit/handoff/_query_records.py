@@ -13,6 +13,7 @@ async def create_query_record_for_intercept(
     agent_id: str,
     row_id: UUID | None = None,
 ) -> tuple[UUID, str]:
+    _log.info("query_record_started", action_name=action_name, agent_id=agent_id)
     if not action_name or not agent_id:
         raise ValueError("create_query_record_for_intercept requires non-empty agent_id and action_name")
 
