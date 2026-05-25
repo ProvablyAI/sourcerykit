@@ -10,7 +10,7 @@ from agentkit.intercept._aiohttp_hook import init_aiohttp_hooks
 from agentkit.intercept._httpx_hook import init_httpx_hooks
 from agentkit.intercept._storage import add_intercept_row
 from agentkit.logger import get_logger
-from agentkit.validation import validate_length
+from agentkit.utils.validation import validate_length
 
 _log = get_logger(__name__)
 

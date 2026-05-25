@@ -9,7 +9,7 @@ from agentkit.errors import AgentKitTrustError
 from agentkit.intercept._self_egress import is_self_egress
 from agentkit.logger import get_logger
 from agentkit.trusted_endpoints import is_endpoint_trusted
-from agentkit.validation import validate_length
+from agentkit.utils.validation import validate_length
 
 _log = get_logger(__name__)
 

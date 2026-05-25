@@ -5,7 +5,7 @@ from agentkit.db._intercepts import select_intercept_by_id, select_intercepts_by
 from agentkit.errors import AgentKitBootstrapError
 from agentkit.logger import get_logger
 from agentkit.provably.service import service
-from agentkit.validation import validate_length
+from agentkit.utils.validation import validate_length
 
 _log = get_logger(__name__)
 

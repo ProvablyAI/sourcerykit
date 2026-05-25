@@ -14,7 +14,7 @@ from agentkit.db._trusted_endpoints import (
 from agentkit.errors import AgentKitStorageError, AgentKitTrustError
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffPayload
-from agentkit.validation import validate_length
+from agentkit.utils.validation import validate_length
 
 _log = get_logger(__name__)
 
