@@ -74,8 +74,8 @@ test-e2e: ## Run only the loopback-server e2e suite
 # --- packaging --------------------------------------------------------------
 
 .PHONY: build
-build: ## Build wheel + sdist into ./dist via python -m build
-	$(UV) run python -m build
+build: ## Build wheel + sdist into ./dist via uv build
+	$(UV) build
 
 # --- docs -------------------------------------------------------------------
 
