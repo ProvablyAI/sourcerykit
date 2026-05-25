@@ -78,7 +78,7 @@ class HttpxJsonOverride:
 
 
 def _as_json(body: Any) -> Any:
-    if isinstance(body, (dict, list)):
+    if isinstance(body, dict | list):
         return body
     if isinstance(body, str):
         return json.loads(body)

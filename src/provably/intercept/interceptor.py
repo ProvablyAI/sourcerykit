@@ -78,9 +78,7 @@ def set_intercept_url_allowlist(urls: list[str] | None) -> None:
     if urls is None:
         _url_allowlist = None
     else:
-        _url_allowlist = {
-            normalize_url_for_trust(str(u or "").strip()) for u in urls if (u or "").strip()
-        }
+        _url_allowlist = {normalize_url_for_trust(str(u or "").strip()) for u in urls if (u or "").strip()}
         _url_allowlist.discard("")
 
 
@@ -101,9 +99,7 @@ def _url_in_allowlist(nurl: str) -> bool:
 
 
 @contextmanager
-def intercept_context(
-    *, agent_id: str, action_name: str, intercept_index: int = 0
-) -> Generator[None, None, None]:
+def intercept_context(*, agent_id: str, action_name: str, intercept_index: int = 0) -> Generator[None, None, None]:
     """Scoped tagging for HTTP traffic emitted inside the ``with`` block.
 
     Sets the underlying :class:`contextvars.ContextVar` values on enter and resets them
@@ -277,9 +273,7 @@ def _attach(response: Any, url: str, method: str, req_kwargs: dict[str, Any]) ->
     return _record_and_maybe_tamper(response, url, method, req_kwargs, extract_raw(response))
 
 
-def _record_and_maybe_tamper(
-    response: Any, url: str, method: str, req_kwargs: dict[str, Any], raw: Any
-) -> Any:
+def _record_and_maybe_tamper(response: Any, url: str, method: str, req_kwargs: dict[str, Any], raw: Any) -> Any:
     """Inside-the-gate recording path shared by sync (_attach) and async (aiohttp) callers.
 
     Callers must have already cleared self-egress / re-entry guards. ``raw`` is the
@@ -384,9 +378,7 @@ def _wrap_async_client_send(
 ) -> Callable[..., Awaitable[httpx.Response]]:
     """Wrap httpx.AsyncClient.send to record responses via _attach."""
 
-    async def wrapped(
-        self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any
-    ) -> httpx.Response:
+    async def wrapped(self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any) -> httpx.Response:
         response = await orig_send(self, request, **kwargs)
         return cast(
             httpx.Response,
@@ -401,9 +393,7 @@ def _wrap_session_send(
 ) -> Callable[..., requests.Response]:
     """Wrap requests.Session.send to record responses via _attach."""
 
-    def wrapped(
-        self: requests.Session, request: requests.PreparedRequest, **kwargs: Any
-    ) -> requests.Response:
+    def wrapped(self: requests.Session, request: requests.PreparedRequest, **kwargs: Any) -> requests.Response:
         response = orig_send(self, request, **kwargs)
         return cast(
             requests.Response,

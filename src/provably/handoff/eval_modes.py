@@ -148,9 +148,7 @@ def _step_into(cursor: Any, segment: str) -> Any:
         if segment not in cursor:
             raise KeyError(segment)
         return cursor[segment]
-    raise KeyError(
-        f"expected dict or list at segment {segment!r}, got {type(cursor).__name__}"
-    )
+    raise KeyError(f"expected dict or list at segment {segment!r}, got {type(cursor).__name__}")
 
 
 def _get_by_json_path(obj: Any, path: str) -> Any:
@@ -169,7 +167,7 @@ def _get_by_json_path(obj: Any, path: str) -> Any:
 def _coerce_number(value: Any) -> float:
     if isinstance(value, bool):
         raise TypeError("boolean is not a numeric bound value")
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return float(value)
     if isinstance(value, str):
         return float(value.strip())

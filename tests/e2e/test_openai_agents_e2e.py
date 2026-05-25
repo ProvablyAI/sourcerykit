@@ -40,9 +40,7 @@ from tests.e2e.conftest import FakeHttpServer, FakeResponse
 # ---------------------------------------------------------------------------
 
 
-def _tool_call_response(
-    tool_name: str, call_id: str = "call_001", arguments: str = "{}"
-) -> dict[str, Any]:
+def _tool_call_response(tool_name: str, call_id: str = "call_001", arguments: str = "{}") -> dict[str, Any]:
     """First LLM turn: respond with a tool_call."""
     return {
         "id": "chatcmpl-test-turn1",
@@ -161,9 +159,7 @@ def patched_interceptor_with_trust(monkeypatch: pytest.MonkeyPatch) -> tuple[lis
     allowlist: set[str] = set()
 
     monkeypatch.setenv("POSTGRES_URL", "postgresql://fake-host/fake-db")
-    monkeypatch.setattr(
-        _storage_module, "_require_trusted_endpoint", lambda _pg, url: _trusted_check(allowlist, url)
-    )
+    monkeypatch.setattr(_storage_module, "_require_trusted_endpoint", lambda _pg, url: _trusted_check(allowlist, url))
     monkeypatch.setattr(
         _storage_module,
         "_write_row",
@@ -193,9 +189,7 @@ def _configure_agent_client(fake_llm_server: FakeHttpServer) -> None:
     set_default_openai_api("chat_completions")
 
 
-def _make_weather_agent(
-    fake_data_server: FakeHttpServer, *, fail_loudly: bool = False
-) -> Agent:
+def _make_weather_agent(fake_data_server: FakeHttpServer, *, fail_loudly: bool = False) -> Agent:
     """Build the standard weather agent that GETs ``/v1/temperature`` from the fake data server.
 
     ``fail_loudly=True`` sets ``failure_error_function=None`` on the tool so that exceptions
@@ -284,9 +278,7 @@ async def test_openai_agent_intercepts_and_handoff_passes(
     assert methods.count("GET") >= 1, f"Expected ≥1 data GET, got {methods}"
 
     fake_provably = _make_provably_backend(fake_server_factory, "q1", {"celsius": 21})
-    eval_result = evaluate_handoff(
-        _make_payload("q1", {"celsius": 21}), provably_base_url=fake_provably.base_url
-    )
+    eval_result = evaluate_handoff(_make_payload("q1", {"celsius": 21}), provably_base_url=fake_provably.base_url)
     assert eval_result["outcome"] == "PASS", f"Expected PASS, got: {eval_result}"
     assert eval_result["per_claim"][0]["result"] == "PASS"
 
@@ -366,9 +358,7 @@ def test_self_egress_completes_without_trust(
     assert len(fake_trusted_endpoints) == 0  # nothing trusted
     fake_provably = _make_provably_backend(fake_server_factory, "q1", {"x": 1})
 
-    eval_result = evaluate_handoff(
-        _make_payload("q1", {"x": 1}), provably_base_url=fake_provably.base_url
-    )
+    eval_result = evaluate_handoff(_make_payload("q1", {"x": 1}), provably_base_url=fake_provably.base_url)
     assert eval_result["outcome"] == "PASS", f"Expected PASS, got: {eval_result}"
 
 
@@ -388,8 +378,7 @@ async def test_async_llm_call_intercepted(
 
     llm_base = normalize_url_for_trust(fake_llm_server.base_url)
     post_llm_rows = [
-        r for r in patched_interceptor
-        if r["method"] == "POST" and llm_base in normalize_url_for_trust(r["url"])
+        r for r in patched_interceptor if r["method"] == "POST" and llm_base in normalize_url_for_trust(r["url"])
     ]
     assert post_llm_rows, (
         f"Expected ≥1 POST row to LLM server {llm_base}. "

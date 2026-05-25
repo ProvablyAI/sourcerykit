@@ -2,9 +2,7 @@
 
 import contextvars
 
-_in_intercept: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "provably_in_intercept", default=False
-)
+_in_intercept: contextvars.ContextVar[bool] = contextvars.ContextVar("provably_in_intercept", default=False)
 
 
 def already_recording() -> bool:

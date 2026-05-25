@@ -65,6 +65,13 @@ def test_contract_is_neutral_no_named_agents() -> None:
 
 def test_contract_field_set_matches_handoff_claim_model() -> None:
     """Drift guard: every LLM-facing field must exist on HandoffClaim."""
-    llm_fields = {"action_name", "claimed_value", "verification_mode", "json_path",
-                  "expected_json_schema", "range_min", "range_max"}
+    llm_fields = {
+        "action_name",
+        "claimed_value",
+        "verification_mode",
+        "json_path",
+        "expected_json_schema",
+        "range_min",
+        "range_max",
+    }
     assert llm_fields.issubset(HandoffClaim.model_fields.keys())

@@ -6,16 +6,17 @@
 #
 # Quick start:
 #   make install          # uv sync --extra dev --locked
-#   make check            # lint + typecheck + test (CI parity)
+#   make check            # pre-commit + test + docs + build (CI parity)
 #
 # Run `make help` to list everything.
 # ----------------------------------------------------------------------------
 
 UV ?= uv
-PYTEST_ARGS ?=
+PYTEST_ARGS ?= --cov=provably --cov-report=term-missing --cov-fail-under=60
 RUFF_ARGS ?=
 MYPY_TARGETS ?= src tests
 DOCS_DIR ?= docs
+DOCS_BUILD ?= $(DOCS_DIR)/_build
 
 .DEFAULT_GOAL := help
 
@@ -41,8 +42,12 @@ lock-upgrade: ## Refresh uv.lock and upgrade pinned versions
 
 # --- quality ----------------------------------------------------------------
 
+.PHONY: pre-commit
+pre-commit: ## Run all pre-commit hooks (matches CI)
+	$(UV) run pre-commit run --all-files
+
 .PHONY: lint
-lint: ## Run ruff lint (matches CI)
+lint: ## Run ruff lint
 	$(UV) run ruff check $(RUFF_ARGS)
 
 .PHONY: format
@@ -54,13 +59,13 @@ format-check: ## Verify formatting without writing changes
 	$(UV) run ruff format --check $(RUFF_ARGS)
 
 .PHONY: typecheck
-typecheck: ## Run mypy in strict mode (requires the dev extra; see point 5)
+typecheck: ## Run mypy in strict mode
 	$(UV) run mypy $(MYPY_TARGETS)
 
 # --- tests ------------------------------------------------------------------
 
 .PHONY: test
-test: ## Run the full pytest suite (unit + e2e)
+test: ## Run the full pytest suite with coverage gate (unit + e2e)
 	$(UV) run pytest -q $(PYTEST_ARGS)
 
 .PHONY: test-unit
@@ -80,24 +85,18 @@ build: ## Build wheel + sdist into ./dist via uv build
 # --- docs -------------------------------------------------------------------
 
 .PHONY: docs
-docs: ## Point at the canonical Markdown docs (no doc-site tooling in Phase 1)
-	@echo "Docs are Markdown under $(DOCS_DIR)/. Entry points:"
-	@echo "  README.md            top-level intro + quickstart"
-	@echo "  CONTEXT.md           agent contract: invariants + dependency rules"
-	@echo "  $(DOCS_DIR)/README.md           per-pillar deep-dives index"
-	@echo "  $(DOCS_DIR)/architecture.md     module map + I/O boundaries"
-	@echo "  $(DOCS_DIR)/intercept.md        intercept pillar"
-	@echo "  $(DOCS_DIR)/handoff.md          handoff pillar"
-	@echo "  $(DOCS_DIR)/trusted-endpoints.md trusted-endpoint registry"
+docs: ## Build Sphinx HTML under docs/_build
+	$(UV) run sphinx-build -W -b html $(DOCS_DIR) $(DOCS_BUILD)
 
 # --- meta workflows ---------------------------------------------------------
 
 .PHONY: check
-check: lint typecheck test ## Run the full CI-equivalent gate (lint + typecheck + test)
+check: pre-commit test docs build ## Run the full CI-equivalent gate
 
 .PHONY: clean
 clean: ## Remove build artifacts and cache directories
 	rm -rf build/ dist/ *.egg-info src/*.egg-info \
+	       $(DOCS_BUILD) \
 	       .pytest_cache .ruff_cache .mypy_cache \
 	       .coverage .coverage.* htmlcov coverage.xml
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

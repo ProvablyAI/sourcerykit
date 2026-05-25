@@ -20,11 +20,20 @@ wheels/
 *.egg
 MANIFEST
 
+# Pre-commit hook environments (local cache)
+.cache/
+
+# Cursor IDE / debug session artifacts
+.cursor/
+
 # Virtual environments
 .venv/
 venv/
 ENV/
 env/
+
+# Documentation
+docs/_build/
 
 # Testing / coverage
 .pytest_cache/

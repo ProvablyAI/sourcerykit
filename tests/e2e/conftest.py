@@ -36,7 +36,7 @@ class FakeResponse:
     headers: dict[str, str] = field(default_factory=dict)
 
     def encoded(self) -> tuple[bytes, dict[str, str]]:
-        if isinstance(self.body, (dict, list)):
+        if isinstance(self.body, dict | list):
             payload = json.dumps(self.body).encode("utf-8")
             hdrs = {"Content-Type": "application/json", **self.headers}
             return payload, hdrs

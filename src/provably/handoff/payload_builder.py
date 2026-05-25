@@ -106,9 +106,7 @@ def _build_claims(
     intercept_agent_id: str,
     provably_on: bool,
 ) -> tuple[list[HandoffClaim], list[str], list[str]]:
-    raw_claims = (
-        fetch_and_claim_json.get("claims") if isinstance(fetch_and_claim_json, dict) else None
-    )
+    raw_claims = fetch_and_claim_json.get("claims") if isinstance(fetch_and_claim_json, dict) else None
     if not isinstance(raw_claims, list):
         return [], [], []
 
@@ -116,9 +114,7 @@ def _build_claims(
     urls: list[str] = []
     ids: list[str] = []
 
-    claim_rows: list[
-        tuple[dict[str, Any], str, Any, dict[str, Any], Any]
-    ] = []
+    claim_rows: list[tuple[dict[str, Any], str, Any, dict[str, Any], Any]] = []
     for raw in raw_claims:
         if not isinstance(raw, dict):
             continue
@@ -161,15 +157,11 @@ def _build_claims(
                         error=str(exc),
                     )
 
-    for i, (raw, action_name, claimed_value, request_payload, response_payload) in enumerate(
-        claim_rows
-    ):
+    for i, (raw, action_name, claimed_value, request_payload, response_payload) in enumerate(claim_rows):
         qid, qurl = resolved[i] if i < len(resolved) else ("", "")
         ids.append(qid)
         urls.append(qurl)
-        claims.append(
-            _build_claim(raw, action_name, claimed_value, request_payload, response_payload, qid)
-        )
+        claims.append(_build_claim(raw, action_name, claimed_value, request_payload, response_payload, qid))
 
     return claims, urls, ids
 

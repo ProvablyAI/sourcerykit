@@ -42,8 +42,11 @@ provably-python-sdk/
     conftest.py             docs the two-layer setup
     unit/                   fast, hermetic; mocks for httpx + psycopg2
     e2e/                    real loopback http.server; real requests + httpx
-  docs/                     architecture, per-pillar deep dives, historical plans
-  .github/workflows/        ci.yml (active, runs lint + tests + docker), publish.yml (manual stub)
+  docs/                     architecture, per-pillar deep dives, Sphinx (conf.py, index.md)
+  .github/workflows/        ci.yml (pre-commit, pytest+coverage, sphinx, docker), publish.yml (tag v*)
+  .github/dependabot.yml    weekly uv + github-actions updates
+  .github/pull_request_template.md
+  .pre-commit-config.yaml   ruff + mypy hooks mirrored in CI
   Dockerfile                two-stage: builder → runtime (no test image)
   .dockerignore
   .env.example              canonical inventory of SDK + example env vars
@@ -145,10 +148,11 @@ matrix without a local Python toolchain.
   integration test ever needs real Postgres, introduce the database
   dependency explicitly in that test layer rather than as ambient
   infrastructure.
-- **CI** — `.github/workflows/ci.yml` has a `docker` job that builds the
-  `runtime` image and runs its smoke `CMD`, so the Docker packaging cannot
-  silently rot. Tests are not re-run inside Docker — the `lint-and-test`
-  matrix job already covers them via uv.
+- **CI** — `.github/workflows/ci.yml` runs pre-commit, pytest with a 60%
+  coverage floor, Sphinx (`sphinx-build -W`), and `uv build` on Python
+  3.11–3.13, then a `docker` job that builds the `runtime` image and runs its
+  smoke `CMD`. **Publish** — pushing a `v*` tag triggers
+  `.github/workflows/publish.yml` (`uv build` → PyPI via OIDC).
 
 If you change `pyproject.toml` (deps, optional extras, name, license,
 build-system), bump the Docker layer that copies that file and run the

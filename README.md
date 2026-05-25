@@ -473,11 +473,13 @@ uv sync --extra dev
 ```
 
 ```bash
-uv run ruff check
-uv run mypy src tests
-uv run pytest
-uv run python -m build       # wheel + sdist into ./dist/
+uv run pre-commit run --all-files   # ruff + mypy (matches CI)
+uv run pytest --cov=provably --cov-fail-under=60
+uv run sphinx-build -W -b html docs docs/_build
+uv build                            # wheel + sdist into ./dist/
 ```
+
+Install git hooks once: `uv run pre-commit install`.
 
 `uv.lock` is committed; CI installs with `uv sync --extra dev --locked` so
 the lockfile must match `pyproject.toml` (CI fails if someone forgot `uv
@@ -488,13 +490,22 @@ A [`Makefile`](Makefile) wraps the same commands for discoverability — run
 
 ```bash
 make install      # uv sync --extra dev --locked
-make lint         # uv run ruff check
-make typecheck    # uv run mypy src tests   (strict)
-make test         # uv run pytest -q        (full suite)
-make test-unit    # only the fast hermetic suite
-make build        # uv run python -m build
-make check        # CI-equivalent gate: lint + typecheck + test
+make pre-commit   # all pre-commit hooks (CI parity)
+make test         # pytest with 60% coverage gate
+make docs         # sphinx-build -W -b html docs docs/_build
+make build        # uv build
+make check        # pre-commit + test + docs + build (full CI gate)
 ```
+
+### Releasing to PyPI
+
+1. Bump `version` in `pyproject.toml` and move notes in `CHANGELOG.md`.
+2. Merge to `main`.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`
+
+The [`publish`](.github/workflows/publish.yml) workflow builds with `uv build`
+and publishes via PyPI trusted publishing (OIDC). Configure the trusted
+publisher on PyPI before the first release.
 
 The SDK ships a `py.typed` marker (PEP 561), so downstream code can type-check
 against `provably` without the package being treated as opaque. mypy runs

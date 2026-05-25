@@ -33,23 +33,14 @@ _CLAIM_FIELDS_FOR_LLM: tuple[tuple[str, str], ...] = (
 
 _unknown_claim_fields = {n for n, _ in _CLAIM_FIELDS_FOR_LLM} - set(HandoffClaim.model_fields)
 if _unknown_claim_fields:  # pragma: no cover - drift guard
-    raise RuntimeError(
-        f"claim_contract drift: {_unknown_claim_fields} not present on HandoffClaim"
-    )
+    raise RuntimeError(f"claim_contract drift: {_unknown_claim_fields} not present on HandoffClaim")
 
 
 _MODE_RULES: dict[str, str] = {
     "verbatim": "For verbatim: claimed_value must equal the full indexed payload.",
-    "field_extraction": (
-        "For field_extraction: set json_path; claimed_value is the value at that path."
-    ),
-    "schema_type": (
-        "For schema_type: set json_path and expected_json_schema; "
-        "claimed_value may be a concise summary."
-    ),
-    "range_threshold": (
-        "For range_threshold: set json_path and range_min and/or range_max for numeric bounds."
-    ),
+    "field_extraction": ("For field_extraction: set json_path; claimed_value is the value at that path."),
+    "schema_type": ("For schema_type: set json_path and expected_json_schema; claimed_value may be a concise summary."),
+    "range_threshold": ("For range_threshold: set json_path and range_min and/or range_max for numeric bounds."),
 }
 
 _missing_modes = set(get_args(VerificationMode)) - set(_MODE_RULES)
@@ -84,13 +75,7 @@ def claim_contract(
     """
     claim_body = ",\n    ".join(f'"{name}": {ty}' for name, ty in _CLAIM_FIELDS_FOR_LLM)
     wrapper_text = "".join(f'"{k}": {v}, ' for k, v in (wrapper_fields or {}).items())
-    shape = (
-        f'{{{wrapper_text}"claims": [\n'
-        "  {\n"
-        f"    {claim_body}\n"
-        "  }\n"
-        "]}"
-    )
+    shape = f'{{{wrapper_text}"claims": [\n  {{\n    {claim_body}\n  }}\n]}}'
 
     lines: list[str] = [
         "You reply with a single JSON object only (no markdown fences). Shape:",

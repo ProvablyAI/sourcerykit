@@ -76,9 +76,7 @@ def create_query_record_for_intercept(
 
     oid = (org_id or env_org_id()).strip()
     if not oid or not middleware_id or not collection_id:
-        raise ValueError(
-            "create_query_record_for_intercept requires org_id, middleware_id, collection_id"
-        )
+        raise ValueError("create_query_record_for_intercept requires org_id, middleware_id, collection_id")
 
     if row_id is not None:
         # Single integer equality — accepted by all Provably engine versions.

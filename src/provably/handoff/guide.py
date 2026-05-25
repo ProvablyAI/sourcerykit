@@ -13,18 +13,14 @@ __all__ = [
 
 
 FIELD_DESCRIPTIONS: dict[str, str] = {
-    "provably_org_id": (
-        "Provably organization ID; use with integration_api_key for Provably API authentication."
-    ),
+    "provably_org_id": ("Provably organization ID; use with integration_api_key for Provably API authentication."),
     "integration_api_key": "API key for Provably; pass as the x-api-key header.",
     "handoff_evaluate_url": (
         "URL of the Provably evaluator (handoff evaluation tool / MCP server) that the receiving "
         "agent should call. The run_id field enables full trace lookup in any dashboard."
     ),
     "handoff_contract_version": "Schema version of this HandoffPayload.",
-    "run_id": (
-        "Optional caller-supplied identifier used to correlate a handoff across logs and traces."
-    ),
+    "run_id": ("Optional caller-supplied identifier used to correlate a handoff across logs and traces."),
     "claims": (
         "List of claims about sender-agent actions; each claim carries claimed_value, action_name "
         "and query_record_id. The evaluator fetches ground truth from Provably using query_record_id."
@@ -32,14 +28,10 @@ FIELD_DESCRIPTIONS: dict[str, str] = {
     "provably_mcp_url": "Provably MCP endpoint; alternative verification path.",
     "reasoning": "Free-text reasoning from the sending agent; informational only, not verified.",
     "query_record_ids": "Parallel list of Provably query UUIDs aligned with claims.",
-    "trusted_endpoint_registry": (
-        "Snapshot of trusted endpoint URLs for provably_org_id at handoff time."
-    ),
+    "trusted_endpoint_registry": ("Snapshot of trusted endpoint URLs for provably_org_id at handoff time."),
     "query_record_urls": "Human-readable query record URLs aligned with claims.",
     "task": "Task description for this handoff.",
-    "verification_results": (
-        "Per-claim or aggregate verification labels (often filled after evaluation)."
-    ),
+    "verification_results": ("Per-claim or aggregate verification labels (often filled after evaluation)."),
     "handoff_field_guide": "Short descriptions of each top-level field for external agents.",
     "instructions": "Steps the receiving agent should follow.",
     "sdk_precheck": "Optional deterministic precheck from the sender (informational only).",
@@ -47,14 +39,10 @@ FIELD_DESCRIPTIONS: dict[str, str] = {
 
 
 FIELD_DESCRIPTIONS_OFF: dict[str, str] = {
-    "handoff_evaluate_url": (
-        "Empty when Provably intercept indexing was disabled; no evaluator POST for this run."
-    ),
+    "handoff_evaluate_url": ("Empty when Provably intercept indexing was disabled; no evaluator POST for this run."),
     "integration_api_key": "Empty when Provably was off; not used for this run.",
     "query_record_ids": "Empty when Provably was off; no proof query IDs.",
-    "trusted_endpoint_registry": (
-        "Empty when Provably was off; trusted endpoint policy enforcement is skipped."
-    ),
+    "trusted_endpoint_registry": ("Empty when Provably was off; trusted endpoint policy enforcement is skipped."),
     "query_record_urls": "Empty when Provably was off; no query record URLs.",
 }
 

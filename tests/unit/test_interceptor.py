@@ -100,9 +100,8 @@ def _attach_with_pattern_allowlist(
     recorded: list[str] = []
     tampered: list[Any] = []
 
-    monkeypatch.setattr(
-        interceptor, "_insert_row", lambda url, *_a, **_k: recorded.append(url)
-    )
+    monkeypatch.setattr(interceptor, "_insert_row", lambda url, *_a, **_k: recorded.append(url))
+
     def _record_tamper(raw: Any) -> Any:
         tampered.append(raw)
         return raw

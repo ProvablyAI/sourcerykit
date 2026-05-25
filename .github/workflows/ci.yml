@@ -25,17 +25,17 @@ jobs:
       - name: Install
         run: uv sync --extra dev --locked
 
-      - name: Ruff
-        run: uv run ruff check
-
-      - name: Mypy
-        run: uv run mypy src tests
+      - name: Pre-commit
+        run: uv run pre-commit run --all-files
 
       - name: Pytest
-        run: uv run pytest -q
+        run: uv run pytest -q --cov=provably --cov-report=term-missing --cov-fail-under=60
 
-      - name: Build wheel
-        run: uv run python -m build
+      - name: Sphinx
+        run: uv run sphinx-build -W -b html docs docs/_build
+
+      - name: Build package
+        run: uv build
 
   docker:
     runs-on: ubuntu-latest

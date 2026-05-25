@@ -239,9 +239,7 @@ def _verify_query_record(
     url = f"{base_url}/api/v1/organizations/{org_id}/queries/{query_record_id}/verify"
     last_exc: Exception | None = None
     for attempt, wait in enumerate((*_VERIFY_RETRY_BACKOFF, None)):
-        response = client.post(
-            url, headers={"x-api-key": api_key, "Content-Type": "application/json"}, json={}
-        )
+        response = client.post(url, headers={"x-api-key": api_key, "Content-Type": "application/json"}, json={})
         if response.status_code not in _VERIFY_TRANSIENT_STATUS:
             response.raise_for_status()
             return
@@ -304,7 +302,7 @@ def _coerce_query_result_to_indexed_value(value: Any) -> Any:
 
 
 def _parse_jsonish_cell(cell: Any) -> Any:
-    if isinstance(cell, (dict, list)):
+    if isinstance(cell, dict | list):
         return cell
     if isinstance(cell, str) and cell.strip()[:1] in "{[":
         try:
@@ -376,12 +374,12 @@ def _timing_from_query_record(record: dict[str, Any]) -> dict[str, float]:
     )
     for k in proof_keys:
         v = record.get(k)
-        if isinstance(v, (int, float)):
+        if isinstance(v, int | float):
             out["proof_time_ms"] = float(v)
             break
     for k in verify_keys:
         v = record.get(k)
-        if isinstance(v, (int, float)):
+        if isinstance(v, int | float):
             out["verify_time_ms"] = float(v)
             break
 

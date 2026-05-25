@@ -207,9 +207,7 @@ def list_trusted_endpoints(
     blocked = excluded_urls or set()
     metadata_by_url: dict[str, dict[str, Any]] = {}
     if metadata_seeds:
-        metadata_by_url = {
-            normalize_url_for_trust(str(seed.get("url", ""))): seed for seed in metadata_seeds
-        }
+        metadata_by_url = {normalize_url_for_trust(str(seed.get("url", ""))): seed for seed in metadata_seeds}
     result: list[dict[str, str]] = []
     seen: set[str] = set()
     for normalized_url, display_label in rows:
