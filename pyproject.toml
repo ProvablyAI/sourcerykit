@@ -41,8 +41,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ProvablyAI/provably-python-sdk"
-Issues = "https://github.com/ProvablyAI/provably-python-sdk/issues"
+Homepage = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2"
+Issues = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/provably"]

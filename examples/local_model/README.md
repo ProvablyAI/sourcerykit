@@ -80,7 +80,7 @@ Copy the repo-root [`.env.example`](../../.env.example) to `.env` and fill in th
 
 ## Obtaining environment variables
 
-- **PROVABLY_API_KEY**: Log in to https://app.provably.ai and open *User settings* → *Integrations*. Create a new Integration and copy the generated API key into `PROVABLY_API_KEY`.
+- **PROVABLY_API_KEY**: Log in to https://app.provably.ai and open *User settings* → *API Key* → *Active key*. Copy the active API key into `PROVABLY_API_KEY`.
 
 - **PROVABLY_ORG_ID**: After signing in to the Provably web app your organisation UUID appears in the URL. For example:
 

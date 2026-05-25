@@ -30,12 +30,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /build
 
-RUN pip install --upgrade pip build
+RUN pip install --upgrade pip hatch
 
 COPY pyproject.toml README.md LICENSE.md ./
 COPY src ./src
 
-RUN python -m build --wheel --outdir /dist
+RUN hatch build -t wheel /dist
 
 # ---------- Stage 2: runtime ------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS runtime
