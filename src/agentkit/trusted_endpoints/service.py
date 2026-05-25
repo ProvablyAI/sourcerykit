@@ -14,6 +14,7 @@ from agentkit.db._trusted_endpoints import (
 from agentkit.errors import AgentKitStorageError, AgentKitTrustError
 from agentkit.logger import get_logger
 from agentkit.schemas.handoff import HandoffPayload
+from agentkit.validation import validate_length
 
 _log = get_logger(__name__)
 
@@ -66,6 +67,9 @@ async def insert_trusted_endpoint(url: str, display_label: str | None = None) ->
 
     # Sanitize the URL string
     clean_url = sanitize_and_extract_trusted_url(url)
+
+    # Validate optional display label length against DB column size
+    validate_length("display_label", display_label, max_len=255, allow_none=True)
 
     org_id = get_settings().org_id
     engine = get_engine()

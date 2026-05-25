@@ -9,6 +9,7 @@ from agentkit.errors import AgentKitTrustError
 from agentkit.intercept._self_egress import is_self_egress
 from agentkit.logger import get_logger
 from agentkit.trusted_endpoints import is_endpoint_trusted
+from agentkit.validation import validate_length
 
 _log = get_logger(__name__)
 
@@ -25,6 +26,9 @@ async def add_intercept_row(
     agent_id: str,
     action_name: str,
 ) -> UUID | None:
+    # Validate identifiers that map to VARCHAR DB columns
+    validate_length("agent_id", agent_id, max_len=255)
+    validate_length("action_name", action_name, max_len=255)
     if is_self_egress():
         return None
 

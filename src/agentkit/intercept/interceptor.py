@@ -10,6 +10,7 @@ from agentkit.intercept._aiohttp_hook import init_aiohttp_hooks
 from agentkit.intercept._httpx_hook import init_httpx_hooks
 from agentkit.intercept._storage import add_intercept_row
 from agentkit.logger import get_logger
+from agentkit.validation import validate_length
 
 _log = get_logger(__name__)
 
@@ -23,6 +24,10 @@ _action_row_ids: dict[tuple[str, str], UUID] = {}
 @asynccontextmanager
 async def async_intercept_context(*, agent_id: str, action_name: str) -> AsyncGenerator[None, None]:
     """Scoped tagging context manager for tracking HTTP traffic (async)."""
+    # Validate user-provided identifiers before setting context
+    validate_length("agent_id", agent_id, max_len=255)
+    validate_length("action_name", action_name, max_len=255)
+
     _log.debug("intercept_context_entered", agent_id=agent_id, action_name=action_name)
     t_agent = _ctx_agent_id.set(agent_id)
     t_action = _ctx_action_name.set(action_name)
