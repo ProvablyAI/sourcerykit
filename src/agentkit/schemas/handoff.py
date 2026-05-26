@@ -7,6 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from agentkit.schemas.verification_mode import VerificationMode
 
+# TODO: Replace with uuid.NIL once the repository drops support for Python < 3.14
+UUID_NIL = getattr(uuid, "NIL", uuid.UUID(int=0))
+
 
 class HandoffClaim(BaseModel):
     """One outbound HTTP intercept claim; ground truth lives in the matching Provably query record."""
@@ -24,7 +27,7 @@ class HandoffClaim(BaseModel):
         description="Raw response the claim was extracted from; kept for debugging, not compared.",
     )
     query_id: uuid.UUID = Field(
-        default=uuid.NIL,
+        default=UUID_NIL,
         description="Provably query record UUID used to fetch the canonical indexed value.",
     )
     verification_mode: VerificationMode = Field(
@@ -59,7 +62,7 @@ class HandoffPayload(BaseModel):
 
     provably_mcp_url: str = Field(default="", description="Base URL of the Provably MCP server.")
     provably_org_id: uuid.UUID = Field(
-        default=uuid.NIL, description="Provably org id; scopes registry and query lookups."
+        default=UUID_NIL, description="Provably org id; scopes registry and query lookups."
     )
     integration_api_key: str = Field(
         default="",
