@@ -99,9 +99,6 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
                 }
             return {**base, "result": Outcome.PASS}
 
-        case _:
-            return {**base, "result": Outcome.CAUGHT, "detail": f"unknown verification_mode: {verification_mode}"}
-
 
 def _get_by_json_path(obj: Any, path: str) -> Any:
     """Path walker"""
