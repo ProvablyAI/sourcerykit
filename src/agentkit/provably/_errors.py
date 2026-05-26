@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import httpx
@@ -36,7 +37,7 @@ class ProvablyDataError(ProvablyError):
 
 
 @asynccontextmanager
-async def provably_error_handler(service: str):
+async def provably_error_handler(service: str) -> AsyncIterator[None]:
     """
     Standardizes error handling and logging across service methods.
 

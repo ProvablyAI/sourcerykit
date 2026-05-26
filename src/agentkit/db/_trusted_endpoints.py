@@ -1,6 +1,7 @@
 """SQLAlchemy Core DML statements for the ``trusted_endpoints`` table."""
 
 import uuid
+from typing import Any
 
 from sqlalchemy import Insert, Select, and_, exists, literal, select
 from sqlalchemy.dialects.postgresql import insert
@@ -13,7 +14,7 @@ _ACTIVE = and_(
 )
 
 
-def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str) -> Select:
+def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str) -> Select[tuple[bool]]:
     """Fast-path existence check: scalar result is a boolean.
 
     Equivalent raw SQL::
@@ -38,7 +39,7 @@ def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str) -> Sele
     )
 
 
-def select_active_trusted_endpoints(org_id: uuid.UUID) -> Select:
+def select_active_trusted_endpoints(org_id: uuid.UUID) -> Select[tuple[Any, ...]]:
     """Return a SELECT for all active endpoints for ``org_id``, most-recent first.
 
     Equivalent raw SQL::

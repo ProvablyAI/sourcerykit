@@ -1,17 +1,17 @@
 """SQLAlchemy Core DML statements for the ``provably_intercepts`` table."""
 
 import json
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, column, insert, select, text
-from sqlalchemy import table as sa_table
-from sqlalchemy.dialects import postgresql
+from sqlalchemy import Dialect, Insert, and_, column, create_engine, insert, select, text
 from sqlalchemy.sql.selectable import Select
 
 from agentkit.db._schema import provably_intercepts
 
-_PG = postgresql.dialect()
-_t = sa_table(provably_intercepts.name, *[column(c.name) for c in provably_intercepts.c])
+_ENGINE = create_engine("postgresql://")
+_PG: Dialect = _ENGINE.dialect
+_t = provably_intercepts
 
 
 def insert_intercept(
@@ -21,7 +21,7 @@ def insert_intercept(
     request_payload: dict[str, object],
     raw_response: dict[str, object],
     response_hash: str,
-):
+) -> Insert:
     """Return a SQLAlchemy Core INSERT statement for a new intercept row.
 
     Equivalent raw SQL::
@@ -63,7 +63,7 @@ def select_intercepts_by_action(action_name: str) -> str:
     return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
 
-def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) -> Select:
+def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) -> Select[tuple[Any, ...]]:
     """Return a Select construct that fetches all rows matching ``row_id`` and ``action_name``.
 
     Equivalent raw SQL::
