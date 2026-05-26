@@ -143,7 +143,7 @@ async def main() -> None:
                 }
             ],
         },
-        run_id=uuid.uuid7(),
+        run_id=uuid.uuid4(),
         intercept_agent_id="demo",
     )
 
