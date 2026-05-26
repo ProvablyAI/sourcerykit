@@ -74,13 +74,13 @@ POSTGRES_URL=postgresql://user:password@db-host.example.com:5432/provably
 | `LOCAL_MODEL_URL`     | no       | Docker Model Runner endpoint URL (default: `http://localhost:12434/engines/v1/chat/completions`) |
 | `LOCAL_MODEL`         | no       | Model id to use, as pulled via `docker model pull` (default: `huggingface.co/qwen/qwen3.5-0.8b-base`) |
 
-Copy `examples/.env.example` to `examples/.env` and fill in the values, or export them in your shell.
+Copy the repo-root [`.env.example`](../../.env.example) to `.env` and fill in the values, or export them in your shell. The example-specific `LOCAL_MODEL_URL` / `LOCAL_MODEL` overrides live in the same file under the "Examples-only" section.
 
 ---
 
 ## Obtaining environment variables
 
-- **PROVABLY_API_KEY**: Log in to https://app.provably.ai and open *User settings* → *Integrations*. Create a new Integration and copy the generated API key into `PROVABLY_API_KEY`.
+- **PROVABLY_API_KEY**: Log in to https://app.provably.ai and open *User settings* → *API Key* → *Active key*. Copy the active API key into `PROVABLY_API_KEY`.
 
 - **PROVABLY_ORG_ID**: After signing in to the Provably web app your organisation UUID appears in the URL. For example:
 
@@ -88,7 +88,7 @@ Copy `examples/.env.example` to `examples/.env` and fill in the values, or expor
 	https://app.provably.ai/org/${PROVABLY_ORG_ID}/data?tab=collections
 	```
 
-- **PROVABLY_RUST_BE_URL**: You can usually leave this set to the default value provided in `examples/.env.example` (for example `https://api.provably.ai`) unless you are running a self-hosted Provably backend.
+- **PROVABLY_RUST_BE_URL**: You can usually leave this set to the default value provided in the repo-root [`.env.example`](../../.env.example) (for example `https://api.provably.ai`) unless you are running a self-hosted Provably backend.
 
 ## Running
 

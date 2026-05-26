@@ -8,6 +8,8 @@ contract is honored.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from agentkit.handoff.evaluator import evaluate_handoff
@@ -15,7 +17,7 @@ from agentkit.handoff.types import HandoffClaim, HandoffPayload
 from tests.e2e.conftest import FakeHttpServer
 
 
-def _stored(record: dict) -> dict:
+def _stored(record: dict[str, Any]) -> dict[str, Any]:
     return {"result": record}
 
 

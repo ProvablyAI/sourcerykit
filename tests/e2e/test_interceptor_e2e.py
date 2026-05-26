@@ -64,9 +64,7 @@ def test_simulation_hook_overrides_response_body(
 
 
 @pytest.mark.e2e
-def test_disable_stops_recording(
-    fake_server: FakeHttpServer, patched_interceptor: list[dict[str, Any]]
-) -> None:
+def test_disable_stops_recording(fake_server: FakeHttpServer, patched_interceptor: list[dict[str, Any]]) -> None:
     fake_server.respond("GET", "/data", status=200, body={"v": 1})
 
     requests.get(f"{fake_server.base_url}/data")
@@ -82,9 +80,7 @@ def test_disable_stops_recording(
 
 
 @pytest.mark.e2e
-def test_httpx_get_also_intercepted(
-    fake_server: FakeHttpServer, patched_interceptor: list[dict[str, Any]]
-) -> None:
+def test_httpx_get_also_intercepted(fake_server: FakeHttpServer, patched_interceptor: list[dict[str, Any]]) -> None:
     fake_server.respond("GET", "/data", status=200, body={"v": 7})
 
     response = httpx.get(f"{fake_server.base_url}/data")

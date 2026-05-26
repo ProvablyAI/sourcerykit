@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
 
 [project]
 name = "provably-sdk"
@@ -35,19 +35,35 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "coverage[toml]>=7.0",
     "ruff>=0.3",
     "build>=1.2",
+    "mypy>=1.10",
+    "pre-commit>=4.0",
+    "sphinx>=8.0",
+    "myst-parser>=4.0",
+    "types-jsonschema>=4.0",
+    "types-requests>=2.31",
     "openai-agents>=0.0.3",
     "aiohttp>=3.9",
 ]
 
 [project.urls]
-Homepage = "https://github.com/ProvablyAI/provably-python-sdk"
-Issues = "https://github.com/ProvablyAI/provably-python-sdk/issues"
+Homepage = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2"
+Issues = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2/issues"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["provably*"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/provably"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/provably",
+    "README.md",
+    "LICENSE.md",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 120
@@ -66,3 +82,38 @@ asyncio_mode = "auto"
 markers = [
     "e2e: end-to-end tests that drive the SDK against a real loopback HTTP server",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+files = ["src", "tests"]
+strict = true
+warn_unreachable = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["psycopg2", "psycopg2.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["aiohttp", "aiohttp.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["openai_agents", "openai_agents.*", "agents", "agents.*"]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+warn_required_dynamic_aliases = true
+
+[tool.coverage.run]
+source = ["provably"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+omit = ["*/tests/*"]

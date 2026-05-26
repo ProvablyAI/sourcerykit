@@ -205,7 +205,7 @@ planned (issue [#2](https://github.com/ProvablyAI/provably-python-sdk/issues/2))
 
 1. Sign up at [app.provably.ai](https://app.provably.ai).
 2. Create an organisation. Its id is what goes in `PROVABLY_ORG_ID`.
-3. In the left-side menu, go to **Integrations** and create one. The generated key is your `PROVABLY_API_KEY`.
+3. Go to **User settings** → **API Key** → **Active key** and copy the active key into `PROVABLY_API_KEY`.
 
 Full product docs: [provably.ai/docs](https://provably.ai/docs).
 
@@ -214,9 +214,13 @@ Full product docs: [provably.ai/docs](https://provably.ai/docs).
 | `PROVABLY_API_KEY` | `initialize_runtime`, integration cache | yes |
 | `PROVABLY_ORG_ID` | `initialize_runtime`, intercept allow-list | yes |
 | `PROVABLY_RUST_BE_URL` | `initialize_runtime`, evaluator | yes |
+| `PROVABLY_MCP_URL` | `build_handoff_payload` (embedded in `HandoffPayload`) | yes |
 | `POSTGRES_URL` | intercept storage, trusted endpoints, handoff preprocess | yes |
 | `PROVABLY_APP_UI_URL` | optional UI deep-links | no |
-| `PROVABLY_QUERY_RESOLVE_MAX_WAIT_S` | max seconds to wait for a query record to appear (default 15) | no |
+
+A copy-pastable template lives at [`.env.example`](.env.example) in the repo
+root; it is the canonical inventory of every variable the SDK or first-party
+examples read.
 
 `POSTGRES_URL` is a hard dependency today. Three SDK modules open Postgres
 directly (`provably.intercept._storage`, `provably.trusted_endpoints`,
@@ -469,10 +473,44 @@ uv sync --extra dev
 ```
 
 ```bash
-uv run ruff check .
-uv run pytest
-python -m build              # wheel + sdist into ./dist/
+uv run pre-commit run --all-files   # ruff + mypy (matches CI)
+uv run pytest --cov=provably --cov-fail-under=60
+uv run sphinx-build -W -b html docs docs/_build
+uv build                            # wheel + sdist into ./dist/
 ```
+
+Install git hooks once: `uv run pre-commit install`.
+
+`uv.lock` is committed; CI installs with `uv sync --extra dev --locked` so
+the lockfile must match `pyproject.toml` (CI fails if someone forgot `uv
+lock`). Refresh it with `make lock` (or `make lock-upgrade` to bump pins).
+
+A [`Makefile`](Makefile) wraps the same commands for discoverability — run
+`make help` to list every target. The most common ones:
+
+```bash
+make install      # uv sync --extra dev --locked
+make pre-commit   # all pre-commit hooks (CI parity)
+make test         # pytest with 60% coverage gate
+make docs         # sphinx-build -W -b html docs docs/_build
+make build        # uv build
+make check        # pre-commit + test + docs + build (full CI gate)
+```
+
+### Releasing to PyPI
+
+1. Bump `version` in `pyproject.toml` and move notes in `CHANGELOG.md`.
+2. Merge to `main`.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`
+
+The [`publish`](.github/workflows/publish.yml) workflow builds with `uv build`
+and publishes via PyPI trusted publishing (OIDC). Configure the trusted
+publisher on PyPI before the first release.
+
+The SDK ships a `py.typed` marker (PEP 561), so downstream code can type-check
+against `provably` without the package being treated as opaque. mypy runs
+with `strict = true` in [`pyproject.toml`](pyproject.toml); contributions are
+expected to keep the strict gate green.
 
 The SDK has no `fastapi`, `langgraph`, or LLM-vendor dependencies, and CI
 should keep it that way — see [`docs/architecture.md`](docs/architecture.md)
@@ -502,35 +540,24 @@ database.
 
 ## Docker
 
-The repo ships a multi-stage `Dockerfile`. Three build targets are exposed:
+The repo ships a lean two-stage `Dockerfile` oriented at **shipping** the SDK,
+not at running CI:
 
 | Target    | What it produces                                                    |
 | --------- | ------------------------------------------------------------------- |
-| `builder` | Wheel + sdist in `/dist` (used by the other stages, not run alone). |
-| `test`    | Wheel installed + dev tools; `CMD` runs `ruff check && pytest -q`.  |
-| `runtime` | Slim image with only the wheel; `CMD` smoke-imports `provably`.     |
+| `builder` | Wheel in `/dist` (used by the runtime stage, not run alone).        |
+| `runtime` | Slim image with only the wheel installed; `CMD` smoke-imports `provably`. |
 
-Run the full lint + test suite in a container:
-
-```bash
-docker build --target test -t provably-sdk:test .
-docker run --rm provably-sdk:test
-```
-
-Smoke-import the runtime image:
+Build and smoke-import the runtime image:
 
 ```bash
-docker build --target runtime -t provably-sdk:runtime .
+docker build -t provably-sdk:runtime .
 docker run --rm provably-sdk:runtime
 ```
 
-Use `docker-compose.yml` for local development runs (no database required —
-tests are hermetic):
-
-```bash
-docker compose run --rm sdk                  # ruff + pytest
-docker compose run --rm sdk pytest -q -m e2e # only e2e tests
-```
+Local development and CI run tests via **uv** (`uv sync --extra dev` +
+`uv run pytest`), not inside the container. The image intentionally does not
+bundle `pytest` / `ruff` / dev extras.
 
 ## Security model
 

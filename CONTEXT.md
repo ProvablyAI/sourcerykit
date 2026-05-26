@@ -42,11 +42,16 @@ provably-python-sdk/
     conftest.py             docs the two-layer setup
     unit/                   fast, hermetic; mocks for httpx + psycopg2
     e2e/                    real loopback http.server; real requests + httpx
-  docs/                     architecture, per-pillar deep dives, historical plans
-  .github/workflows/        ci.yml (active, runs lint + tests + docker), publish.yml (manual stub)
-  Dockerfile                multi-stage: builder → test → runtime
-  docker-compose.yml        sdk container + Postgres for integration tests
+  docs/                     architecture, per-pillar deep dives, Sphinx (conf.py, index.md)
+  .github/workflows/        ci.yml (pre-commit, pytest+coverage, sphinx, docker), publish.yml (tag v*)
+  .github/dependabot.yml    weekly uv + github-actions updates
+  .github/pull_request_template.md
+  .pre-commit-config.yaml   ruff + mypy hooks mirrored in CI
+  Dockerfile                two-stage: builder → runtime (no test image)
   .dockerignore
+  .env.example              canonical inventory of SDK + example env vars
+  Makefile                  uv-backed dev targets (install / test / typecheck / build / ...)
+  uv.lock                   committed lockfile; CI uses --locked
 ```
 
 ## Dependency rules
@@ -132,22 +137,28 @@ considered done.
 The repo is dockerised so any contributor (or CI) can reproduce the test
 matrix without a local Python toolchain.
 
-- **`Dockerfile`** — three stages:
-  - `builder` builds the wheel/sdist from `src/` into `/dist`.
-  - `test` installs the wheel + dev tools and defaults to `ruff check && pytest -q`.
+- **`Dockerfile`** — two stages:
+  - `builder` builds the wheel from `src/` into `/dist`.
   - `runtime` is a slim image with only the wheel installed, suitable as a
-    base for services that consume the SDK.
-- **`docker-compose.yml`** — pairs the `test` image with a Postgres 16
-  service (`db`) and wires `POSTGRES_URL` into the `sdk` container, so
-  future integration tests that exercise the real psycopg2 path can use it
-  without extra plumbing.
-- **CI** — `.github/workflows/ci.yml` has a `docker` job that builds both
-  `test` and `runtime` targets and runs them, so the Docker layout cannot
-  silently rot.
+    base for services that consume the SDK. The default `CMD` smoke-imports
+    `provably`.
+- **Local development** uses `uv` directly (`uv sync --extra dev` +
+  `uv run pytest`); the test suite is hermetic and does **not** require a
+  live Postgres instance, so no Compose stack is needed. If a future
+  integration test ever needs real Postgres, introduce the database
+  dependency explicitly in that test layer rather than as ambient
+  infrastructure.
+- **CI** — `.github/workflows/ci.yml` runs pre-commit, pytest with a 60%
+  coverage floor, Sphinx (`sphinx-build -W`), and `uv build` on Python
+  3.11–3.13, then a `docker` job that builds the `runtime` image and runs its
+  smoke `CMD`. **Publish** — pushing a `v*` tag triggers
+  `.github/workflows/publish.yml` (`uv build` → PyPI via OIDC).
 
 If you change `pyproject.toml` (deps, optional extras, name, license,
-build-system), bump the Docker layer that copies that file and run
-`docker run --rm provably-sdk:test` locally before pushing.
+build-system), bump the Docker layer that copies that file and run the
+local uv check (`uv sync --extra dev && uv run pytest -q`) plus a Docker
+smoke build (`docker build -t provably-sdk:runtime . && docker run --rm
+provably-sdk:runtime`) before pushing.
 
 ## When you are about to break things
 

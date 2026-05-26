@@ -22,10 +22,7 @@ def test_outcome_from_trace_falsy_trace() -> None:
 
 
 def test_aggregate_outcome_verification_results() -> None:
-    assert (
-        aggregate_outcome(HandoffPayload(verification_results=["PASS", "CAUGHT"]))
-        == "CAUGHT"
-    )
+    assert aggregate_outcome(HandoffPayload(verification_results=["PASS", "CAUGHT"])) == "CAUGHT"
     assert aggregate_outcome(HandoffPayload(verification_results=["PASS", "PASS"])) == "PASS"
     assert aggregate_outcome(HandoffPayload(verification_results=[])) == "PASS"
     assert aggregate_outcome(HandoffPayload()) == "PASS"

@@ -1,9 +1,9 @@
 name: publish
 
-# STUB — manual-trigger only. Tagging alone does NOT publish.
-# Enable once PyPI trusted-publishing (or an API token secret) is configured for this repo.
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build-and-publish:
@@ -13,6 +13,7 @@ jobs:
       url: https://pypi.org/p/provably-sdk
     permissions:
       id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -21,11 +22,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build deps
-        run: pip install build
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
 
-      - name: Build sdist + wheel
-        run: python -m build
+      - name: Build package
+        run: uv build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

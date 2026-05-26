@@ -20,6 +20,7 @@ Trust-gate testing notes (scenarios C and D):
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -39,7 +40,7 @@ from tests.e2e.conftest import FakeHttpServer, FakeResponse
 # ---------------------------------------------------------------------------
 
 
-def _tool_call_response(tool_name: str, call_id: str = "call_001", arguments: str = "{}") -> dict:
+def _tool_call_response(tool_name: str, call_id: str = "call_001", arguments: str = "{}") -> dict[str, Any]:
     """First LLM turn: respond with a tool_call."""
     return {
         "id": "chatcmpl-test-turn1",
@@ -68,7 +69,7 @@ def _tool_call_response(tool_name: str, call_id: str = "call_001", arguments: st
     }
 
 
-def _final_response(content: str = "The temperature is 21 degrees Celsius.") -> dict:
+def _final_response(content: str = "The temperature is 21 degrees Celsius.") -> dict[str, Any]:
     """Second LLM turn: final assistant message."""
     return {
         "id": "chatcmpl-test-turn2",
@@ -93,12 +94,12 @@ def _final_response(content: str = "The temperature is 21 degrees Celsius.") -> 
 
 
 @pytest.fixture
-def fake_llm_server(fake_server_factory) -> FakeHttpServer:
+def fake_llm_server(fake_server_factory: Callable[[], FakeHttpServer]) -> FakeHttpServer:
     """Fake LLM: tool_call response on the first POST, final assistant message after that."""
-    server = fake_server_factory()
+    server: FakeHttpServer = fake_server_factory()
     call_count = [0]
 
-    def _handle_chat(_req):
+    def _handle_chat(_req: Any) -> FakeResponse:
         call_count[0] += 1
         body = _tool_call_response("get_temperature") if call_count[0] == 1 else _final_response()
         return FakeResponse(status=200, body=body)
@@ -108,9 +109,9 @@ def fake_llm_server(fake_server_factory) -> FakeHttpServer:
 
 
 @pytest.fixture
-def fake_data_server(fake_server_factory) -> FakeHttpServer:
+def fake_data_server(fake_server_factory: Callable[[], FakeHttpServer]) -> FakeHttpServer:
     """Fake data API: GET /v1/temperature → {'celsius': 21}."""
-    server = fake_server_factory()
+    server: FakeHttpServer = fake_server_factory()
     server.respond("GET", "/v1/temperature", status=200, body={"celsius": 21})
     return server
 
@@ -158,9 +159,7 @@ def patched_interceptor_with_trust(monkeypatch: pytest.MonkeyPatch) -> tuple[lis
     allowlist: set[str] = set()
 
     monkeypatch.setenv("POSTGRES_URL", "postgresql://fake-host/fake-db")
-    monkeypatch.setattr(
-        _storage_module, "_require_trusted_endpoint", lambda _pg, url: _trusted_check(allowlist, url)
-    )
+    monkeypatch.setattr(_storage_module, "_require_trusted_endpoint", lambda _pg, url: _trusted_check(allowlist, url))
     monkeypatch.setattr(
         _storage_module,
         "_write_row",
@@ -190,9 +189,7 @@ def _configure_agent_client(fake_llm_server: FakeHttpServer) -> None:
     set_default_openai_api("chat_completions")
 
 
-def _make_weather_agent(
-    fake_data_server: FakeHttpServer, *, fail_loudly: bool = False
-) -> Agent:
+def _make_weather_agent(fake_data_server: FakeHttpServer, *, fail_loudly: bool = False) -> Agent:
     """Build the standard weather agent that GETs ``/v1/temperature`` from the fake data server.
 
     ``fail_loudly=True`` sets ``failure_error_function=None`` on the tool so that exceptions
@@ -203,9 +200,10 @@ def _make_weather_agent(
     decorator = function_tool(failure_error_function=None) if fail_loudly else function_tool
 
     @decorator
-    def get_temperature() -> dict:
+    def get_temperature() -> dict[str, Any]:
         """Get the current temperature."""
-        return requests_lib.get(data_url).json()
+        response: dict[str, Any] = requests_lib.get(data_url).json()
+        return response
 
     return Agent(
         name="weather-agent",
@@ -216,17 +214,19 @@ def _make_weather_agent(
 
 
 def _make_provably_backend(
-    fake_server_factory, query_record_id: str, indexed_value: dict
+    fake_server_factory: Callable[[], FakeHttpServer],
+    query_record_id: str,
+    indexed_value: dict[str, Any],
 ) -> FakeHttpServer:
     """Spin up a fake Provably backend that resolves one query record + one verify call."""
-    server = fake_server_factory()
+    server: FakeHttpServer = fake_server_factory()
     base = f"/api/v1/organizations/org-1/queries/{query_record_id}"
     server.respond("GET", base, status=200, body={"result": indexed_value})
     server.respond("POST", f"{base}/verify", status=200, body={"verified": True})
     return server
 
 
-def _make_payload(query_record_id: str, claimed_value: dict) -> HandoffPayload:
+def _make_payload(query_record_id: str, claimed_value: dict[str, Any]) -> HandoffPayload:
     return HandoffPayload(
         provably_org_id="org-1",
         integration_api_key="key-abc",
@@ -262,7 +262,7 @@ def _exception_chain_contains(exc: BaseException, pattern: str) -> bool:
 async def test_openai_agent_intercepts_and_handoff_passes(
     fake_llm_server: FakeHttpServer,
     fake_data_server: FakeHttpServer,
-    fake_server_factory,
+    fake_server_factory: Callable[[], FakeHttpServer],
     patched_interceptor: list[dict[str, Any]],
     fake_trusted_endpoints: set[str],
 ) -> None:
@@ -278,9 +278,7 @@ async def test_openai_agent_intercepts_and_handoff_passes(
     assert methods.count("GET") >= 1, f"Expected ≥1 data GET, got {methods}"
 
     fake_provably = _make_provably_backend(fake_server_factory, "q1", {"celsius": 21})
-    eval_result = evaluate_handoff(
-        _make_payload("q1", {"celsius": 21}), provably_base_url=fake_provably.base_url
-    )
+    eval_result = evaluate_handoff(_make_payload("q1", {"celsius": 21}), provably_base_url=fake_provably.base_url)
     assert eval_result["outcome"] == "PASS", f"Expected PASS, got: {eval_result}"
     assert eval_result["per_claim"][0]["result"] == "PASS"
 
@@ -289,7 +287,7 @@ async def test_openai_agent_intercepts_and_handoff_passes(
 async def test_evaluate_catches_wrong_claim(
     fake_llm_server: FakeHttpServer,
     fake_data_server: FakeHttpServer,
-    fake_server_factory,
+    fake_server_factory: Callable[[], FakeHttpServer],
     patched_interceptor: list[dict[str, Any]],
     fake_trusted_endpoints: set[str],
 ) -> None:
@@ -348,7 +346,7 @@ async def test_untrusted_post_blocks_llm_call(
 
 @pytest.mark.e2e
 def test_self_egress_completes_without_trust(
-    fake_server_factory,
+    fake_server_factory: Callable[[], FakeHttpServer],
     patched_interceptor: list[dict[str, Any]],
     fake_trusted_endpoints: set[str],
 ) -> None:
@@ -360,9 +358,7 @@ def test_self_egress_completes_without_trust(
     assert len(fake_trusted_endpoints) == 0  # nothing trusted
     fake_provably = _make_provably_backend(fake_server_factory, "q1", {"x": 1})
 
-    eval_result = evaluate_handoff(
-        _make_payload("q1", {"x": 1}), provably_base_url=fake_provably.base_url
-    )
+    eval_result = evaluate_handoff(_make_payload("q1", {"x": 1}), provably_base_url=fake_provably.base_url)
     assert eval_result["outcome"] == "PASS", f"Expected PASS, got: {eval_result}"
 
 
@@ -382,8 +378,7 @@ async def test_async_llm_call_intercepted(
 
     llm_base = normalize_url_for_trust(fake_llm_server.base_url)
     post_llm_rows = [
-        r for r in patched_interceptor
-        if r["method"] == "POST" and llm_base in normalize_url_for_trust(r["url"])
+        r for r in patched_interceptor if r["method"] == "POST" and llm_base in normalize_url_for_trust(r["url"])
     ]
     assert post_llm_rows, (
         f"Expected ≥1 POST row to LLM server {llm_base}. "

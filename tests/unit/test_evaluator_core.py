@@ -105,7 +105,7 @@ def test_extract_resultset_raw_response_matches_intercept_body() -> None:
 
 
 def _mock_httpx_client(
-    get_response_json: dict | list[dict],
+    get_response_json: dict[str, Any] | list[dict[str, Any]],
     *,
     post_raises: Exception | None = None,
     post_status: int = 200,
@@ -378,9 +378,7 @@ def test_final_verify_step_called_once_per_unique_qrid(mock_client_cls: MagicMoc
     assert r["outcome"] == "PASS"
 
     client_inst = mock.__enter__.return_value
-    verify_paths = [
-        call.args[0] for call in client_inst.post.call_args_list if "/verify" in call.args[0]
-    ]
+    verify_paths = [call.args[0] for call in client_inst.post.call_args_list if "/verify" in call.args[0]]
     assert len(verify_paths) == 2
     assert any(p.endswith("/queries/q1/verify") for p in verify_paths)
     assert any(p.endswith("/queries/q2/verify") for p in verify_paths)
@@ -391,9 +389,7 @@ def test_final_verify_step_called_once_per_unique_qrid(mock_client_cls: MagicMoc
 def test_final_verify_failure_marks_caught(mock_sleep: MagicMock, mock_client_cls: MagicMock) -> None:
     """If ``/verify`` returns a 4xx (proof rejected), the proof did not validate ⇒ CAUGHT."""
     stored = {"result": {"x": 1}, "proof": {"execution_time_ms": 10}}
-    mock_client_cls.return_value = _mock_httpx_client(
-        stored, post_raises=RuntimeError("verify rejected")
-    )
+    mock_client_cls.return_value = _mock_httpx_client(stored, post_raises=RuntimeError("verify rejected"))
     hp = HandoffPayload(
         provably_org_id="org",
         integration_api_key="k",

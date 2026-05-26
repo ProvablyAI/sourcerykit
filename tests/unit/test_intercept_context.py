@@ -93,23 +93,23 @@ async def _agent_loop_with_naked_set() -> list[tuple[str, str]]:
     """Demonstrates WHY the context manager exists: a fire-and-forget ``ContextVar.set``
     inside the tool persists into the subsequent LLM call in the same Task."""
     rows: list[tuple[str, str]] = []
-    rows.append(_read_what_insert_row_would_record())          # LLM turn 1
+    rows.append(_read_what_insert_row_would_record())  # LLM turn 1
     # tool body uses naked .set() (the buggy pattern):
     interceptor._ctx_agent_id.set("demo")
     interceptor._ctx_action_name.set("get_weather")
-    rows.append(_read_what_insert_row_would_record())          # tool GET
+    rows.append(_read_what_insert_row_would_record())  # tool GET
     # tool returns; agent continues with another LLM call in the SAME task:
-    rows.append(_read_what_insert_row_would_record())          # LLM turn 2
+    rows.append(_read_what_insert_row_would_record())  # LLM turn 2
     return rows
 
 
 async def _agent_loop_with_intercept_context() -> list[tuple[str, str]]:
     """The fix: scoping with ``intercept_context`` resets the tag on tool exit."""
     rows: list[tuple[str, str]] = []
-    rows.append(_read_what_insert_row_would_record())          # LLM turn 1
+    rows.append(_read_what_insert_row_would_record())  # LLM turn 1
     with intercept_context(agent_id="demo", action_name="get_weather"):
-        rows.append(_read_what_insert_row_would_record())      # tool GET
-    rows.append(_read_what_insert_row_would_record())          # LLM turn 2
+        rows.append(_read_what_insert_row_would_record())  # tool GET
+    rows.append(_read_what_insert_row_would_record())  # LLM turn 2
     return rows
 
 
@@ -121,9 +121,9 @@ def test_naked_ctx_var_set_leaks_into_subsequent_calls() -> None:
     _reset_ctx_for_test_isolation()
     try:
         rows = asyncio.run(_agent_loop_with_naked_set())
-        assert rows[0] == ("unknown", "unknown")               # turn 1
-        assert rows[1] == ("demo", "get_weather")              # tool
-        assert rows[2] == ("demo", "get_weather"), (           # turn 2 — leaks
+        assert rows[0] == ("unknown", "unknown")  # turn 1
+        assert rows[1] == ("demo", "get_weather")  # tool
+        assert rows[2] == ("demo", "get_weather"), (  # turn 2 — leaks
             "Naked ContextVar.set should leak into subsequent calls in the same Task. "
             "If this assertion ever starts failing it means asyncio's ContextVar "
             "semantics changed, in which case revisit the rationale for "
@@ -138,8 +138,8 @@ def test_intercept_context_does_not_leak_into_subsequent_calls() -> None:
     _reset_ctx_for_test_isolation()
     try:
         rows = asyncio.run(_agent_loop_with_intercept_context())
-        assert rows[0] == ("unknown", "unknown")           # turn 1
-        assert rows[1] == ("demo", "get_weather")          # tool
-        assert rows[2] == ("unknown", "unknown")           # turn 2 — fixed
+        assert rows[0] == ("unknown", "unknown")  # turn 1
+        assert rows[1] == ("demo", "get_weather")  # tool
+        assert rows[2] == ("unknown", "unknown")  # turn 2 — fixed
     finally:
         _reset_ctx_for_test_isolation()

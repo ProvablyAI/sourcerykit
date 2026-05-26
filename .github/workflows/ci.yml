@@ -23,16 +23,19 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install
-        run: uv sync --extra dev
+        run: uv sync --extra dev --locked
 
-      - name: Ruff
-        run: uv run ruff check
+      - name: Pre-commit
+        run: uv run pre-commit run --all-files
 
       - name: Pytest
-        run: uv run pytest -q
+        run: uv run pytest -q --cov=provably --cov-report=term-missing --cov-fail-under=60
 
-      - name: Build wheel
-        run: uv run python -m build
+      - name: Sphinx
+        run: uv run sphinx-build -W -b html docs docs/_build
+
+      - name: Build package
+        run: uv build
 
   docker:
     runs-on: ubuntu-latest
@@ -43,18 +46,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build "test" image and run suite in container
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: test
-          load: true
-          tags: provably-sdk:test
-
-      - name: Run ruff + pytest inside container
-        run: docker run --rm provably-sdk:test
-
-      - name: Build "runtime" image
+      - name: Build runtime image
         uses: docker/build-push-action@v5
         with:
           context: .
