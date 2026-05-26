@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any, cast
+from typing import Any
 
 import httpx
 
@@ -11,7 +11,7 @@ from agentkit.logger import get_logger
 
 _log = get_logger(__name__)
 
-_orig_async_client_send = None
+_orig_async_client_send: Callable[..., Awaitable[httpx.Response]] | None = None
 
 
 def init_httpx_hooks(record_fn: Callable[[str, str, dict[str, Any], dict[str, Any]], Awaitable[None]]) -> None:
@@ -21,14 +21,14 @@ def init_httpx_hooks(record_fn: Callable[[str, str, dict[str, Any], dict[str, An
         return
     _orig_async_client_send = httpx.AsyncClient.send
     patched_send = _make_async_wrapper(_orig_async_client_send, record_fn)
-    httpx.AsyncClient.send = cast(Any, patched_send)
+    setattr(httpx.AsyncClient, "send", patched_send)
 
 
 def _make_async_wrapper(
     orig: Callable[..., Awaitable[httpx.Response]],
     record_fn: Callable[[str, str, dict[str, Any], dict[str, Any]], Awaitable[None]],
 ) -> Callable[..., Awaitable[httpx.Response]]:
-    async def wrapped(self, request: httpx.Request, **kwargs: Any) -> httpx.Response:
+    async def wrapped(self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any) -> httpx.Response:
         is_stream = kwargs.get("stream", False) or "text/event-stream" in request.headers.get("accept", "")
         response = await orig(self, request, **kwargs)
 
@@ -47,9 +47,9 @@ def _make_async_wrapper(
 
         # Passive async stream
         orig_aiter = response.aiter_bytes
-        chunks = []
+        chunks: list[bytes] = []
 
-        async def wrapped_aiter(*args, **p):
+        async def wrapped_aiter(*args: Any, **p: Any) -> Any:
             async for chunk in orig_aiter(*args, **p):
                 chunks.append(chunk)
                 yield chunk
@@ -59,7 +59,7 @@ def _make_async_wrapper(
             except Exception as e:
                 _log.warning("httpx_stream_record_failed", url=url, error=str(e))
 
-        response.aiter_bytes = wrapped_aiter
+        setattr(response, "aiter_bytes", wrapped_aiter)
         return response
 
     return wrapped

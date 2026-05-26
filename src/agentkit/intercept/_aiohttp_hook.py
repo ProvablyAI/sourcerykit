@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any, cast
+from typing import Any
 
 import aiohttp
 
@@ -11,7 +11,7 @@ from agentkit.logger import get_logger
 
 _log = get_logger(__name__)
 
-_orig_request = None
+_orig_request: Callable[..., Awaitable[Any]] | None = None
 _AIOHTTP_KWARG_KEYS = ("params", "json", "data")
 
 
@@ -24,14 +24,14 @@ def init_aiohttp_hooks(record_fn: Callable[[str, str, dict[str, Any], dict[str, 
     _orig_request = aiohttp.ClientSession._request
 
     patched_send = _make_aiohttp_wrapper(_orig_request, record_fn)
-    aiohttp.ClientSession._request = cast(Any, patched_send)
+    setattr(aiohttp.ClientSession, "_request", patched_send)
 
 
 def _make_aiohttp_wrapper(
     orig: Callable[..., Awaitable[Any]],
     record_fn: Callable[[str, str, dict[str, Any], dict[str, Any]], Awaitable[None]],
 ) -> Callable[..., Awaitable[Any]]:
-    async def wrapped(self, method: str, str_or_url: Any, **kwargs: Any) -> Any:
+    async def wrapped(self: aiohttp.ClientSession, method: str, str_or_url: Any, **kwargs: Any) -> Any:
         response = await orig(self, method, str_or_url, **kwargs)
         if is_self_egress():
             return response
