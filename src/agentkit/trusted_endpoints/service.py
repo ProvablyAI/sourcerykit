@@ -133,7 +133,7 @@ async def list_all_trusted_endpoints() -> list[str]:
 
 async def verify_claim_endpoints(
     payload: HandoffPayload,
-):
+) -> None:
     """
     Validates that all URLs within the payload claims are authorized prefixes.
 

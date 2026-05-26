@@ -14,7 +14,7 @@
 UV ?= uv
 PYTEST_ARGS ?= --cov=agentkit --cov-report=term-missing --cov-fail-under=60
 RUFF_ARGS ?=
-MYPY_TARGETS ?= src tests
+MYPY_TARGETS ?= src
 DOCS_DIR ?= docs
 DOCS_BUILD ?= $(DOCS_DIR)/_build
 

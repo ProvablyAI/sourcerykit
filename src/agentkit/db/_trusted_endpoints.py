@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import and_, exists, literal, select
+from sqlalchemy import Insert, Select, and_, exists, literal, select
 from sqlalchemy.dialects.postgresql import insert
 
 from agentkit.db._schema import trusted_endpoints
@@ -13,7 +13,7 @@ _ACTIVE = and_(
 )
 
 
-def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str):
+def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str) -> Select:
     """Fast-path existence check: scalar result is a boolean.
 
     Equivalent raw SQL::
@@ -38,7 +38,7 @@ def select_trusted_endpoint_prefix(org_id: uuid.UUID, incoming_url: str):
     )
 
 
-def select_active_trusted_endpoints(org_id: uuid.UUID):
+def select_active_trusted_endpoints(org_id: uuid.UUID) -> Select:
     """Return a SELECT for all active endpoints for ``org_id``, most-recent first.
 
     Equivalent raw SQL::
@@ -67,7 +67,7 @@ def select_active_trusted_endpoints(org_id: uuid.UUID):
     )
 
 
-def insert_trusted_endpoint(org_id: uuid.UUID, normalized_url: str, display_label: str | None = None):
+def insert_trusted_endpoint(org_id: uuid.UUID, normalized_url: str, display_label: str | None = None) -> Insert:
     """Insert a new active endpoint, ignoring conflicts with an existing non-revoked row.
 
     Equivalent raw SQL::

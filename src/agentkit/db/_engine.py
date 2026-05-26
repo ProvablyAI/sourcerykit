@@ -1,6 +1,7 @@
 """SQLAlchemy engine"""
 
 from dataclasses import dataclass
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -20,7 +21,7 @@ class ConnectionInfo:
     provider: str
     uri: str
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "username": self.username,

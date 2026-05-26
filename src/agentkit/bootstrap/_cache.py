@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
-from agentkit.db._engine import get_connection_info
+from agentkit.db._engine import ConnectionInfo, get_connection_info
 from agentkit.errors import AgentKitBootstrapError, AgentKitError
 from agentkit.logger import get_logger
 from agentkit.provably._errors import ProvablyError
@@ -54,7 +54,7 @@ class ProvablyBootstrapCache:
                 _log.error("middleware_creation_failed", error=str(e))
                 raise
 
-    async def _resolve_database(self, database) -> UUID:
+    async def _resolve_database(self, database: ConnectionInfo) -> UUID:
         if self.middleware_id is None:
             raise AgentKitBootstrapError("middleware_id is not set; run_handshake() must be called first")
         try:

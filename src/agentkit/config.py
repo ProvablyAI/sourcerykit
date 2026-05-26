@@ -30,7 +30,7 @@ class Settings:
     provably_mcp: str = "https://mcp.provably.ai"
     """AGENTKIT_PROVABLY_MCP_URL — URL of the Provably MCP server."""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate required fields after initialization."""
         missing = []
         if not self.api_key:

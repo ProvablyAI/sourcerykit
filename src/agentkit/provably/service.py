@@ -379,7 +379,7 @@ class ProvablyService:
             result = await api.start_preprocess(middleware_id, table_id)
             return uuid.UUID(str(result["id"]))
 
-    async def get_preprocess_completed(self, middleware_id: uuid.UUID, table_id: uuid.UUID, timeout: int = 60):
+    async def get_preprocess_completed(self, middleware_id: uuid.UUID, table_id: uuid.UUID, timeout: int = 60) -> None:
         """
         Polls the preprocess status until it reaches 'completed'.
 
@@ -480,7 +480,7 @@ class ProvablyService:
 
         raise TimeoutError(f"Timed out waiting for proof {query_id} after {timeout}s")
 
-    async def verify_proof(self, query_id: uuid.UUID, integration_api_key: str):
+    async def verify_proof(self, query_id: uuid.UUID, integration_api_key: str) -> None:
         """Run a SQL query through a middleware and request a proof.
 
         Args:
