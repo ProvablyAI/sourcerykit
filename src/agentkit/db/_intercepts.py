@@ -9,7 +9,8 @@ from sqlalchemy.sql.selectable import Select
 
 from agentkit.db._schema import provably_intercepts
 
-_ENGINE = create_engine("postgresql://")
+_ENGINE = create_engine("postgresql+psycopg://", strategy="mock", executor=lambda *args, **kwargs: None)
+
 _PG: Dialect = _ENGINE.dialect
 _t = provably_intercepts
 
