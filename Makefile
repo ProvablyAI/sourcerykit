@@ -12,7 +12,7 @@
 # ----------------------------------------------------------------------------
 
 UV ?= uv
-PYTEST_ARGS ?= --cov=provably --cov-report=term-missing --cov-fail-under=60
+PYTEST_ARGS ?= --cov=agentkit --cov-report=term-missing --cov-fail-under=60
 RUFF_ARGS ?=
 MYPY_TARGETS ?= src tests
 DOCS_DIR ?= docs

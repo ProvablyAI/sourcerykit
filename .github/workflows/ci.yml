@@ -29,7 +29,7 @@ jobs:
         run: uv run pre-commit run --all-files
 
       - name: Pytest
-        run: uv run pytest -q --cov=provably --cov-report=term-missing --cov-fail-under=60
+        run: uv run pytest -q --cov=agentkit --cov-report=term-missing --cov-fail-under=60
 
       - name: Sphinx
         run: uv run sphinx-build -W -b html docs docs/_build

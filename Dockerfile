@@ -59,4 +59,4 @@ RUN pip install --upgrade pip \
     && pip install /dist/*.whl \
     && rm -rf /dist
 
-CMD ["python", "-c", "import importlib.metadata as m, provably; print('provably-sdk', m.version('provably-sdk'), 'imported as', provably.__name__)"]
+CMD ["python", "-c", "import importlib.metadata as m, agentkit; print('provably-sdk', m.version('provably-sdk'), 'imported as', agentkit.__name__)"]
