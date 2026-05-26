@@ -231,23 +231,6 @@ class ProvablyService:
     # Columns
     # ------------------------------------------------------------------
 
-    async def get_columns_from_collection(self, collection_id: uuid.UUID) -> dict[str, Any]:
-        """Retrieve all columns associated with a collection.
-
-        Args:
-            collection_id: The ID of the collection to inspect.
-
-        Returns:
-            dict[str, Any]: The raw columns response from the API.
-
-        Raises:
-            ProvablyAPIError: If the server rejects the request.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_error_handler("get_columns_from_database"):
-            columns = await api.list_columns_from_collection(collection_id)
-            return columns
-
     async def get_columns_from_database(
         self,
         middleware_id: uuid.UUID,

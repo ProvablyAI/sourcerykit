@@ -38,7 +38,9 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/provably"
-        return await http.post(path)
+
+        result: dict[str, Any] = await http.post(path)
+        return result
 
     async def list_middlewares(self) -> list[dict[str, Any]]:
         """
@@ -48,7 +50,9 @@ class ProvablyAPI:
             Any: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares"
-        return await http.get(path)
+
+        result: list[dict[str, Any]] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Databases
@@ -66,7 +70,9 @@ class ProvablyAPI:
             httpx.Response: The raw HTTP response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/databases"
-        return await http.post(path, body)
+
+        result: dict[str, Any] = await http.post(path, body)
+        return result
 
     async def list_databases(self, middleware_id: uuid.UUID) -> list[dict[str, Any]]:
         """
@@ -79,40 +85,13 @@ class ProvablyAPI:
             Any: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/databases"
-        return await http.get(path)
+
+        result: list[dict[str, Any]] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Schemas / Tables / Columns
     # ------------------------------------------------------------------
-
-    async def list_schemas(self, middleware_id: uuid.UUID, database_id: uuid.UUID) -> Any:
-        """
-        List all schemas in a database.
-
-        Args:
-            middleware_id: The ID of the middleware owning the database.
-            database_id: The ID of the database to inspect.
-
-        Returns:
-            Any: The raw JSON response from the API.
-        """
-        path = f"{self._org_path()}/middlewares/{middleware_id}/databases/{database_id}/schemas"
-        return await http.get(path)
-
-    async def list_tables(self, middleware_id: str, database_id: str, schema_id: str) -> Any:
-        """
-        List all tables in a schema.
-
-        Args:
-            middleware_id: The ID of the middleware owning the database.
-            database_id: The ID of the database containing the schema.
-            schema_id: The ID of the schema to inspect.
-
-        Returns:
-            Any: The raw JSON response from the API.
-        """
-        path = f"{self._org_path()}/middlewares/{middleware_id}/databases/{database_id}/schemas/{schema_id}/tables"
-        return await http.get(path)
 
     async def list_columns_from_database(
         self,
@@ -120,7 +99,7 @@ class ProvablyAPI:
         database_id: uuid.UUID,
         schema_id: uuid.UUID,
         table_id: uuid.UUID,
-    ) -> Any:
+    ) -> list[dict[str, Any]]:
         """
         List all columns in a table.
 
@@ -131,57 +110,44 @@ class ProvablyAPI:
             table_id: The ID of the table to inspect.
 
         Returns:
-            Any: The raw JSON response from the API.
+            list[dict[str, Any]]: The raw JSON response from the API.
         """
         path = (
             f"{self._org_path()}/middlewares/{middleware_id}"
             f"/databases/{database_id}/schemas/{schema_id}/tables/{table_id}/columns"
         )
-        return await http.get(path)
-
-    async def list_columns_from_collection(
-        self,
-        collection_id: uuid.UUID,
-    ) -> Any:
-        """
-        List all columns in a collection.
-
-        Args:
-            collection_id: The ID of the middleware owning the database.
-
-        Returns:
-            Any: The raw JSON response from the API.
-        """
-        path = f"{self._org_path()}/collections/{collection_id}/columns"
-        return await http.get(path)
+        result: list[dict[str, Any]] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Data
     # ------------------------------------------------------------------
 
-    async def get_data(self) -> Any:
+    async def get_data(self) -> dict[str, Any]:
         """
         Retrieve data for the configured org.
 
         Returns:
-            Any: The raw JSON response from the API.
+            dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/data"
-        return await http.get(path)
+        result: dict[str, Any] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Collections
     # ------------------------------------------------------------------
 
-    async def list_collections(self) -> Any:
+    async def list_collections(self) -> list[dict[str, Any]]:
         """
         List all collections for the configured org.
 
         Returns:
-            Any: The raw JSON response from the API.
+            list[dict[str, Any]]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/collections"
-        return await http.get(path)
+        result: list[dict[str, Any]] = await http.get(path)
+        return result
 
     async def create_collection(self, body: dict[str, Any]) -> dict[str, Any]:
         """
@@ -194,7 +160,9 @@ class ProvablyAPI:
             httpx.Response: The raw HTTP response from the API.
         """
         path = f"{self._org_path()}/collections"
-        return await http.post(path, body)
+
+        result: dict[str, Any] = await http.post(path, body)
+        return result
 
     # ------------------------------------------------------------------
     # Integrations
@@ -211,9 +179,11 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/integrations"
-        return await http.post(path, body)
 
-    async def list_integrations(self, query: str | None = None) -> Any:
+        result: dict[str, Any] = await http.post(path, body)
+        return result
+
+    async def list_integrations(self, query: str | None = None) -> list[dict[str, Any]]:
         """
         List all integrations for the configured org.
 
@@ -221,21 +191,23 @@ class ProvablyAPI:
             query: Optional search string to filter integrations by name.
 
         Returns:
-            Any: The raw JSON response from the API.
+            list[dict[str, Any]]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/integrations"
         params = {"query": query} if query is not None else None
-        return await http.get(path, params=params)
+        result: list[dict[str, Any]] = await http.get(path, params=params)
+        return result
 
-    async def get_integration_by_id(self, integration_id: uuid.UUID) -> Any:
+    async def get_integration_by_id(self, integration_id: uuid.UUID) -> dict[str, Any]:
         """
         Get integration by id.
 
         Returns:
-            Any: The raw JSON response from the API.
+            dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/integrations/{integration_id}"
-        return await http.get(path)
+        result: dict[str, Any] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Preprocess
@@ -253,7 +225,9 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
-        return await http.post(path, {"force": True})
+
+        result: dict[str, Any] = await http.post(path, {"force": True})
+        return result
 
     async def get_preprocess_status(self, middleware_id: uuid.UUID, table_id: uuid.UUID) -> dict[str, Any]:
         """
@@ -267,7 +241,9 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
-        return await http.get(path)
+
+        result: dict[str, Any] = await http.get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Queries / Proofs
@@ -286,7 +262,11 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/query"
-        return await http.post(path, {"query": sql, "require_proof": True, "collection_id": str(collection_id)})
+
+        result: dict[str, Any] = await http.post(
+            path, {"query": sql, "require_proof": True, "collection_id": str(collection_id)}
+        )
+        return result
 
     async def get_query(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """
@@ -300,7 +280,9 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/queries/{query_id}"
-        return await http.get(path, api_key=api_key)
+
+        result: dict[str, Any] = await http.get(path, api_key=api_key)
+        return result
 
     async def verify_proof(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """
@@ -320,7 +302,9 @@ class ProvablyAPI:
                 cannot be initiated.
         """
         path = f"{self._org_path()}/queries/{query_id}/verify"
-        return await http.post(path, {}, api_key=api_key)
+
+        result: dict[str, Any] = await http.post(path, {}, api_key=api_key)
+        return result
 
     # ------------------------------------------------------------------
     # URL helpers
