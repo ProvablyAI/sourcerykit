@@ -107,6 +107,11 @@ under the hood. As of v0.3.0:
 | `aiohttp` | `ClientSession._request` (soft dep — patches only when `aiohttp` is importable) |
 | `botocore` / `urllib3` | _pending_ — see [issue #10](https://github.com/ProvablyAI/provably-python-sdk/issues/10) |
 
+For a minimal "verify before answering" API implementation, see
+[implementations/github_api/](implementations/github_api/). It calls the GitHub REST API
+through `requests`, builds a claim from the intercepted response, and prints an
+answer only after `evaluate_handoff()` returns `PASS`.
+
 **Agent / LLM frameworks**
 
 | Framework | Status | Notes |
@@ -120,7 +125,7 @@ under the hood. As of v0.3.0:
 | AutoGen | ✅ | AsyncOpenAI |
 | Haystack | ✅ | migrated to httpx (2024–25) |
 | Phidata / Agno | ✅ | AsyncOpenAI / `httpx[http2]` |
-| OpenAI Agents SDK | ✅ | httpx; e2e suite at [tests/e2e/test_openai_agents_e2e.py](tests/e2e/test_openai_agents_e2e.py); demo at [examples/openai_agents/](examples/openai_agents/) |
+| OpenAI Agents SDK | ✅ | httpx; e2e suite at [tests/e2e/test_openai_agents_e2e.py](tests/e2e/test_openai_agents_e2e.py); implementation at [implementations/openai_agents/](implementations/openai_agents/) |
 | Google GenAI | ✅ | httpx default + optional `aiohttp` extra |
 | LiteLLM | ✅ | aiohttp transport (default since v1.71) |
 | DSPy | ✅ | LiteLLM only |
