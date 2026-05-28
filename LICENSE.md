@@ -1,3 +1,5 @@
+# License
+
 Business Source License 1.1
 
 Copyright © 2026 Provably Technologies LTD
