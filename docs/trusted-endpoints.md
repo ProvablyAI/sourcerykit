@@ -1,121 +1,56 @@
-# Trusted endpoints
+# Trusted Endpoints
+Trusted Endpoints define exactly which URLs an agent is allowed to contact. With this registry in place, any attempt to reach an unapproved destination is blocked before the request leaves the Python process.
 
-The `trusted_endpoints` registry is the SDK's policy edge: which URLs an agent
-is allowed to talk to at all. Everything else in the SDK is observation; this
-is enforcement.
+## Core Functions
+The registry acts as a database-backed, real-time allow-list for outbound network traffic:
 
-## Schema
+- **Strict Policy Enforcement**: The Interceptor queries this registry before dispatching any HTTP call. Unregistered endpoints are blocked immediately, raising an exception.
+- **Instant Propagation**: Additions, or revocations to the database registry take effect across the running process instantly without requiring an application restart.
 
-The DDL is embedded and applied lazily on first use:
 
-```sql
-CREATE TABLE IF NOT EXISTS trusted_endpoints (
-  id              SERIAL PRIMARY KEY,
-  org_id          TEXT NOT NULL,
-  entry_type      TEXT NOT NULL DEFAULT 'endpoint',
-  normalized_url  TEXT NOT NULL,
-  display_label   TEXT,
-  policy_version  TEXT DEFAULT 'v1',
-  created_at      TIMESTAMPTZ DEFAULT NOW(),
-  revoked_at      TIMESTAMPTZ,
-  created_by      TEXT
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS trusted_endpoints_org_url
-  ON trusted_endpoints(org_id, normalized_url)
-  WHERE revoked_at IS NULL;
-```
-
-A row is a non-revoked URL trusted for one org. Revocation is soft (set
-`revoked_at`); the unique index excludes revoked rows so the same URL can be
-re-added later.
-
-`ensure_trusted_endpoints_table(conn)` runs the DDL idempotently. It is also
-called automatically by `is_trusted_endpoint`, `list_trusted_endpoints`, and
-`check_claim_endpoints_are_trusted` so callers usually do not need to invoke it.
-
-## URL normalization
-
-Every URL is normalized **before** it is read or written:
+## Example
+All database operations in the SDK are asynchronous. Register a trusted destination during your application's setup or bootstrap phase:
 
 ```python
-from provably import normalize_url_for_trust
+import sourcerykit
 
-normalize_url_for_trust("HTTPS://API.Example.COM/v1/data/")
-# -> "https://api.example.com/v1/data"
+async def setup_network_policies():
+    # Register an allowed endpoint in the database
+    await sourcerykit.trusted_endpoints.insert_trusted_endpoint("https://api.example.com/v1/data")
 ```
 
-Rules:
+## How the Registry Works
+- **URL Normalization**: URLs are standardized before storage and evaluation to prevent evasion via minor string variations.
+- **Enforcement Scope**: Enforcement is strictly active with no "warning-only" or dry-run mode. Currently, `GET` requests to unknown URLs face a hard block before an intercept row is recorded. `POST` requests are logged for auditing but are not policed in the current version.
 
-- Empty / whitespace input -> `""`.
-- Scheme and host lowercased.
-- Default ports collapsed (`:80` for `http`, `:443` for `https`).
-- Path's trailing slash stripped (path-less URLs end up with empty path).
-- Query strings and fragments are kept as-is (case-preserving).
 
-Two URLs that normalize to the same string collide on the same row. This is
-deliberate — agents should not be able to evade the registry by varying case
-or trailing slashes.
+## Async API Reference
+The SDK exposes the following asynchronous functions to manage and query policies:
 
-## API
-
+### Check if an endpoint is trusted
 ```python
-from provably import (
-    is_trusted_endpoint,
-    list_trusted_endpoints,
-    check_claim_endpoints_are_trusted,
-    ensure_trusted_endpoints_table,
-    normalize_url_for_trust,
-)
+await sourcerykit.trusted_endpoints.is_endpoint_trusted(url: str) -> bool
 ```
+Evaluates whether a given URL is active within the registry. This is called internally by the HTTP Interceptor before every outbound request.
 
-### `is_trusted_endpoint(url, org_id, conn) -> bool`
+### Register a new trusted endpoint
+```python
+await sourcerykit.trusted_endpoints.insert_trusted_endpoint(url: str, display_label: str | None = None) -> None
+```
+Inserts a new endpoint into the database. If the URL is already registered, this operation acts as a no-op.
 
-The hot path. Used by the interceptor before every `GET`. Returns `False` for
-empty URLs, empty orgs, or URLs that normalize to empty. Otherwise checks for
-a non-revoked row matching `(org_id, normalized_url, entry_type='endpoint')`.
+### List all trusted endpoints
+```python
+await sourcerykit.trusted_endpoints.list_all_trusted_endpoints() -> list[str]
+```
+Returns a list of all active, registered endpoint URLs.
 
-### `list_trusted_endpoints(conn, org_id, *, excluded_urls=None, metadata_seeds=None)`
+### Verify all endpoints in a handoff payload
+```python
+await sourcerykit.trusted_endpoints.verify_claim_endpoints(payload: HandoffPayload) -> None
+```
+Scans a handoff payload and verifies that every external URL referenced within it is present in the trusted registry. Raises an exception if an untrusted URL is detected.
 
-Enumerates the registry for an org. Returns a list of dicts with `url`,
-`label`, and (when seed metadata matches) `category`, `risk_level`,
-`description`, `expected_response`. `excluded_urls` is a normalized-URL set
-the caller wants hidden — typically internal service URLs auto-allowed by the
-deployment.
 
-### `check_claim_endpoints_are_trusted(payload, *, postgres_url, org_id_fallback="")`
 
-Used by eval services (e.g. `agents/cluster_b` in the demo). For every
-claim that has a `request_payload.url`, normalizes it and:
-
-1. If `payload.trusted_endpoint_registry` is non-empty, the URL must appear
-   in that snapshot. Missing entries raise `ValueError`.
-2. The URL must be present in the live `trusted_endpoints` table for the
-   payload's `provably_org_id` (or `org_id_fallback` if the payload is
-   unattributed). Missing entries raise `ValueError`.
-
-Configuration errors (`postgres_url` empty, org id missing) raise
-`RuntimeError`. The function opens its own Postgres connection via
-`psycopg2.connect(postgres_url)` and closes it before raising.
-
-This is the only entry point that opens a connection. Everything else takes a
-caller-provided `conn`. Issue
-[#1](https://github.com/ProvablyAI/provably-python-sdk/issues/1) tracks
-unifying the contract so all functions accept an injected connection.
-
-## Enforcement vs warning
-
-v0.1 enforces only on `GET`. The interceptor blocks unknown URLs before any
-row reaches `provably_intercepts`. `POST` is recorded but not policed.
-
-There is no soft / warning tier — a missing entry is a hard block. Issue
-[#6](https://github.com/ProvablyAI/provably-python-sdk/issues/6) tracks the
-policy-tier design (warn vs block, plus cross-org sharing semantics).
-
-## Cross-org sharing
-
-There is none in v0.1. Each org carries its own list. The schema has
-`org_id` and `created_by` so a future shared / replica model is possible
-without a migration; the API will need additional surface (a "global"
-`org_id` value, or a separate read path) before any agent can see another
-org's entries.
+For details on how the Interceptor blocks these calls, see [intercept](intercept.md). To see how database tables fit into the wider architecture, see [architecture](architecture.md).
