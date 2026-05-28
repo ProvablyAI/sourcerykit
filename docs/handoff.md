@@ -13,28 +13,29 @@ The following example demonstrates how to construct a claim, bundle it into a Ha
 
 ```python
 import uuid
-import sourcerykit
+from sourcerykit import build_handoff_payload, evaluate_handoff
 
-# Define a claim about an HTTP interaction
-claim = {
-    "action_name": "get_data",
-    "claimed_value": {"result": {"status": "success", "value": 42}},
-    "verification_mode": "field_extraction",
-    "json_path": "result.value",
+# Define the fetch_and_claim payload structures
+payload_data = {
+    "reasoning": "Agent completed processing and claims the returned value is valid.",
+    "claims": [
+        {
+            "action_name": "get_data",
+            "claimed_value": {"result": {"status": "success", "value": 42}},
+            "verification_mode": "verbatim",
+        }
+    ],
 }
 
-# Assemble the handoff payload
-payload = await sourcerykit.handoff.build_handoff_payload(
-    {
-        "reasoning": "Agent completed processing and claims the returned value is 42.",
-        "claims": [claim],
-    },
+# Assemble the handoff payload using the flat SDK builder
+payload = await build_handoff_payload(
+    payload_data,
     run_id=uuid.uuid4(),
-    intercept_agent_id="demo-agent",
+    intercept_agent_id="demo",
 )
 
-# Submit the payload to the evaluator
-result = await sourcerykit.evaluator.evaluate_handoff(payload)
+# Submit the payload directly to the evaluator
+result = await evaluate_handoff(payload)
 print(f"Evaluation Verdict: {result.get('outcome')}") 
 # Returns: {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...], "errors": [...]}
 ```
