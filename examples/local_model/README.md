@@ -95,11 +95,20 @@ Configure the tracking environment using your project variables or an explicit `
 
 
 ## Execution
-Execute a standard, fully validated transaction tracking loop:
-```bash
-python agent_run.py
-```
-Execute a validation loop with forced data modification to simulate a data hallucination catch:
-```bash
-python agent_run.py --tamper
-```
+
+1. Install the SDK package:
+   ```bash
+   pip install sourcerykit
+   ```
+2. Export your configured secrets into your current shell:
+      ```bash
+   export LOCAL_MODEL_URL="http://localhost:1234/.."
+   export LOCAL_MODEL="your-local-model"
+   export SOURCERYKIT_API_KEY="zk_..."
+   export SOURCERYKIT_ORG_ID="org_..."
+   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
+   ```
+3. Run the example:
+      ```bash
+   python agent_run.py
+   ```

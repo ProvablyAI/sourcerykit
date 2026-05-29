@@ -23,11 +23,11 @@ Configure the development tracking workspace using your target system variables 
 
 ---
 
-## Execution Instructions
+## Execution
 
-1. Install the SDK package in editable mode along with developer tools extensions:
+1. Install the SDK package:
    ```bash
-   pip install -e ".[dev]"
+   pip install sourcerykit
    ```
 2. Export your configured secrets into your current shell:
       ```bash
@@ -36,7 +36,7 @@ Configure the development tracking workspace using your target system variables 
    export SOURCERYKIT_ORG_ID="org_..."
    export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
    ```
-3. Run the tracking script:
+3. Run the example:
       ```bash
    python agent_run.py
    ```
