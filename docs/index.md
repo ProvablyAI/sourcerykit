@@ -47,6 +47,7 @@ architecture
 intercept
 handoff
 trusted-endpoints
+example
 ```
 
 ```{toctree}
