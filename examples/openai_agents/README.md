@@ -1,100 +1,42 @@
-# OpenAI Agents SDK + Provably — Runnable Demo
+# OpenAI Agents SDK
 
-This demo shows an end-to-end run of the Provably SDK integrated with the
-[OpenAI Agents SDK](https://github.com/openai/openai-agents-python) (>=0.0.3).
-It exercises every pillar of the SDK in a single script:
+This example demonstrates how to integrate SourceryKit with the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python). It showcases automated intercept capture, target endpoint allow-list constraints, and runtime evaluation loops inside a structured multi-turn agent execution flow.
 
-1. **Intercept** — `configure_indexing(True)` installs monkey-patches on
-   `httpx.AsyncClient.send` and `requests.Session.send` so every outbound HTTP
-   request from the agent loop is captured and stored in `provably_intercepts`.
-2. **Trust gate** — before storing a request the SDK checks that its URL is
-   registered in `trusted_endpoints`.  The demo seeds both the OpenRouter
-   chat-completions URL and the Open-Meteo weather URL before running the agent.
-3. **Tool call** — the agent uses a `@function_tool` that calls the free
-   [Open-Meteo API](https://open-meteo.com/) (no API key required) to fetch the
-   current temperature in London.
-4. **Handoff** — the captured intercept row id is wrapped in a `HandoffPayload`
-   with one `HandoffClaim` asserting the tool output.
-5. **Evaluate** — `evaluate_handoff()` fetches the stored query record from the
-   Provably backend, compares it to the claimed value, and prints the verdict.
+## Core Pillars Tested
 
-Expected output (abbreviated):
+1. **HTTP Interception:** The `bootstrap_system()` hook dynamically monitors `httpx` and `requests` outbound calls, ensuring that network operations generated within the agent loop are securely logged to your database intercepts table.
+2. **All-Method Trust Gate:** SourceryKit enforces structural target validation checks against **every HTTP method** (GET, POST, etc.). Consequently, both the external weather lookup endpoint (GET) and the underlying OpenRouter orchestration engine endpoint (POST) are explicitly registered via policy seeds before agent execution.
+3. **Automated Handoff:** Captured network states are bundled alongside model generation reasoning strings to establish structured claims verified directly against the backend source of truth.
 
-```json
-{
-  "outcome": "PASS",
-  "per_claim": [
-    {
-      "action_name": "get_weather",
-      "result": "PASS",
-      "proof_time_ms": 42,
-      "verify_time_ms": 137
-    }
-  ],
-  "errors": []
-}
-```
+---
 
-## Required environment variables
+## Environment Configuration
 
-| Variable | Required | Notes |
+Configure the development tracking workspace using your target system variables or an explicit `.env` file mapping:
+
+| Variable | Required | Description |
 |---|---|---|
-| `OPENROUTER_API_KEY` | yes | API key for [OpenRouter](https://openrouter.ai/). Used for the model call (`openai/gpt-4o-mini`). |
-| `PROVABLY_API_KEY` | yes | Provably integration API key. |
-| `PROVABLY_ORG_ID` | yes | Provably organisation id. Scopes trusted-endpoint and query-record lookups. |
-| `PROVABLY_RUST_BE_URL` | yes | Base URL of the Provably Rust backend (e.g. `https://api.provably.ai`). |
-| `POSTGRES_URL` | yes | PostgreSQL DSN (e.g. `postgresql://user:pass@host/db`). Used for intercept storage and trusted-endpoint registry. |
+| `OPENROUTER_API_KEY` | **yes** | API authentication token for [OpenRouter](https://openrouter.ai/). Used for handling model processing calls (`openai/gpt-4o-mini`). |
+| `SOURCERYKIT_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
+| `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
+| `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
 
-## How to run
+---
 
-```bash
-# 1. Install the SDK in editable mode with dev extras (includes openai-agents)
-pip install -e .[dev]
+## Execution Instructions
 
-# 2. Export the required env vars
-export OPENROUTER_API_KEY="sk-or-..."
-export PROVABLY_API_KEY="prov_..."
-export PROVABLY_ORG_ID="org_..."
-export PROVABLY_RUST_BE_URL="https://api.provably.ai"
-export POSTGRES_URL="postgresql://user:pass@localhost/provably"
-
-# 3. Run the demo
-python examples/openai_agents/agent_run.py
-```
-
-## Model and cost
-
-The demo uses **`openai/gpt-4o-mini`** on OpenRouter — a cheap, capable model
-that reliably follows tool-calling instructions.  Estimated cost is approximately
-**$0.001 per run** (one tool call + one summary turn).
-
-## How the trust gate works — and what happens when you forget to seed it
-
-The Provably SDK now enforces trust on **all HTTP methods** (GET, POST, etc.),
-not only GET.  This means the LLM provider call (a POST to OpenRouter) *and* the
-weather API call (a GET to Open-Meteo) both need to be registered in
-`trusted_endpoints` before the agent runs.
-
-If you forget to seed an endpoint, the SDK raises:
-
-```
-RuntimeError: BLOCKED: endpoint https://openrouter.ai/api/v1/chat/completions not in trusted index for org <org_id>
-```
-
-When this error occurs inside `httpx.AsyncClient.send` (the async LLM call), the
-OpenAI SDK wraps it in an `APIConnectionError`.  You can inspect the full
-exception chain to find the original `BLOCKED: ...` message.
-
-**Migration note for existing users:** if you were previously relying on the SDK
-only trust-checking GET requests, you must now register *all* outbound URLs
-including your LLM provider URL.  Use the `seed_trusted_endpoints` helper pattern
-shown in this demo (raw psycopg2 `INSERT ... ON CONFLICT DO NOTHING`), or add
-rows via the Provably dashboard.
-
-## How `provably_self_egress()` relates to this demo
-
-The Provably SDK's own HTTP calls (fetching query records, posting verify
-requests, bootstrap handshakes) are **never** blocked by the trust gate.  They
-run inside `with provably_self_egress():` context managers that mark them as
-SDK-internal egress, so the trust gate is bypassed automatically.  You do not
-need to add Provably's own backend URL to `trusted_endpoints`.
+1. Install the SDK package in editable mode along with developer tools extensions:
+   ```bash
+   pip install -e ".[dev]"
+   ```
+2. Export your configured secrets into your current shell:
+      ```bash
+   export OPENROUTER_API_KEY="sk-or-..."
+   export SOURCERYKIT_API_KEY="zk_..."
+   export SOURCERYKIT_ORG_ID="org_..."
+   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
+   ```
+3. Run the tracking script:
+      ```bash
+   python agent_run.py
+   ```

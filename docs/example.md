@@ -132,7 +132,7 @@ Expected engine response:
 }
 ```
 
-### Scenario B: Mismatched Data / Hallucination (CAUGHT)
+### Scenario B: Mismatched Data / Hallucination (`CAUGHT`)
 Modify a field inside your `claimed_value` dictionary right before Step 4 (e.g., `claimed_value["current"]["temperature_2m"] = 99.9`) and execute the script again:
 
 ```bash

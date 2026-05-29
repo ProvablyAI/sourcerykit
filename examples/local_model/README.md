@@ -1,101 +1,105 @@
-# Local Model Example — Docker Model Runner + Provably
+# Local LLM
 
-This example shows how to integrate Provably with a locally running LLM via
-[Docker Model Runner](https://docs.docker.com/desktop/features/model-runner/).
+This example demonstrates how to integrate SourceryKit with an agent workflow backed by a locally hosted, OpenAI-compatible LLM inference server. This setup works seamlessly with any modern serving engine that exposes a standard `/v1/chat/completions` REST endpoint.
 
-The agent:
-1. Calls the [Open-Meteo](https://open-meteo.com/) API to fetch the current London temperature.
-2. Records the HTTP response via the Provably interceptor.
-3. Passes the result to the local LLM and asks it to reason about it.
-4. Builds a handoff payload and evaluates it against the indexed data — producing **PASS** or **CAUGHT**.
+## How It Works
 
-The `--tamper` flag injects a fake temperature into the claim before evaluation, demonstrating that hallucinated data is reliably detected.
+1. **Tool Invocations:** The agent requests current London weather profiles via an external endpoint.
+2. **Interception:** Outbound traffic is transparently captured and written to your local audit table.
+3. **Local Inference:** The tool data packages into a prompt context and routes to your local inference instance.
+4. **Handoff Validation:** The agent constructs an explicit assertion tracking payload. The evaluator verifies it against the ground-truth intercept tables, producing a **PASS** or **CAUGHT** verdict.
 
----
 
 ## Requirements
 
-### Docker Model Runner
+### Local Inference Engine Setup
+Your local server must expose an OpenAI-compatible API layer. Below are examples of runtime engines you can choose from to back your agent:
 
-Docker Model Runner is bundled with [Docker Desktop](https://docs.docker.com/desktop/) 4.40+.
-Enable it under **Settings → Features in development → Enable Docker Model Runner**.
-
-#### Finding a model on HuggingFace
-
-Browse models at https://huggingface.co/models. On any model page:
-
-1. Click **Use this model**.
-2. Select **View all local apps**.
-3. Choose **Docker Model Runner** — it will show the exact `docker model pull` command for that model.
-
-Example (Qwen 3.5 0.8B):
-
-```bash
-docker model pull huggingface.co/qwen/qwen3.5-0.8b-base
-```
-
-Update `_DEFAULT_MODEL` in `agent_run.py` to match the model you pulled, or set it via the `LOCAL_MODEL` environment variable.
-
-Verify the endpoint is reachable:
-
-```bash
-curl http://localhost:12434/engines/v1/models
-```
-
-> The default endpoint is `http://localhost:12434/engines/v1/chat/completions`.
-> Override it with the `LOCAL_MODEL_URL` environment variable if needed.
-
-### Python dependencies
-
-```bash
-pip install -e ".[dev]"
-```
-
-### PostgreSQL (hosted)
-
-A hosted PostgreSQL instance is required for intercept storage. This demo expects a network-reachable, managed database (local-only Postgres on your laptop is not supported).
-
-Set `POSTGRES_URL` to the DSN/connection string provided by your provider, for example:
-
-```
-POSTGRES_URL=postgresql://user:password@db-host.example.com:5432/provably
-```
-
----
-
-## Environment variables
-
-| Variable              | Required | Description                                              |
-|-----------------------|----------|----------------------------------------------------------|
-| `PROVABLY_API_KEY`    | yes      | Provably integration key                                 |
-| `PROVABLY_ORG_ID`     | yes      | Provably organisation ID                                 |
-| `PROVABLY_RUST_BE_URL`| yes      | Provably Rust backend base URL                           |
-| `POSTGRES_URL`        | yes      | PostgreSQL DSN for intercept storage                     |
-| `LOCAL_MODEL_URL`     | no       | Docker Model Runner endpoint URL (default: `http://localhost:12434/engines/v1/chat/completions`) |
-| `LOCAL_MODEL`         | no       | Model id to use, as pulled via `docker model pull` (default: `huggingface.co/qwen/qwen3.5-0.8b-base`) |
-
-Copy the repo-root [`.env.example`](../../.env.example) to `.env` and fill in the values, or export them in your shell. The example-specific `LOCAL_MODEL_URL` / `LOCAL_MODEL` overrides live in the same file under the "Examples-only" section.
-
----
-
-## Obtaining environment variables
-
-- **PROVABLY_API_KEY**: Log in to https://app.provably.ai and open *User settings* → *API Key* → *Active key*. Copy the active API key into `PROVABLY_API_KEY`.
-
-- **PROVABLY_ORG_ID**: After signing in to the Provably web app your organisation UUID appears in the URL. For example:
-
+#### Option A: Ollama
+[Ollama](https://ollama.com) bundles open-source models into a lightweight local daemon across macOS, Linux, and Windows.
+1. Download and install Ollama from the [official downloads page](https://ollama.com/download).
+2. Fetch and run your preferred model via your terminal:
+	```bash
+	ollama run qwen2.5:0.5b
 	```
-	https://app.provably.ai/org/${PROVABLY_ORG_ID}/data?tab=collections
+3. Set your environment variables to target Ollama’s default server port:
+	```bash
+	export LOCAL_MODEL_URL="http://localhost:11434/v1/chat/completions"
+	export LOCAL_MODEL="qwen2.5:0.5b"
 	```
 
-- **PROVABLY_RUST_BE_URL**: You can usually leave this set to the default value provided in the repo-root [`.env.example`](../../.env.example) (for example `https://api.provably.ai`) unless you are running a self-hosted Provably backend.
+#### Option B: llama.cpp / llama-server
+[llama.cpp](https://github.com/ggml-org/llama.cpp) provides plain-vanilla inference in pure C/C++ with zero dependencies. It includes `llama-server` for a lightweight drop-in API server.
+1. Follow the llama.cpp [Getting Started Guide](https://github.com/ggml-org/llama.cpp) to download or build the binaries.
+2. Launch the server pointing to a downloaded GGUF format model:
+	```bash
+	./llama-server -m models/qwen2.5-1.5b-instruct-q4_k_m.gguf --port 8080 -ngl 99
+	```
+3. Route your local script variables to the active `llama-server` instance:
+	```bash
+	export LOCAL_MODEL_URL="http://localhost:8080/v1/chat/completions"
+	export LOCAL_MODEL="qwen2.5-1.5b"
+	```
 
-## Running
+#### Option C: oMLX
+[oMLX](https://github.com/jundot/omlx) is a local inference server explicitly built to leverage Apple Silicon via continuous batching and SSD tiered KV-caching.
+1. Install and launch the application or use the CLI via the oMLX [Repository Guide](https://github.com/jundot/omlx):
+	```bash
+	omlx serve --model-dir ~/models
+	```
+2. Download or load a target MLX model using the web admin dashboard or via any OpenAI-compatible integration layer.
+3. Direct your environment to the oMLX server endpoint:
+	```bash
+	export LOCAL_MODEL_URL="http://localhost:8000/v1/chat/completions"
+	export LOCAL_MODEL="your-mlx-model-name"
+	```
 
+#### Option D: vLLM
+[vLLM](https://github.com/vllm-project/vllm) is a fast, easy-to-use LLM serving engine built to maximize GPU utilization via PagedAttention.
+1. Install vllm via pip as outlined in the vLLM [Installation Guide](https://docs.vllm.ai/en/latest/getting_started/installation/):
+	```bash
+	pip install vllm
+	```
+2. Fire up the server hosting a target model:
+	```bash
+	vllm serve Qwen/Qwen2.5-1.5B-Instruct --port 8000
+	```
+4. Configure your local script variables to match the active host instance:
+	```bash
+	export LOCAL_MODEL_URL="http://localhost:8000/v1/chat/completions"
+	export LOCAL_MODEL="Qwen/Qwen2.5-1.5B-Instruct"
+	```
+
+#### Option E: Docker Model Runner
+If you are using [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.40+, you can leverage the built-in [Docker Model Runner](https://docs.docker.com/ai/model-runner/) features in development.
+1. Pull the default test model using the Docker CLI:
+	```bash
+	docker model pull huggingface.co/qwen/qwen3.5-0.8b-base
+	```
+2. The engine serves traffic at port `12434` automatically. Keep the script defaults or explicitly state them:
+	```bash
+	export LOCAL_MODEL_URL="http://localhost:12434/engines/v1/chat/completions"
+	export LOCAL_MODEL="huggingface.co/qwen/qwen3.5-0.8b-base"
+	```
+
+## Environment Configuration
+Configure the tracking environment using your project variables or an explicit `.env` file mapping:
+
+| Variable                   | Description |
+|----------------------------|-------------|
+| `SOURCERYKIT_API_KEY`      | Your active integration token from the Provably dashboard. |
+| `SOURCERYKIT_ORG_ID`       | Your target workspace organization UUID. |
+| `SOURCERYKIT_POSTGRES_URL` | Network DSN connection string for your hosted Postgres intercept database. |
+| `LOCAL_MODEL_URL`          | Target endpoint for local text generation. |
+| `LOCAL_MODEL`              | Target model signature identifier. |
+
+
+## Execution
+Execute a standard, fully validated transaction tracking loop:
 ```bash
-# Normal run — expect PASS
-python examples/local_model/agent_run.py
-
-# Tampered run — expect CAUGHT (fake temperature injected into the claim)
-python examples/local_model/agent_run.py --tamper
+python agent_run.py
+```
+Execute a validation loop with forced data modification to simulate a data hallucination catch:
+```bash
+python agent_run.py --tamper
 ```
