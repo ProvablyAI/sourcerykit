@@ -13,9 +13,9 @@ Welcome to the developer documentation for the Provably Python SDK (**SourceryKi
 
 ## Ecosystem Framework Examples
 Explore how to integrate SourceryKit seamlessly into your favorite production development stack:
-* **Local Stacks:** Check out the [Local Inference Server Guide](examples/local_model/README.md) (Ollama, vLLM, llama.cpp, oMLX).
-* **API Providers:** Review the [OpenAI Agents SDK Blueprint](examples/openai_agents/README.md) using OpenRouter configurations.
-* **Orchestration Toolchains:** See the [LangChain AgentExecutor Guide](examples/langchain_agent/README.md) for full trust-gate compliance.
+* **Local Stacks:** Check out the [Local Server example](examples/local_model/README.md) (Ollama, vLLM, llama.cpp, oMLX).
+* **API Providers:** Review the [OpenAI Agents SDK example](examples/openai_agents/README.md) using OpenRouter configurations.
+* **Orchestration Toolchains:** See the [LangChain example](examples/langchain_agent/README.md) for full trust-gate compliance.
 
 ## API Reference & Development
 * Explore the [API Reference](api.md) for a complete mapping of all public functions, classes, and types.
