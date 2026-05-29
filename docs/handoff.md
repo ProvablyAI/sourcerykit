@@ -43,8 +43,8 @@ print(f"Evaluation Verdict: {result.get('outcome')}")
 ## Anatomy of fetch_and_claim
 The `build_handoff_payload` function accepts a structured `fetch_and_claim` dictionary. Other runtime fields—such as network intercepts, organization IDs, and API keys—are resolved automatically by the SDK during compilation.
 
-[!NOTE]
-The fields below represent a complete and exhaustive view of the parameters you can manually configure. Any schema fields omitted from these tables are managed entirely by the SDK lifecycle.
+> [!NOTE]
+> The fields below represent a complete and exhaustive view of the parameters you can manually configure. Any schema fields omitted from these tables are managed entirely by the SDK lifecycle.
 
 ### Payload Input Fields
 | Field | Type | Description |
