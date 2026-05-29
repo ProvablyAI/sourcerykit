@@ -26,8 +26,9 @@ Explore how to integrate SourceryKit seamlessly into your favorite production de
 
 ```{toctree}
 :maxdepth: 1
+:titlesonly:
 
-src/provably
+Provably Technologies <src/provably>
 ```
 
 ```{toctree}

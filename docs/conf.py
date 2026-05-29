@@ -1,9 +1,10 @@
-"""Sphinx configuration for provably-sdk."""
+"""Sphinx configuration"""
 
 from __future__ import annotations
 
 import os
 import sys
+import urllib.request
 from pathlib import Path
 
 os.environ.setdefault("AGENTKIT_API_KEY", "dummy")
@@ -13,14 +14,14 @@ os.environ.setdefault("AGENTKIT_POSTGRES_URL", "postgresql://postgres:postgres@l
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-project = "provably-sdk"
+project = "SourceryKit"
 copyright = "Provably Technologies Ltd"
 author = "Provably Technologies Ltd"
 
 try:
     from importlib.metadata import version as pkg_version
 
-    release = pkg_version("provably-sdk")
+    release = pkg_version("sourcerykit")
 except Exception:
     release = "0.0.0"
 
@@ -53,3 +54,27 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 autodoc_member_order = "bysource"
+
+# (Provably Description)
+REMOTE_MD_URL = "https://raw.githubusercontent.com/ProvablyAI/.github/refs/heads/main/profile/README.md"
+LOCAL_MD_PATH = Path(__file__).resolve().parent / "src/provably.md"
+
+
+def download_remote_description() -> None:
+    print(f"--> Fetching {REMOTE_MD_URL}")
+    try:
+        with urllib.request.urlopen(REMOTE_MD_URL, timeout=10) as response:
+            content = response.read().decode("utf-8")
+
+        front = "# \n ## \n"
+
+        LOCAL_MD_PATH.write_text(front + content, encoding="utf-8")
+        print("--> Remote description synced successfully.")
+
+    except Exception as e:
+        print(f"--> Warning: Failed to fetch remote markdown: {e}")
+        if not LOCAL_MD_PATH.exists():
+            LOCAL_MD_PATH.write_text("Provably", encoding="utf-8")
+
+
+download_remote_description()
