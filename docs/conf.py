@@ -44,6 +44,13 @@ source_suffix = {
 
 myst_heading_anchors = 3
 
+myst_enable_extensions = [
+    "alert",
+    "colon_fence",
+]
+
+myst_fence_as_directive = {"mermaid"}
+
 # README / CHANGELOG / CONTEXT live outside docs/; links use ../ paths.
 suppress_warnings = ["myst.xref_missing"]
 

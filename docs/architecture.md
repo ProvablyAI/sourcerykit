@@ -4,7 +4,7 @@ The SourceryKit SDK adds verifiable guardrails to Python agents by making outbou
 ## Core Flow
 SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint policies, records interactions, and enables deterministic evaluation of claims.
 
-```{mermaid}
+```mermaid
 flowchart TD
   Agent([Agent]) -->|Initializes| Bootstrap[Bootstrap System]
   Bootstrap -->|Configures| Interceptor[HTTP Interceptor]
