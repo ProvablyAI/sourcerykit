@@ -11,7 +11,7 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides v
 SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
 
 
-```{mermaid}
+```mermaid
 flowchart TD
   Agent([Agent]) -->|Initializes| Bootstrap[Bootstrap System]
   Bootstrap -->|Configures| Interceptor[HTTP Interceptor]
@@ -111,6 +111,53 @@ Set up these three environment variables to get things running:
 Note: Only hosted, publicly accessible Postgres instances are supported. Local or embedded databases will not work.
 
 You can set these in your shell, a .env file, or your deployment environment. For a full list of options, see [.env.example](.env.example).
+
+
+## Migrating to v2
+v2 is a major refactor focused on strict type safety and cleaner internal architecture. If you are upgrading from a previous release, you'll need to make a few quick adjustments:
+
+### Package Rename
+Update all project imports to use the new package name:
+```python
+# Previous Version
+import provably
+
+# New Version
+import sourcerykit
+```
+
+### Environment Variables
+All configuration environment variable prefixes have been standardized to match the new engine scope:
+
+| Previous Version | New Version | Notes |
+|----|----|-------|
+| `PROVABLY_API_KEY` | `SOURCERYKIT_API_KEY` | System-wide prefix change |
+| `PROVABLY_ORG_ID` | `SOURCERYKIT_ORG_ID` | System-wide prefix change |
+| `POSTGRES_URL` | `SOURCERYKIT_POSTGRES_URL` | System-wide prefix change |
+
+> [!NOTE]
+> `PROVABLY_RUST_BE_URL` and `PROVABLY_MCP_URL` are now handled automatically by the runtime configuration loader and are no longer required in your local environment files.
+
+### Database Schema Migration
+> [!WARNING]
+> **Breaking Change**: The core data types of the internal tables have shifted from `SERIAL` integers to `UUID` identifiers. Upgrading directly from a previous version will cause a structural conflict.
+
+To handle this smoothly, an automated purge script has been integrated directly into the migration sequence. Running the update command will automatically drop the previous tables and initialize the fresh new schemas in a single safe step.
+
+Run the migration engine to update your environment automatically:
+```bash
+alembic upgrade head
+```
+
+### Code & API Changes
+Core engine methods have been renamed or restructured for asynchronous clarity and better data flow:
+
+| Previous Version | New Version | Notes |
+|-----------|-----------|-------|
+| `intercept_context(..)` | `async_intercept_context(..)` | Migrated to an async context manager |
+| `configure_indexing()` | `bootstrap_system()` | Renamed for architectural clarity |
+| Not Provided | `insert_trusted_endpoint()` | New method to add trusted endpoints |
+
 
 ## More Docs
 Want to dig into the details? Check out the specific guides:
