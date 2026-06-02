@@ -1,9 +1,13 @@
 import asyncio
 from logging.config import fileConfig
 
-from agentkit.db._engine import get_engine
-from agentkit.db._schema import metadata as target_metadata
-from alembic import context
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from agentkit.db._engine import get_engine  # noqa: E402
+from agentkit.db._schema import metadata as target_metadata  # noqa: E402
+from alembic import context  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
