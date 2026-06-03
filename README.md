@@ -1,10 +1,10 @@
-# Verifiable Data AgentKit
+# SourceryKit
 
 [![status: v0.2](https://img.shields.io/badge/status-v0.2-blue)](CHANGELOG.md)
 [![python: 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
 [![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](LICENSE.md)
 
-The Python SDK for [Provably](https://provably.ai). Adds a deterministic
+SourceryKit is the Python SDK for [Provably](https://provably.ai). Adds a deterministic
 **eval** layer (verifiable guardrails — distinct from proof _verification_)
 to any Python agent: every outbound HTTP call is recorded, every claim
 handed off to another agent is evaluated against a trusted Provably query
