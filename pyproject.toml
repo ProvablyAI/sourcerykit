@@ -69,6 +69,7 @@ include = [
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = [".cache", ".venv", "venv", "dist", "build", ".git"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "W"]
@@ -117,4 +118,4 @@ branch = true
 [tool.coverage.report]
 fail_under = 60
 show_missing = true
-omit = ["*/tests/*"]
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
