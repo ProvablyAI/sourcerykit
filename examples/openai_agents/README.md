@@ -2,7 +2,7 @@
 
 This example demonstrates how to integrate SourceryKit with the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python). It showcases automated intercept capture, target endpoint allow-list constraints, and runtime evaluation loops inside a structured agent execution flow.
 
-## Core Pillars Tested
+## How It Works
 1. **HTTP Interception**: The `bootstrap_system()` hook dynamically monitors outbound `httpx` calls, ensuring that network operations generated within the agent tool loop (`get_current_temperature_london`) are securely logged to your database intercepts table.
 2. **All-Method Trust Gate**: SourceryKit enforces structural target validation checks against your external network endpoints. The external weather lookup endpoint (`api.open-meteo.com`) is explicitly registered via policy seeds (`insert_trusted_endpoint`) before execution.
 3. **Automated Handoff & Evaluation**: Captured network states are bundled alongside model generation reasoning strings and the model's structured Pydantic claimed_values list. This payload is passed to `evaluate_handoff` to verify data integrity and catch hallucinations.
@@ -28,9 +28,9 @@ Configure the workspace using your target system variables or an explicit `.env`
 
 1. Install the SDK package:
    ```bash
-   pip install sourcerykit
+   pip install sourcerykit openai-agents python-dotenv httpx pydantic
    ```
-2. Export your configured secrets into your current shell:
+2. Export your configured secrets into your current shell or place them in a local `.env` file:
       ```bash
    export MODEL_URL="https://openrouter.ai/api/v1"
    export MODEL_API_KEY="sk-or-..."
