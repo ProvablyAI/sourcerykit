@@ -1,40 +1,49 @@
 # LangChain Agent
-
-This directory demonstrates how to seamlessly integrate SourceryKit with autonomous agent systems built using the modern [LangChain](https://github.com/langchain-ai/langchain).
+This example demonstrates how to integrate SourceryKit with LangChain using agent compilation workflows (create_agent). It showcases automated tool intercept capture, target endpoint allow-list constraints, native structured JSON responses via Pydantic, and backend evaluation loops.
 
 ## How It Works
-1. **Clean Interception:** Your custom LangChain `@tool` block is wrapped in an `async_intercept_context` manager. When the orchestration layer (`create_agent`) triggers the function call, SourceryKit captures and indexes the execution metadata inside your Postgres database.
-2. **Data Caching:** The tool securely caches a copy of the raw response dictionary making it accessible once the graph completes its processing turns.
-3. **Claim Evaluation:** After `agent.ainvoke()` natively resolves the final conversational output string, the captured execution structure is passed directly to `build_handoff_payload` and evaluated against the tamper-proof baseline records.
+1. **HTTP Interception**: The `bootstrap_system()` hook dynamically monitors outbound `httpx` calls, ensuring that network operations generated within the LangChain agent tool loop (`get_current_temperature_london`) are securely logged to your database intercepts table.
+2. **All-Method Trust Gate**: SourceryKit enforces structural target validation checks against your external network endpoints. The external weather lookup endpoint (`api.open-meteo.com`) is explicitly registered via policy seeds (`insert_trusted_endpoint`) before execution.
+before execution.
+3. **Automated Handoff & Evaluation**: Captured network states are bundled alongside model generation reasoning strings and the model's structured Pydantic claimed_values list extracted directly from `result["structured_response"]`. This payload is passed to `evaluate_handoff` to verify data integrity and catch hallucinations.
 
 ---
 
 ## Environment Configuration
 
-Configure your environment setup using your shell profile or a local `.env` file mapping:
+Configure the workspace using your target system variables or an explicit `.env` file mapping:
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | **yes** | Your OpenAI secret key. |
-| `SOURCERYKIT_API_KEY` | **yes** | Your active integration token from the Provably dashboard. |
-| `SOURCERYKIT_ORG_ID` | **yes** | Your workspace organization UUID. |
-| `SOURCERYKIT_POSTGRES_URL` | **yes** | DSN connection string for your hosted Postgres intercept database. |
+| `MODEL_NAME` | **yes** | Targeted model architecture identifier string passed to create_agent (e.g., `openrouter:openai/gpt-4o-mini`). |
+| `SOURCERYKIT_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
+| `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
+| `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
+
+> [!Note]
+> Ensure your underlying model provider's environment variables—such as `OPENROUTER_API_KEY`—are also set as required by your LangChain backend provider setup.
 
 ---
 
 ## Execution
-1. Install the SDK package:
+1. Install dependencies:
    ```bash
-   pip install sourcerykit
+   pip install sourcerykit langchain python-dotenv httpx pydantic
    ```
-2. Export your configured secrets into your current shell:
+2. Export your configured secrets into your current shell or place them in a local `.env` file:
       ```bash
-   export OPENAI_API_KEY="sk-or-..."
+   export MODEL_NAME="openrouter:openai/gpt-4o-mini"
    export SOURCERYKIT_API_KEY="zk_..."
    export SOURCERYKIT_ORG_ID="org_..."
    export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
    ```
 3. Run the example:
       ```bash
-   python agent_run.py
+      # Standard Validation
+      python agent_run.py
+
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```
