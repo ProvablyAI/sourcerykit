@@ -57,8 +57,17 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
 
     match verification_mode:
         case VerificationMode.FIELD_EXTRACTION:
-            ok = base["claimed"] == base["indexed_at_path"]
-            return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
+            is_valid = True
+
+            for entry in claimed_value:
+                raw_true_value = _get_by_json_path(row_response, entry.path)
+                true_value = str(raw_true_value) if raw_true_value is not None else None
+
+                if true_value is None or entry.value.strip() != true_value.strip():
+                    is_valid = False
+                    break
+
+            return {**base, "result": Outcome.PASS if is_valid else Outcome.CAUGHT}
 
         case VerificationMode.SCHEMA_TYPE:
             if not (schema := claim.expected_json_schema):
