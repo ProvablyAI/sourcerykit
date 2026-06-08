@@ -33,9 +33,10 @@ flowchart TD
 - **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
 - **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
 - **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
+- **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
 - **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
 - **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
-- **Provably Backend**:The source of truth that turns your local intercepts into anchored verification proofs.
+- **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
 
 
 ## Quick Example
@@ -45,44 +46,61 @@ Here is how to bootstrap the system, run an intercepted request, build a payload
 import uuid
 import httpx
 import sourcerykit
+from agents import Agent, Runner
+from sourcerykit import SourceryKitAgentResponse
 
 async def run_verifiable_agent():
-    # 1. Fire up the system 
-    sourcerykit.bootstrap_system()
+    # 1. Fire up the system
+    await sourcerykit.bootstrap_system()
 
     # 2. Tell the registry which URL is allowed
-    await sourcerykit.trusted_endpoints.insert_trusted_endpoint("[https://api.example.com/data](https://api.example.com/data)")
+    await sourcerykit.insert_trusted_endpoint("https://api.example.com/data")
 
     # 3. Make a network call inside an intercept context
     async with sourcerykit.async_intercept_context(agent_id="demo-agent", action_name="get_data"):
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                "[https://api.example.com/data](https://api.example.com/data)",
+                "https://api.example.com/data",
                 params={"query": "example_parameter"}
             )
-            record = response.json()
+            response.raise_for_status()
 
-    # 4. Set up the claim data
+    # 4. Configure your agent with SourceryKitAgentResponse as the structured output type
+    #    and run it. Each framework exposes the typed result differently, but the output
+    #    is always a SourceryKitAgentResponse with `claimed_values`.
+    #    Pass the keyword argument supported by your framework, e.g.:
+    #      output_type=SourceryKitAgentResponse   (OpenAI Agents SDK)
+    #      response_format=SourceryKitAgentResponse  (LangChain)
+    agent = Agent(
+        name="demo-agent",
+        instructions="You are a helpful assistant.",
+        tools=[...],
+        model=MODEL_NAME,
+        output_type=SourceryKitAgentResponse,
+    )
+    result = await Runner.run(agent, prompt)
+    final_output: SourceryKitAgentResponse = result.final_output
+
+    # 5. Build the handoff payload from the agent's structured output
     payload_data = {
-        "reasoning": "Agent completed processing and claims the returned value is valid.",
+        "reasoning": final_output.reasoning,
         "claims": [
             {
                 "action_name": "get_data",
-                "claimed_value": record,
-                "verification_mode": "verbatim",
+                "claimed_value": final_output.claimed_values,
+                "verification_mode": "field_extraction",
             }
         ],
     }
 
-    # 5. Build the handoff payload
-    payload = await sourcerykit.handoff.build_handoff_payload(
+    payload = await sourcerykit.build_handoff_payload(
         payload_data,
         run_id=uuid.uuid4(),
         intercept_agent_id="demo-agent",
     )
 
     # 6. Ask the evaluator for a verdict
-    result = await sourcerykit.evaluator.evaluate_handoff(payload)
+    result = await sourcerykit.evaluate_handoff(payload)
     print(f"Evaluation Outcome: {result.get('outcome')}") # PASS, CAUGHT, or ERROR
 ```
 

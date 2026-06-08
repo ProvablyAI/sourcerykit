@@ -1,6 +1,8 @@
 # Handoff
 The handoff mechanism structures agent claims—such as the result of an API call—and submits them to an evaluation service. These claims are evaluated deterministically against authoritative records to provide verifiable runtime guardrails.
 
+Agent frameworks (OpenAI Agents SDK, LangChain) should use `SourceryKitAgentResponse` as the structured output type. This enforces a typed contract where the LLM returns a `reasoning` string and a `claimed_values` list—a flat collection of `ClaimedValue` objects, each with a JSONPath-style `path` and an extracted string `value`. These `claimed_values` feed directly into the handoff payload.
+
 
 ## Core Flow
 - **Collect Claims**: The agent records statements about its actions alongside supporting request/response payloads.
@@ -13,16 +15,31 @@ The following example demonstrates how to construct a claim, bundle it into a Ha
 
 ```python
 import uuid
-from sourcerykit import build_handoff_payload, evaluate_handoff
+from agents import Agent, Runner
+from sourcerykit import build_handoff_payload, evaluate_handoff, SourceryKitAgentResponse
 
-# Define the fetch_and_claim payload structures
+# Set SourceryKitAgentResponse as the structured output type on your agent.
+# Pass the keyword argument supported by your framework, e.g.:
+#   output_type=SourceryKitAgentResponse   (OpenAI Agents SDK)
+#   response_format=SourceryKitAgentResponse  (LangChain)
+agent = Agent(
+    name="demo",
+    instructions="You are a helpful assistant.",
+    tools=[...],
+    model=MODEL_NAME,
+    output_type=SourceryKitAgentResponse,
+)
+result = await Runner.run(agent, prompt)
+final_output: SourceryKitAgentResponse = result.final_output
+
+# Build the handoff payload from the agent's structured output
 payload_data = {
-    "reasoning": "Agent completed processing and claims the returned value is valid.",
+    "reasoning": final_output.reasoning,
     "claims": [
         {
             "action_name": "get_data",
-            "claimed_value": {"result": {"status": "success", "value": 42}},
-            "verification_mode": "verbatim",
+            "claimed_value": final_output.claimed_values,
+            "verification_mode": "field_extraction",
         }
     ],
 }
@@ -59,8 +76,6 @@ The `build_handoff_payload` function accepts a structured `fetch_and_claim` dict
 | `action_name` | `str` | Logical identifier for the agent action producing the claim. |
 | `claimed_value` | `Any` | The specific data value or object subset the agent claims to be true. |
 | `verification_mode` | `str` | The verification strategy applied to this specific claim (e.g., `verbatim`, `field_extraction`). |
-| `json_path` | `str` | Dot-notation path used to target and isolate nested values within the response payload. |
-| `expected_json_schema` | `dict | None` | Optional JSON Schema definition needed if utilizing `schema_type` mode. |
 | `range_min` | `float | int | None` | Optional inclusive lower bound boundary used for `range_threshold` mode. |
 | `range_max` | `float | int | None` | Optional inclusive upper bound boundary used for `range_threshold` mode. |
 
@@ -68,9 +83,7 @@ The `build_handoff_payload` function accepts a structured `fetch_and_claim` dict
 ## Verification Modes
 The evaluation engine processes claims using one of four specific strategies:
 
-- **verbatim** (default): Compares the `claimed_value` against the entire authoritative backend record using canonical-JSON equality.
 - **field_extraction**: Isolates a specific element in the backend record using the `json_path` string and compares it directly to the `claimed_value`.
-- **schema_type**: Ignores the explicit literal value of `claimed_value` and validates the data structure at `json_path` against a provided `expected_json_schema`.
 - **range_threshold**: Verifies that the extracted numeric value matches the `claimed_value` and falls inclusively between defined `range_min` and `range_max` boundaries.
 
 

@@ -16,7 +16,7 @@ import sourcerykit
 import httpx
 
 # Initialize runtime, database schema, and interceptors
-sourcerykit.bootstrap_system()
+await sourcerykit.bootstrap_system()
 
 # Intercept and tag outbound network activity
 async with sourcerykit.async_intercept_context(agent_id="demo", action_name="get_data"):
