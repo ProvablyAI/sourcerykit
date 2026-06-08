@@ -31,7 +31,7 @@ class HandoffClaim(BaseModel):
         description="Provably query record UUID used to fetch the canonical indexed value.",
     )
     verification_mode: VerificationMode = Field(
-        default=VerificationMode.VERBATIM,
+        default=VerificationMode.FIELD_EXTRACTION,
         description="How claimed_value is compared to the indexed payload.",
     )
     json_path: str = Field(
