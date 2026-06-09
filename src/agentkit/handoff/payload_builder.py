@@ -130,7 +130,7 @@ async def _resolve_claim(
     try:
         verification_mode = VerificationMode(mode_raw)
     except ValueError:
-        verification_mode = VerificationMode.VERBATIM
+        verification_mode = VerificationMode.FIELD_EXTRACTION
 
     schema = raw.get("expected_json_schema") if isinstance(raw.get("expected_json_schema"), dict) else None
 

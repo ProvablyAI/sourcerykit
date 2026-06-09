@@ -3,7 +3,6 @@
 import math
 from typing import Any
 
-import jsonschema
 import msgspec
 
 from agentkit.logger import get_logger
@@ -38,13 +37,6 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
         "json_path": json_path,
     }
 
-    # Verbatim matching
-    if verification_mode == VerificationMode.VERBATIM:
-        answer = canonical_json(row_response)
-        base["indexed"] = answer
-        ok = base["claimed"] == answer
-        return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
-
     # Extract target node by path strings
     try:
         at_path = _get_by_json_path(row_response, json_path)
@@ -57,17 +49,17 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
 
     match verification_mode:
         case VerificationMode.FIELD_EXTRACTION:
-            ok = base["claimed"] == base["indexed_at_path"]
-            return {**base, "result": Outcome.PASS if ok else Outcome.CAUGHT}
+            is_valid = True
 
-        case VerificationMode.SCHEMA_TYPE:
-            if not (schema := claim.expected_json_schema):
-                return {**base, "result": Outcome.CAUGHT, "detail": "expected_json_schema is required for schema_type"}
-            try:
-                jsonschema.validate(at_path, schema)
-                return {**base, "result": Outcome.PASS}
-            except (jsonschema.ValidationError, jsonschema.SchemaError) as e:
-                return {**base, "result": Outcome.CAUGHT, "detail": getattr(e, "message", str(e))}
+            for entry in claimed_value:
+                raw_true_value = _get_by_json_path(row_response, entry.path)
+                true_value = str(raw_true_value) if raw_true_value is not None else None
+
+                if true_value is None or entry.value.strip() != true_value.strip():
+                    is_valid = False
+                    break
+
+            return {**base, "result": Outcome.PASS if is_valid else Outcome.CAUGHT}
 
         case VerificationMode.RANGE_THRESHOLD:
             if claim.range_min is None and claim.range_max is None:
@@ -76,10 +68,21 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
                     "result": Outcome.CAUGHT,
                     "detail": "range_threshold requires range_min and/or range_max",
                 }
-            try:
-                value = _coerce_number(at_path)
-            except (TypeError, ValueError) as exc:
-                return {**base, "result": Outcome.CAUGHT, "detail": f"indexed value not numeric: {exc}"}
+
+            if isinstance(at_path, list):
+                if not at_path:
+                    return {**base, "result": Outcome.CAUGHT, "detail": "indexed list is empty; cannot compute average"}
+                try:
+                    numbers = [_coerce_number(item) for item in at_path]
+                except (TypeError, ValueError) as exc:
+                    return {**base, "result": Outcome.CAUGHT, "detail": f"list element not numeric: {exc}"}
+                value = sum(numbers) / len(numbers)
+                base["indexed_average"] = value
+            else:
+                try:
+                    value = _coerce_number(at_path)
+                except (TypeError, ValueError) as exc:
+                    return {**base, "result": Outcome.CAUGHT, "detail": f"indexed value not numeric: {exc}"}
 
             if claim.range_min is not None and value < float(claim.range_min):
                 return {**base, "result": Outcome.CAUGHT, "detail": f"value {value} below range_min {claim.range_min}"}

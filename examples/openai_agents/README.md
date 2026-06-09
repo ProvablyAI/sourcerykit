@@ -1,100 +1,51 @@
-# OpenAI Agents SDK + Provably — Runnable Demo
+# OpenAI Agents SDK
 
-This demo shows an end-to-end run of the Provably SDK integrated with the
-[OpenAI Agents SDK](https://github.com/openai/openai-agents-python) (>=0.0.3).
-It exercises every pillar of the SDK in a single script:
+This example demonstrates how to integrate SourceryKit with the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python). It showcases automated intercept capture, target endpoint allow-list constraints, and runtime evaluation loops inside a structured agent execution flow.
 
-1. **Intercept** — `configure_indexing(True)` installs monkey-patches on
-   `httpx.AsyncClient.send` and `requests.Session.send` so every outbound HTTP
-   request from the agent loop is captured and stored in `provably_intercepts`.
-2. **Trust gate** — before storing a request the SDK checks that its URL is
-   registered in `trusted_endpoints`.  The demo seeds both the OpenRouter
-   chat-completions URL and the Open-Meteo weather URL before running the agent.
-3. **Tool call** — the agent uses a `@function_tool` that calls the free
-   [Open-Meteo API](https://open-meteo.com/) (no API key required) to fetch the
-   current temperature in London.
-4. **Handoff** — the captured intercept row id is wrapped in a `HandoffPayload`
-   with one `HandoffClaim` asserting the tool output.
-5. **Evaluate** — `evaluate_handoff()` fetches the stored query record from the
-   Provably backend, compares it to the claimed value, and prints the verdict.
+## How It Works
+1. **HTTP Interception**: The `bootstrap_system()` hook dynamically monitors outbound `httpx` calls, ensuring that network operations generated within the agent tool loop (`get_current_temperature_london`) are securely logged to your database intercepts table.
+2. **All-Method Trust Gate**: SourceryKit enforces structural target validation checks against your external network endpoints. The external weather lookup endpoint (`api.open-meteo.com`) is explicitly registered via policy seeds (`insert_trusted_endpoint`) before execution.
+3. **Automated Handoff & Evaluation**: Captured network states are bundled alongside the agent's structured `SourceryKitAgentResponse` output. The agent is configured with `output_type=SourceryKitAgentResponse`, which enforces a typed contract—the LLM returns a `reasoning` string and a `claimed_values` list of `ClaimedValue` objects (each with a JSONPath `path` and extracted string `value`). These `claimed_values` are passed as the `claimed_value` field in the handoff payload and submitted to `evaluate_handoff` to verify data integrity and catch hallucinations.
 
-Expected output (abbreviated):
+---
 
-```json
-{
-  "outcome": "PASS",
-  "per_claim": [
-    {
-      "action_name": "get_weather",
-      "result": "PASS",
-      "proof_time_ms": 42,
-      "verify_time_ms": 137
-    }
-  ],
-  "errors": []
-}
-```
+## Environment Configuration
 
-## Required environment variables
+Configure the workspace using your target system variables or an explicit `.env` file mapping:
 
-| Variable | Required | Notes |
+| Variable | Required | Description |
 |---|---|---|
-| `OPENROUTER_API_KEY` | yes | API key for [OpenRouter](https://openrouter.ai/). Used for the model call (`openai/gpt-4o-mini`). |
-| `PROVABLY_API_KEY` | yes | Provably integration API key. |
-| `PROVABLY_ORG_ID` | yes | Provably organisation id. Scopes trusted-endpoint and query-record lookups. |
-| `PROVABLY_RUST_BE_URL` | yes | Base URL of the Provably Rust backend (e.g. `https://api.provably.ai`). |
-| `POSTGRES_URL` | yes | PostgreSQL DSN (e.g. `postgresql://user:pass@host/db`). Used for intercept storage and trusted-endpoint registry. |
+| `MODEL_URL` | **yes** | Base URL routing endpoint for the LLM processing interface (e.g., `https://openrouter.ai/api/v1`). |
+| `MODEL_API_KEY` | **yes** | API authentication token for the targeting model processing engine. |
+| `MODEL_NAME` | **yes** | Targeted model engine name (e.g., `openai/gpt-4o-mini`). |
+| `SOURCERYKIT_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
+| `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
+| `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
 
-## How to run
+---
 
-```bash
-# 1. Install the SDK in editable mode with dev extras (includes openai-agents)
-pip install -e .[dev]
+## Execution
 
-# 2. Export the required env vars
-export OPENROUTER_API_KEY="sk-or-..."
-export PROVABLY_API_KEY="prov_..."
-export PROVABLY_ORG_ID="org_..."
-export PROVABLY_RUST_BE_URL="https://api.provably.ai"
-export POSTGRES_URL="postgresql://user:pass@localhost/provably"
+1. Install the SDK package:
+   ```bash
+   pip install sourcerykit openai-agents python-dotenv httpx pydantic
+   ```
+2. Export your configured secrets into your current shell or place them in a local `.env` file:
+      ```bash
+   export MODEL_URL="https://openrouter.ai/api/v1"
+   export MODEL_API_KEY="sk-or-..."
+   export MODEL_NAME="openai/gpt-4o-mini"
+   export SOURCERYKIT_API_KEY="zk_..."
+   export SOURCERYKIT_ORG_ID="org_..."
+   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
+   ```
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-# 3. Run the demo
-python examples/openai_agents/agent_run.py
-```
+      # or
 
-## Model and cost
-
-The demo uses **`openai/gpt-4o-mini`** on OpenRouter — a cheap, capable model
-that reliably follows tool-calling instructions.  Estimated cost is approximately
-**$0.001 per run** (one tool call + one summary turn).
-
-## How the trust gate works — and what happens when you forget to seed it
-
-The Provably SDK now enforces trust on **all HTTP methods** (GET, POST, etc.),
-not only GET.  This means the LLM provider call (a POST to OpenRouter) *and* the
-weather API call (a GET to Open-Meteo) both need to be registered in
-`trusted_endpoints` before the agent runs.
-
-If you forget to seed an endpoint, the SDK raises:
-
-```
-RuntimeError: BLOCKED: endpoint https://openrouter.ai/api/v1/chat/completions not in trusted index for org <org_id>
-```
-
-When this error occurs inside `httpx.AsyncClient.send` (the async LLM call), the
-OpenAI SDK wraps it in an `APIConnectionError`.  You can inspect the full
-exception chain to find the original `BLOCKED: ...` message.
-
-**Migration note for existing users:** if you were previously relying on the SDK
-only trust-checking GET requests, you must now register *all* outbound URLs
-including your LLM provider URL.  Use the `seed_trusted_endpoints` helper pattern
-shown in this demo (raw psycopg2 `INSERT ... ON CONFLICT DO NOTHING`), or add
-rows via the Provably dashboard.
-
-## How `provably_self_egress()` relates to this demo
-
-The Provably SDK's own HTTP calls (fetching query records, posting verify
-requests, bootstrap handshakes) are **never** blocked by the trust gate.  They
-run inside `with provably_self_egress():` context managers that mark them as
-SDK-internal egress, so the trust gate is bypassed automatically.  You do not
-need to add Provably's own backend URL to `trusted_endpoints`.
+      # Hallucination Simulation
+      python agent_run.py --tamper
+   ```
