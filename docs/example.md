@@ -21,7 +21,7 @@ import json
 import httpx
 from agents import Agent, Runner, function_tool
 
-from agentkit import (
+from sourcerykit import (
     SourceryKitAgentResponse,
     async_intercept_context,
     bootstrap_system,
@@ -30,13 +30,11 @@ from agentkit import (
     insert_trusted_endpoint,
 )
 
-_WEATHER_API_URL = "https://api.open-meteo.com/v1/forecast"
-
 # Fire up the local runtime environment and database connections
 await bootstrap_system()
 
 # Add the target API pattern to your real-time allow-list policy registry
-await insert_trusted_endpoint(_WEATHER_API_URL)
+await insert_trusted_endpoint("https://api.open-meteo.com/v1/forecast")
 ```
 
 ### Step 2: Intercepted Agent Tools
@@ -50,7 +48,7 @@ async def get_current_temperature_london() -> dict:
     async with async_intercept_context(agent_id="demo-agent", action_name="get_weather"):
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                _WEATHER_API_URL,
+                "https://api.open-meteo.com/v1/forecast",
                 params={"latitude": 51.5074, "longitude": -0.1278, "current": "temperature_2m"},
                 timeout=30,
             )

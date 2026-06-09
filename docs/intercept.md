@@ -5,7 +5,7 @@ The Interceptor acts as an automated network recorder and policy enforcer for Py
 The Interceptor patches popular Python HTTP libraries (including httpx, and aiohttp) to evaluate and record network traffic:
 
 - **Policy Enforcement**: Before a request leaves the process, its destination URL is verified against the trusted endpoints registry. Untrusted requests are blocked immediately.
-- **Audit Logging**: Every processed request and response is logged into the append-only `intercepts` database table, creating a tamper-evident audit trail for downstream proof generation.
+- **Audit Logging**: Every processed request and response is logged into the append-only `intercepts` database table, creating a tamper-evident audit trail for proof generation.
 
 ## Example
 

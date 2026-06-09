@@ -12,16 +12,16 @@ The registry acts as a database-backed, real-time allow-list for outbound networ
 All database operations in the SDK are asynchronous. Register a trusted destination during your application's setup or bootstrap phase:
 
 ```python
-import sourcerykit
+from sourcerykit import insert_trusted_endpoint
 
-async def setup_network_policies():
-    # Register an allowed endpoint in the database
-    await sourcerykit.trusted_endpoints.insert_trusted_endpoint("https://api.example.com/v1/data")
+# Register an allowed endpoint in the database
+await insert_trusted_endpoint("https://api.example.com/v1/data")
+
 ```
 
 ## How the Registry Works
 - **URL Normalization**: URLs are standardized before storage and evaluation to prevent evasion via minor string variations.
-- **Enforcement Scope**: Enforcement is strictly active with no "warning-only" or dry-run mode. Currently, `GET` requests to unknown URLs face a hard block before an intercept row is recorded. `POST` requests are logged for auditing but are not policed in the current version.
+- **Enforcement Scope**: Enforcement is strictly active with no "warning-only" or dry-run mode.
 
 
 ## Async API Reference

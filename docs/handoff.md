@@ -57,8 +57,8 @@ print(f"Evaluation Verdict: {result.get('outcome')}")
 # Returns: {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...], "errors": [...]}
 ```
 
-## Anatomy of fetch_and_claim
-The `build_handoff_payload` function accepts a structured `fetch_and_claim` dictionary. Other runtime fields—such as network intercepts, organization IDs, and API keys—are resolved automatically by the SDK during compilation.
+## Anatomy of the payload_data
+The `build_handoff_payload` function accepts a structured `payload_data` dictionary. Other runtime fields—such as network intercepts, organization IDs, and API keys—are resolved automatically by the SDK during compilation.
 
 > [!NOTE]
 > The fields below represent a complete and exhaustive view of the parameters you can manually configure. Any schema fields omitted from these tables are managed entirely by the SDK lifecycle.
@@ -88,14 +88,18 @@ The evaluation engine processes claims using one of four specific strategies:
 
 
 ## Evaluation Logic
-When evaluate_handoff is invoked:
+When `evaluate_handoff` is invoked, the evaluator validates data integrity through a multi-layered trust gate:
 
-1. Claims missing a valid `query_record_id` fail immediately with a CAUGHT status.
+1. **Pre-Flight Check**: Any claim missing a valid `query_record_id` fails immediately with a CAUGHT status.
 
-2. The evaluator securely fetches historical payloads from the backend using the payload credentials.
+2. **Retrieve Logs & Proof**: The engine uses the payload credentials to fetch the original HTTP query logs, response headers, and the cryptographic proof recorded during the interception phase.
 
-3. The specified `verification_mode` rules are executed against the fetched records.
+3. **Verify Cryptographic Proof**: Before running any logical data checks, the engine validates the proof of the retrieved logs. This guarantees that:
+   - The network response was actually captured by the runtime agent.
+   - The logged data has not been modified or tampered with since it was written to the database.
 
-4. The transaction yields an overall `PASS` verdict if, and only if, every single inner claim successfully satisfies its verification conditions.
+4. **Run Verification Rules**: The engine applies your chosen `verification_mode` (such as an `field_extraction`) against the cryptographically verified records.
 
-For structural details on database tracking, see [architecture](architecture.md). For automated network capture details, see [intercept](intercept.md).
+5. **Final Verdict**: The run receives a final PASS verdict only if the cryptographic proof is valid and every individual claim satisfies its verification rules.
+
+For details on how database logging works, see [architecture](architecture.md). To learn how HTTP requests are captured in real-time, see [intercept](intercept.md).

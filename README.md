@@ -133,7 +133,8 @@ Set up these three environment variables to get things running:
 - `SOURCERYKIT_ORG_ID` — Your organization ID (grab this from your dashboard).
 - `SOURCERYKIT_POSTGRES_URL` — The connection string for your Postgres database, used for storing intercepts and trusted endpoints. Only PostgreSQL is supported. Format: `postgresql://user:password@ipaddress:port/database_name`
 
-Note: Only hosted, publicly accessible Postgres instances are supported. Local or embedded databases will not work.
+> [!NOTE]
+> Only hosted, publicly accessible Postgres instances are supported. Local databases will not work.
 
 You can set these in your shell, a .env file, or your deployment environment. For a full list of options, see [.env.example](.env.example).
 
@@ -194,7 +195,7 @@ Want to dig into the details? Check out the specific guides:
 
 
 ## Contributing
-We welcome fixes, features, and doc updates! Check out CONTRIBUTING.md to see how to run tests and open up a pull request.
+We welcome fixes, features, and doc updates! Check out [CONTRIBUTING.md](CONTRIBUTING.md) to see how to run tests and open up a pull request.
 
 ## License
 
