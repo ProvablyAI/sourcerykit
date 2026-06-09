@@ -75,7 +75,7 @@ The `build_handoff_payload` function accepts a structured `fetch_and_claim` dict
 |---|---|---|
 | `action_name` | `str` | Logical identifier for the agent action producing the claim. |
 | `claimed_value` | `Any` | The specific data value or object subset the agent claims to be true. |
-| `verification_mode` | `str` | The verification strategy applied to this specific claim (e.g., `verbatim`, `field_extraction`). |
+| `verification_mode` | `str` | The verification strategy applied to this specific claim (e.g., `field_extraction`). |
 | `range_min` | `float | int | None` | Optional inclusive lower bound boundary used for `range_threshold` mode. |
 | `range_max` | `float | int | None` | Optional inclusive upper bound boundary used for `range_threshold` mode. |
 
