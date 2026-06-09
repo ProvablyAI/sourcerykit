@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from provably.handoff._query_records import create_query_record_for_intercept
+from agentkit.handoff._query_records import create_query_record_for_intercept
 
 
 @pytest.fixture

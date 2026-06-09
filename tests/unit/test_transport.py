@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from provably.handoff.transport import post_handoff
-from provably.handoff.types import HandoffPayload
+from agentkit.handoff.transport import post_handoff
+from agentkit.handoff.types import HandoffPayload
 
 
 def test_post_handoff_empty_url_raises() -> None:

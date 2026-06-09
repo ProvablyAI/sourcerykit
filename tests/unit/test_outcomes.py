@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from provably.handoff.outcomes import aggregate_outcome, outcome_from_trace
-from provably.handoff.types import HandoffPayload
+from agentkit.handoff.outcomes import aggregate_outcome, outcome_from_trace
+from agentkit.handoff.types import HandoffPayload
 
 
 def test_outcome_from_trace_pass() -> None:

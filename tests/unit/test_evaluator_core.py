@@ -4,11 +4,11 @@ import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from provably.handoff.evaluator import (
+from agentkit.handoff.evaluator import (
     evaluate_handoff,
     extract_indexed_from_query_record,
 )
-from provably.handoff.types import HandoffClaim, HandoffPayload
+from agentkit.handoff.types import HandoffClaim, HandoffPayload
 
 
 def test_trust_gate_caught_when_url_untrusted() -> None:

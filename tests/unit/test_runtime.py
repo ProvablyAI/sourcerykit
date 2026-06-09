@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from provably.runtime import configure_indexing
+from agentkit.runtime import configure_indexing
 
 
 def test_configure_indexing_on() -> None:

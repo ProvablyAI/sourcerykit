@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from provably.trusted_endpoints import (
+from agentkit.trusted_endpoints import (
     _compile_pattern,
     _matches_registered,
     is_trusted_endpoint,
@@ -135,8 +135,8 @@ def test_is_trusted_endpoint_rejects_nonmatching_pattern(monkeypatch: pytest.Mon
 
 def test_snapshot_check_accepts_pattern_match(monkeypatch: pytest.MonkeyPatch) -> None:
     """The snapshot tamper-check must honor pattern entries the same way the live DB check does."""
-    from provably.handoff.types import HandoffClaim, HandoffPayload
-    from provably.trusted_endpoints import check_claim_endpoints_are_trusted
+    from agentkit.handoff.types import HandoffClaim, HandoffPayload
+    from agentkit.trusted_endpoints import check_claim_endpoints_are_trusted
 
     # Live DB check is exercised separately; stub it as trusting whatever made it past
     # the snapshot check (returns True).
@@ -159,8 +159,8 @@ def test_snapshot_check_accepts_pattern_match(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_snapshot_check_rejects_url_outside_pattern(monkeypatch: pytest.MonkeyPatch) -> None:
-    from provably.handoff.types import HandoffClaim, HandoffPayload
-    from provably.trusted_endpoints import check_claim_endpoints_are_trusted
+    from agentkit.handoff.types import HandoffClaim, HandoffPayload
+    from agentkit.trusted_endpoints import check_claim_endpoints_are_trusted
 
     monkeypatch.setattr("provably.trusted_endpoints.is_trusted_endpoint", lambda *_a, **_kw: True)
     monkeypatch.setattr("psycopg2.connect", lambda *_a, **_kw: MagicMock())

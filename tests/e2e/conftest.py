@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-import provably.intercept.interceptor as _interceptor_module
+import agentkit.intercept.interceptor as _interceptor_module
 
 Handler = Callable[["RecordedRequest"], "FakeResponse"]
 

@@ -19,12 +19,16 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "alembic>=1.13",
+    "greenlet>=3.0",
     "httpx>=0.26",
     "jsonschema>=4.0",
-    "psycopg2-binary>=2.9",
+    "psycopg[binary]>=3.1",
     "pydantic>=2.6",
     "requests>=2.31",
+    "sqlalchemy>=2.0",
     "structlog>=24.1",
+    "msgspec>=0.18.0",
 ]
 
 [project.optional-dependencies]
@@ -50,11 +54,11 @@ Homepage = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2"
 Issues = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/provably"]
+packages = ["src/agentkit"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/provably",
+    "src/agentkit",
     "README.md",
     "LICENSE.md",
     "CHANGELOG.md",
@@ -69,7 +73,7 @@ target-version = "py311"
 select = ["E", "F", "I", "UP", "W"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["provably"]
+known-first-party = ["agentkit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -106,7 +110,7 @@ ignore_missing_imports = true
 warn_required_dynamic_aliases = true
 
 [tool.coverage.run]
-source = ["provably"]
+source = ["agentkit"]
 branch = true
 
 [tool.coverage.report]

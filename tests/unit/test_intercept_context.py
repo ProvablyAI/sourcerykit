@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import asyncio
 
-import provably.intercept.interceptor as interceptor
-from provably.intercept import intercept_context
+import agentkit.intercept.interceptor as interceptor
+from agentkit.intercept import intercept_context
 
 
 def _reset_ctx_for_test_isolation() -> None:

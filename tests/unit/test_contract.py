@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import get_args
 
-from provably.handoff.contract import claim_contract
-from provably.handoff.types import HandoffClaim, VerificationMode
+from agentkit.handoff.contract import claim_contract
+from agentkit.handoff.types import HandoffClaim, VerificationMode
 
 
 def test_contract_includes_every_verification_mode() -> None:
