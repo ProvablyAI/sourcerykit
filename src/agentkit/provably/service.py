@@ -320,7 +320,7 @@ class ProvablyService:
 
             # collections and api_key are only present in get_integration_by_id
             full_records = await asyncio.gather(
-                *(api.get_integration_by_id(uuid.UUID(str(c["id"]))) for c in candidates)
+                *(get_api().get_integration_by_id(uuid.UUID(str(c["id"]))) for c in candidates)
             )
 
             match = next(
@@ -541,7 +541,7 @@ class ProvablyService:
         Returns:
             str: The full URL to the query record in the Provably admin UI.
         """
-        return api.query_record_url(query_id)
+        return get_api().query_record_url(query_id)
 
 
 # Shared singleton
