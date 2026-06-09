@@ -1,4 +1,5 @@
 from agentkit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
+from agentkit.config import get_settings
 from agentkit.db._engine import get_engine
 from agentkit.db._schema import metadata
 from agentkit.errors import AgentKitBootstrapError, AgentKitError, AgentKitStorageError
@@ -11,6 +12,9 @@ _log = get_logger(__name__)
 async def bootstrap_system() -> None:
     """System entry point called exactly once during container/server startup."""
     _log.info("system_bootstrap_started")
+
+    # Validate configuration
+    get_settings()
 
     # Initialize database schemas
     try:
