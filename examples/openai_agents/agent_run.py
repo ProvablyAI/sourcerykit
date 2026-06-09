@@ -21,11 +21,6 @@ from agents import Agent, Runner, function_tool, set_default_openai_api, set_def
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
 from agentkit import (  # noqa: E402
     SourceryKitAgentResponse,
     async_intercept_context,
@@ -35,6 +30,11 @@ from agentkit import (  # noqa: E402
     insert_trusted_endpoint,
     take_last_intercept_row_id,
 )
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 _OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 _DEFAULT_MODEL_URL = os.getenv("MODEL_URL", "http://127.0.0.1:1234/v1")

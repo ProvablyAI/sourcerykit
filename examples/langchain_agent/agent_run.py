@@ -21,11 +21,6 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.tools import tool
 
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
 from agentkit import (  # noqa: E402
     SourceryKitAgentResponse,
     async_intercept_context,
@@ -34,6 +29,11 @@ from agentkit import (  # noqa: E402
     evaluate_handoff,
     insert_trusted_endpoint,
 )
+
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 _OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 _DEFAULT_MODEL = os.getenv("MODEL_NAME", "")
