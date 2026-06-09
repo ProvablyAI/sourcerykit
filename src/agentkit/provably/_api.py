@@ -8,11 +8,12 @@
 - **Queries & Proofs** — run queries, generate proofs, poll status
 """
 
+import functools
 import uuid
 from typing import Any
 
 from agentkit.config import Settings, get_settings
-from agentkit.provably._http import http
+from agentkit.provably._http import get_http
 
 
 class ProvablyAPI:
@@ -39,7 +40,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/provably"
 
-        result: dict[str, Any] = await http.post(path)
+        result: dict[str, Any] = await get_http().post(path)
         return result
 
     async def list_middlewares(self) -> list[dict[str, Any]]:
@@ -51,7 +52,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares"
 
-        result: list[dict[str, Any]] = await http.get(path)
+        result: list[dict[str, Any]] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -71,7 +72,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/databases"
 
-        result: dict[str, Any] = await http.post(path, body)
+        result: dict[str, Any] = await get_http().post(path, body)
         return result
 
     async def list_databases(self, middleware_id: uuid.UUID) -> list[dict[str, Any]]:
@@ -86,7 +87,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/databases"
 
-        result: list[dict[str, Any]] = await http.get(path)
+        result: list[dict[str, Any]] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -116,7 +117,7 @@ class ProvablyAPI:
             f"{self._org_path()}/middlewares/{middleware_id}"
             f"/databases/{database_id}/schemas/{schema_id}/tables/{table_id}/columns"
         )
-        result: list[dict[str, Any]] = await http.get(path)
+        result: list[dict[str, Any]] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -131,7 +132,7 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/data"
-        result: dict[str, Any] = await http.get(path)
+        result: dict[str, Any] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -146,7 +147,7 @@ class ProvablyAPI:
             list[dict[str, Any]]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/collections"
-        result: list[dict[str, Any]] = await http.get(path)
+        result: list[dict[str, Any]] = await get_http().get(path)
         return result
 
     async def create_collection(self, body: dict[str, Any]) -> dict[str, Any]:
@@ -161,7 +162,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/collections"
 
-        result: dict[str, Any] = await http.post(path, body)
+        result: dict[str, Any] = await get_http().post(path, body)
         return result
 
     # ------------------------------------------------------------------
@@ -180,7 +181,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/integrations"
 
-        result: dict[str, Any] = await http.post(path, body)
+        result: dict[str, Any] = await get_http().post(path, body)
         return result
 
     async def list_integrations(self, query: str | None = None) -> list[dict[str, Any]]:
@@ -195,7 +196,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/integrations"
         params = {"query": query} if query is not None else None
-        result: list[dict[str, Any]] = await http.get(path, params=params)
+        result: list[dict[str, Any]] = await get_http().get(path, params=params)
         return result
 
     async def get_integration_by_id(self, integration_id: uuid.UUID) -> dict[str, Any]:
@@ -206,7 +207,7 @@ class ProvablyAPI:
             dict[str, Any]: The raw JSON response from the API.
         """
         path = f"{self._org_path()}/integrations/{integration_id}"
-        result: dict[str, Any] = await http.get(path)
+        result: dict[str, Any] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -226,7 +227,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
 
-        result: dict[str, Any] = await http.post(path, {"force": True})
+        result: dict[str, Any] = await get_http().post(path, {"force": True})
         return result
 
     async def get_preprocess_status(self, middleware_id: uuid.UUID, table_id: uuid.UUID) -> dict[str, Any]:
@@ -242,7 +243,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/tables/{table_id}/preprocess"
 
-        result: dict[str, Any] = await http.get(path)
+        result: dict[str, Any] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------
@@ -263,7 +264,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/middlewares/{middleware_id}/query"
 
-        result: dict[str, Any] = await http.post(
+        result: dict[str, Any] = await get_http().post(
             path, {"query": sql, "require_proof": True, "collection_id": str(collection_id)}
         )
         return result
@@ -281,7 +282,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/queries/{query_id}"
 
-        result: dict[str, Any] = await http.get(path, api_key=api_key)
+        result: dict[str, Any] = await get_http().get(path, api_key=api_key)
         return result
 
     async def verify_proof(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
@@ -303,7 +304,7 @@ class ProvablyAPI:
         """
         path = f"{self._org_path()}/queries/{query_id}/verify"
 
-        result: dict[str, Any] = await http.post(path, {}, api_key=api_key)
+        result: dict[str, Any] = await get_http().post(path, {}, api_key=api_key)
         return result
 
     # ------------------------------------------------------------------
@@ -317,5 +318,7 @@ class ProvablyAPI:
         return f"{self.app}/org/{self.org_id}/query-record/{query_record_id}"
 
 
-# Shared singleton
-api = ProvablyAPI()
+@functools.lru_cache(maxsize=1)
+def get_api() -> ProvablyAPI:
+    """Return the shared :class:`ProvablyAPI`, constructed on first call."""
+    return ProvablyAPI()

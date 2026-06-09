@@ -9,7 +9,7 @@ from typing import Any
 from agentkit.db._engine import ConnectionInfo
 from agentkit.db._schema import PROVABLY_INTERCEPTS_TABLE
 from agentkit.logger import get_logger
-from agentkit.provably._api import api
+from agentkit.provably._api import get_api
 from agentkit.provably._errors import provably_error_handler
 
 _log = get_logger(__name__)
@@ -34,7 +34,7 @@ class ProvablyService:
             ProvablyDataError: If the response is malformed.
         """
         async with provably_error_handler("create_middleware"):
-            result = await api.create_middleware()
+            result = await get_api().create_middleware()
             return uuid.UUID(str(result["id"]))
 
     async def get_middleware_id(self) -> uuid.UUID:
@@ -50,7 +50,7 @@ class ProvablyService:
         """
 
         async with provably_error_handler("get_middleware_id"):
-            middlewares = await api.list_middlewares()
+            middlewares = await get_api().list_middlewares()
 
             try:
                 match = next(md for md in middlewares if md.get("name") == "Provably Middleware")
@@ -80,7 +80,7 @@ class ProvablyService:
         """
 
         async with provably_error_handler("create_database"):
-            result = await api.create_database(middleware_id, database.to_dict())
+            result = await get_api().create_database(middleware_id, database.to_dict())
             return uuid.UUID(str(result["id"]))
 
     async def get_database_id(self, middleware_id: uuid.UUID, database: ConnectionInfo) -> uuid.UUID:
@@ -100,7 +100,7 @@ class ProvablyService:
         """
 
         async with provably_error_handler("get_database_id"):
-            databases = await api.list_databases(middleware_id)
+            databases = await get_api().list_databases(middleware_id)
 
             try:
                 match = next(db for db in databases if db.get("name") == database.name)
@@ -154,7 +154,7 @@ class ProvablyService:
         }
 
         async with provably_error_handler("create_collection"):
-            result = await api.create_collection(collection)
+            result = await get_api().create_collection(collection)
             return uuid.UUID(str(result["id"]))
 
     async def get_collection_id(self) -> uuid.UUID:
@@ -169,7 +169,7 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_collection_id"):
-            collections = await api.list_collections()
+            collections = await get_api().list_collections()
 
             try:
                 match = next(
@@ -201,7 +201,7 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_data"):
-            data = await api.get_data()
+            data = await get_api().get_data()
             middlewares = data.get("middlewares", [])
 
             # Find the Middleware
@@ -255,7 +255,7 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_columns_from_database"):
-            columns = await api.list_columns_from_database(middleware_id, database_id, schema_id, table_id)
+            columns = await get_api().list_columns_from_database(middleware_id, database_id, schema_id, table_id)
 
             try:
                 return [uuid.UUID(str(col["id"])) for col in columns]
@@ -290,7 +290,7 @@ class ProvablyService:
         }
 
         async with provably_error_handler("create_integration"):
-            result = await api.create_integration(integration)
+            result = await get_api().create_integration(integration)
             api_key = result.get("api_key")
             if not api_key:
                 raise ValueError("create_integration response missing 'api_key'")
@@ -312,7 +312,7 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_integration_intercepts_id"):
-            integrations = await api.list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
+            integrations = await get_api().list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
 
             candidates = [i for i in integrations if i.get("name") == PROVABLY_INTERCEPTS_TABLE]
             if not candidates:
@@ -359,7 +359,7 @@ class ProvablyService:
             ProvablyDataError: If the response is malformed.
         """
         async with provably_error_handler("start_preprocess"):
-            result = await api.start_preprocess(middleware_id, table_id)
+            result = await get_api().start_preprocess(middleware_id, table_id)
             return uuid.UUID(str(result["id"]))
 
     async def get_preprocess_completed(self, middleware_id: uuid.UUID, table_id: uuid.UUID, timeout: int = 60) -> None:
@@ -380,7 +380,7 @@ class ProvablyService:
 
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("get_preprocess_status"):
-                preprocess = await api.get_preprocess_status(middleware_id, table_id)
+                preprocess = await get_api().get_preprocess_status(middleware_id, table_id)
 
             status = preprocess.get("status")
 
@@ -419,7 +419,7 @@ class ProvablyService:
         """
         _log.info("run_query_started", middleware_id=str(middleware_id), collection_id=str(collection_id))
         async with provably_error_handler("run_query"):
-            result = await api.run_query(middleware_id, collection_id, sql)
+            result = await get_api().run_query(middleware_id, collection_id, sql)
             return uuid.UUID(str(result["query_id"]))
 
     async def wait_for_proof_computation(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
@@ -442,7 +442,7 @@ class ProvablyService:
 
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_computation"):
-                data = await api.get_query(query_id)
+                data = await get_api().get_query(query_id)
 
             proof = data.get("proof")
 
@@ -479,7 +479,7 @@ class ProvablyService:
         """
         _log.info("verify_proof_started", query_id=str(query_id))
         async with provably_error_handler("verify_proof"):
-            await api.verify_proof(query_id, api_key=integration_api_key)
+            await get_api().verify_proof(query_id, api_key=integration_api_key)
 
     async def wait_for_proof_verification(
         self, query_id: uuid.UUID, integration_api_key: str, timeout: int = 60
@@ -503,7 +503,7 @@ class ProvablyService:
 
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_verification"):
-                data = await api.get_query(query_id, api_key=integration_api_key)
+                data = await get_api().get_query(query_id, api_key=integration_api_key)
 
             proof = data.get("proof")
 

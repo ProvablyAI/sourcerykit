@@ -1,5 +1,6 @@
 """HTTP client for the Provably API."""
 
+import functools
 from typing import Any
 
 import httpx
@@ -83,5 +84,7 @@ class ProvablyHTTPClient:
         return await self._fetch("POST", path, api_key=api_key, json=json or {})
 
 
-# Global singleton instance
-http = ProvablyHTTPClient()
+@functools.lru_cache(maxsize=1)
+def get_http() -> ProvablyHTTPClient:
+    """Return the shared :class:`ProvablyHTTPClient`, constructed on first call."""
+    return ProvablyHTTPClient()
