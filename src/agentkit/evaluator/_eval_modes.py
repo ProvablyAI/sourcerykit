@@ -77,7 +77,7 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
                 except (TypeError, ValueError) as exc:
                     return {**base, "result": Outcome.CAUGHT, "detail": f"list element not numeric: {exc}"}
                 value = sum(numbers) / len(numbers)
-                base["indexed_average"] = value
+                base["indexed_average"] = str(value)
             else:
                 try:
                     value = _coerce_number(at_path)
