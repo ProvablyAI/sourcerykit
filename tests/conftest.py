@@ -21,7 +21,7 @@ floor); the threshold lives in ``[tool.coverage.report]`` in ``pyproject.toml``.
 Coverage is not in the default ``pytest`` options, so the inner loop stays fast.
 To check it locally:
 
-    pytest tests/unit --cov=provably --cov-report=term-missing
+    pytest tests/unit --cov=agentkit --cov-report=term-missing
 """
 
 from __future__ import annotations
