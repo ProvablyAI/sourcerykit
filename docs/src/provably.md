@@ -37,13 +37,15 @@ Our work is grounded in formal cryptographic research. We developed **QEDB**, a 
 
 ### 🚀 Getting Started
 
-#### 🤖 Verifiable Data AgentKit
-A Python SDK that adds **verifiable guardrails** to any Python agent. AgentKit improves transparency and security at the process level by combining HTTP recording, claim validation, and endpoint policy enforcement.
+#### 🤖 SourceryKit
 
-* **HTTP Recording:** Every outbound call is recorded for auditability by the Provably interceptor.
-* **Claim Validation:** Agent handoffs are evaluated by the Eval service as a verifiable guardrail against trusted Provably query records.
-* **Policy Enforcement:** Enforce the "policy edge" by controlling which endpoints an agent can access before the request even leaves the process.
-* 👉 **[Explore the Verifiable Data AgentKit Repo](https://github.com/ProvablyAI/verifiable-data-agentkit)**
+SourceryKit is a Python SDK that gives agents tools to build accurate and reliable workflows in minutes. Agents can verify their own work and each other's **handoffs** at runtime across APIs, databases, MCP servers, and backend tools. 
+
+* **Runtime Verification:** Verify tool calls, API responses, database results, and MCP handoffs while the agent is working.
+* **Verifiable Handoffs and Guardrails:** Agents can prove and verify that content came from a source system, so errors can be caught and healed before they propagate.
+* **Fast Setup:** Add accuracy and reliability without weeks of observability and eval pipeline setup.
+
+* 👉 **[Explore the SourceryKit repo](https://github.com/ProvablyAI/sourcerykit)**
 
 #### 📊 Verifiable Database
 Our core solution for end-to-end data integrity. Provably V2 allows you to connect existing relational databases and transform them into verifiable data sources with millisecond latency.

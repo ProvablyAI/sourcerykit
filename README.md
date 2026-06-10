@@ -23,11 +23,11 @@ flowchart TD
   Agent([Agent]) -->|Initializes| Bootstrap[Bootstrap System]
   Bootstrap -->|Configures| Interceptor[HTTP Interceptor]
   Bootstrap -->|Registers| TrustedEndpoints[(Trusted Endpoints)]
-  
+
   Agent -->|Outbound HTTP| Interceptor
   Interceptor -->|Validates against| TrustedEndpoints
   Interceptor -->|Logs to| Intercepts[(Intercepts Table)]
-  
+
   Agent -->|Submits| Handoff[Handoff Payload]
   Handoff -->|Verified by| Evaluator[Evaluator]
   Evaluator -->|Queries records| Provably[Provably Backend]

@@ -52,7 +52,6 @@ example
 :maxdepth: 1
 :caption: Ecosystem Examples
 
-src/examples/local_model
 src/examples/openai_agents
 src/examples/langchain_agent
 ```
