@@ -1,110 +1,79 @@
-from __future__ import annotations
+"""Tests for agentkit.intercept._loader.load_latest_intercept_payload."""
 
+import json
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from provably.intercept import _loader
-from provably.intercept._loader import load_latest_intercept_payload
+from agentkit.errors import AgentKitStorageError
+from agentkit.intercept._loader import load_latest_intercept_payload
 
 
-class FakeCursor:
-    def __init__(self, row: dict[str, Any] | None) -> None:
-        self._row = row
-        self.executed: tuple[str, tuple[Any, ...]] | None = None
+def _make_engine(row: Any = None, raise_exc: Exception | None = None) -> MagicMock:
+    """Build a mock async engine whose connect() context yields a result."""
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = row
 
-    def __enter__(self) -> FakeCursor:
-        return self
+    mock_conn = AsyncMock()
+    if raise_exc:
+        mock_conn.execute = AsyncMock(side_effect=raise_exc)
+    else:
+        mock_conn.execute = AsyncMock(return_value=mock_result)
 
-    def __exit__(self, *exc: object) -> None:
-        return None
+    mock_ctx = AsyncMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_ctx.__aexit__ = AsyncMock(return_value=False)
 
-    def execute(self, sql: str, params: tuple[Any, ...]) -> None:
-        self.executed = (sql, params)
-
-    def fetchone(self) -> dict[str, Any] | None:
-        return self._row
-
-
-class FakeConn:
-    def __init__(self, row: dict[str, Any] | None) -> None:
-        self.cursor_obj = FakeCursor(row)
-        self.closed = False
-
-    def cursor(self, *, cursor_factory: Any = None) -> FakeCursor:
-        return self.cursor_obj
-
-    def close(self) -> None:
-        self.closed = True
+    mock_engine = MagicMock()
+    mock_engine.connect.return_value = mock_ctx
+    return mock_engine
 
 
-def install_conn(monkeypatch: pytest.MonkeyPatch, row: dict[str, Any] | None) -> FakeConn:
-    conn = FakeConn(row)
-    monkeypatch.setattr(_loader.psycopg2, "connect", lambda _url: conn)
-    return conn
+def _make_row(request_payload: str | None = None, raw_response: str | None = None) -> MagicMock:
+    row = MagicMock()
+    row.request_payload = request_payload
+    row.raw_response = raw_response
+    return row
 
 
-def test_empty_pg_url_short_circuits() -> None:
-    assert load_latest_intercept_payload("", "act", agent_id="ag") == ({}, None)
+class TestLoadLatestInterceptPayload:
+    async def test_returns_empty_dict_and_none_when_no_row(self) -> None:
+        engine = _make_engine(row=None)
+        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+            req, resp = await load_latest_intercept_payload("agent-1", "action-a")
+        assert req == {}
+        assert resp is None
 
+    async def test_returns_parsed_request_and_response(self) -> None:
+        row = _make_row(
+            request_payload=json.dumps({"method": "POST", "url": "https://api.example.com"}),
+            raw_response=json.dumps({"status": "ok"}),
+        )
+        engine = _make_engine(row=row)
+        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+            req, resp = await load_latest_intercept_payload("agent-1", "action-a")
+        assert req == {"method": "POST", "url": "https://api.example.com"}
+        assert resp == {"status": "ok"}
 
-def test_row_with_json_string_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
-    conn = install_conn(
-        monkeypatch,
-        {"request_payload": '{"q": 1}', "raw_response": '{"ok": true}'},
-    )
+    async def test_returns_empty_request_when_payload_is_none(self) -> None:
+        row = _make_row(request_payload=None, raw_response=None)
+        engine = _make_engine(row=row)
+        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+            req, resp = await load_latest_intercept_payload("agent-1", "action-a")
+        assert req == {}
+        assert resp is None
 
-    req, resp = load_latest_intercept_payload("postgres://x", "act", agent_id="ag")
+    async def test_raises_storage_error_on_corrupt_request_payload(self) -> None:
+        row = _make_row(request_payload="not-valid-json", raw_response=None)
+        engine = _make_engine(row=row)
+        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+            with pytest.raises(AgentKitStorageError, match="request_payload"):
+                await load_latest_intercept_payload("agent-1", "action-a")
 
-    assert req == {"q": 1}
-    assert resp == {"ok": True}
-    assert conn.closed is True
-    assert conn.cursor_obj.executed is not None
-    assert conn.cursor_obj.executed[1] == ("ag", "act")
-
-
-def test_row_with_dict_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
-    install_conn(
-        monkeypatch,
-        {"request_payload": {"q": 2}, "raw_response": {"already": "dict"}},
-    )
-
-    req, resp = load_latest_intercept_payload("postgres://x", "act", agent_id="ag")
-
-    assert req == {"q": 2}
-    assert resp == {"already": "dict"}
-
-
-def test_no_row_returns_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    conn = install_conn(monkeypatch, None)
-
-    assert load_latest_intercept_payload("postgres://x", "act", agent_id="ag") == ({}, None)
-    assert conn.closed is True
-
-
-def test_invalid_json_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
-    install_conn(
-        monkeypatch,
-        {"request_payload": "not-json", "raw_response": "not-json-either"},
-    )
-
-    req, resp = load_latest_intercept_payload("postgres://x", "act", agent_id="ag")
-
-    # request payload: invalid JSON -> {}
-    assert req == {}
-    # raw_response: invalid JSON string -> returned as-is
-    assert resp == "not-json-either"
-
-
-def test_connection_closed_even_on_cursor_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    conn = FakeConn(None)
-
-    def boom(*, cursor_factory: Any = None) -> FakeCursor:
-        raise RuntimeError("cursor failed")
-
-    conn.cursor = boom  # type: ignore[method-assign]
-    monkeypatch.setattr(_loader.psycopg2, "connect", lambda _url: conn)
-
-    with pytest.raises(RuntimeError, match="cursor failed"):
-        load_latest_intercept_payload("postgres://x", "act", agent_id="ag")
-    assert conn.closed is True
+    async def test_raises_storage_error_on_corrupt_raw_response(self) -> None:
+        row = _make_row(request_payload=json.dumps({}), raw_response="not-valid-json")
+        engine = _make_engine(row=row)
+        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+            with pytest.raises(AgentKitStorageError, match="raw_response"):
+                await load_latest_intercept_payload("agent-1", "action-a")

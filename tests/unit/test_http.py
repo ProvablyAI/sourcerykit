@@ -1,93 +1,102 @@
+"""Tests for agentkit.provably._http.ProvablyHTTPClient."""
+
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
 import pytest
 
-from provably.handoff._http import (
-    _infer_app_ui_base_from_rust_api_url,
-    _resolved_app_ui_base,
-    base_url,
-    headers,
-    org_id,
-    query_record_page_url,
-)
+from agentkit.config import Settings
+from agentkit.provably._http import ProvablyHTTPClient
+
+_ORG = "00000000-0000-0000-0000-000000000001"
 
 
-class TestEnvAccessors:
-    def test_base_url_strips_trailing_slash(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("PROVABLY_RUST_BE_URL", "https://api.test/")
-        assert base_url() == "https://api.test"
+def _make_settings(api_url: str = "https://api.provably.ai") -> Settings:
+    import uuid
 
-    def test_base_url_requires_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("PROVABLY_RUST_BE_URL", raising=False)
-        with pytest.raises(ValueError, match="PROVABLY_RUST_BE_URL"):
-            base_url()
-
-    def test_headers_include_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("PROVABLY_API_KEY", "secret")
-        h = headers()
-        assert h["x-api-key"] == "secret"
-        assert h["Content-Type"] == "application/json"
-
-    def test_org_id_requires_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("PROVABLY_ORG_ID", raising=False)
-        with pytest.raises(ValueError, match="PROVABLY_ORG_ID"):
-            org_id()
-
-
-class TestInferAppUiBase:
-    @pytest.mark.parametrize(
-        ("rust_url", "expected"),
-        [
-            ("https://api-dev.provably.ai", "https://app-dev.provably.ai"),
-            ("https://api.provably.ai", "https://app.provably.ai"),
-            ("https://eu.api-dev.provably.ai", "https://eu.app-dev.provably.ai"),
-            ("https://api2.provably.ai", "https://app2.provably.ai"),
-        ],
+    return Settings(
+        api_key="test-api-key",
+        org_id=uuid.UUID(_ORG),
+        postgres_url="postgresql://user:pass@localhost/db",
+        provably_api=api_url,
     )
-    def test_rewrites_api_label_to_app(self, rust_url: str, expected: str) -> None:
-        assert _infer_app_ui_base_from_rust_api_url(rust_url) == expected
-
-    def test_returns_empty_for_blank(self) -> None:
-        assert _infer_app_ui_base_from_rust_api_url("") == ""
-
-    def test_returns_empty_for_non_provably_host(self) -> None:
-        assert _infer_app_ui_base_from_rust_api_url("https://api.example.com") == ""
-
-    def test_returns_empty_when_no_api_label(self) -> None:
-        assert _infer_app_ui_base_from_rust_api_url("https://gateway.provably.ai") == ""
-
-    def test_accepts_url_without_scheme(self) -> None:
-        assert _infer_app_ui_base_from_rust_api_url("api-dev.provably.ai") == "https://app-dev.provably.ai"
 
 
-class TestResolvedAppUiBase:
-    def test_prefers_explicit_app_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("PROVABLY_APP_UI_URL", "https://app-dev.provably.ai/")
-        assert _resolved_app_ui_base() == "https://app-dev.provably.ai"
-
-    def test_normalizes_explicit_api_url_to_app(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("PROVABLY_APP_UI_URL", "https://api-dev.provably.ai")
-        assert _resolved_app_ui_base() == "https://app-dev.provably.ai"
-
-    def test_infers_from_rust_be_url_when_app_unset(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("PROVABLY_APP_UI_URL", raising=False)
-        monkeypatch.setenv("PROVABLY_RUST_BE_URL", "https://api-dev.provably.ai")
-        assert _resolved_app_ui_base() == "https://app-dev.provably.ai"
-
-    def test_empty_when_nothing_resolves(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("PROVABLY_APP_UI_URL", raising=False)
-        monkeypatch.setenv("PROVABLY_RUST_BE_URL", "https://gateway.example.com")
-        assert _resolved_app_ui_base() == ""
+def _make_client(api_url: str = "https://api.provably.ai") -> ProvablyHTTPClient:
+    return ProvablyHTTPClient(settings=_make_settings(api_url))
 
 
-class TestQueryRecordPageUrl:
-    def test_uses_app_deep_link_when_resolvable(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("PROVABLY_APP_UI_URL", "https://app-dev.provably.ai")
-        url = query_record_page_url("org-1", "q-9")
-        assert url == "https://app-dev.provably.ai/org/org-1/query-record/q-9"
+class TestProvablyHTTPClientInit:
+    def test_base_url_stripped_of_trailing_slash(self) -> None:
+        client = _make_client("https://api.provably.ai/")
+        assert client.base_url == "https://api.provably.ai"
 
-    def test_falls_back_to_api_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("PROVABLY_APP_UI_URL", raising=False)
-        monkeypatch.setenv("PROVABLY_RUST_BE_URL", "https://api.test")
-        url = query_record_page_url("org-1", "q-9")
-        assert url == "https://api.test/api/v1/organizations/org-1/queries/q-9"
+    def test_headers_include_api_key(self) -> None:
+        client = _make_client()
+        assert client._headers["x-api-key"] == "test-api-key"
+
+    def test_headers_include_content_type(self) -> None:
+        client = _make_client()
+        assert client._headers["Content-Type"] == "application/json"
+
+
+class TestProvablyHTTPClientGet:
+    async def test_get_returns_parsed_json(self) -> None:
+        client = _make_client()
+        mock_response = MagicMock()
+        mock_response.content = b'{"result": "ok"}'
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"result": "ok"}
+
+        with patch.object(client, "_request", AsyncMock(return_value=mock_response)):
+            result = await client.get("/test-path")
+        assert result == {"result": "ok"}
+
+    async def test_get_raises_on_http_status_error(self) -> None:
+        client = _make_client()
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        error = httpx.HTTPStatusError("404", request=MagicMock(), response=mock_response)
+
+        with patch.object(client, "_request", AsyncMock(side_effect=error)):
+            with pytest.raises(httpx.HTTPStatusError):
+                await client.get("/missing")
+
+    async def test_get_passes_params(self) -> None:
+        client = _make_client()
+        mock_response = MagicMock()
+        mock_response.content = b"{}"
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {}
+
+        with patch.object(client, "_request", AsyncMock(return_value=mock_response)) as mock_req:
+            await client.get("/path", params={"key": "val"})
+            _, kwargs = mock_req.call_args
+            assert kwargs.get("params") == {"key": "val"}
+
+
+class TestProvablyHTTPClientPost:
+    async def test_post_returns_empty_dict_on_empty_body(self) -> None:
+        client = _make_client()
+        mock_response = MagicMock()
+        mock_response.content = b""
+        mock_response.raise_for_status = MagicMock()
+
+        with patch.object(client, "_request", AsyncMock(return_value=mock_response)):
+            result = await client.post("/some/path", json={"payload": "data"})
+        assert result == {}
+
+    async def test_post_with_custom_api_key(self) -> None:
+        client = _make_client()
+        mock_response = MagicMock()
+        mock_response.content = b'{"ok": true}'
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"ok": True}
+
+        with patch.object(client, "_request", AsyncMock(return_value=mock_response)) as mock_req:
+            await client.post("/path", json={}, api_key="custom-key")
+            _, kwargs = mock_req.call_args
+            assert kwargs.get("api_key") == "custom-key"
