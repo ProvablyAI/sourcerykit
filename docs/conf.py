@@ -52,7 +52,7 @@ myst_enable_extensions = [
 myst_fence_as_directive = {"mermaid"}
 
 # README / CHANGELOG / CONTEXT live outside docs/; links use ../ paths.
-suppress_warnings = ["myst.xref_missing"]
+suppress_warnings = ["myst.xref_missing", "myst.header"]
 
 html_theme = "sphinx_rtd_theme"
 

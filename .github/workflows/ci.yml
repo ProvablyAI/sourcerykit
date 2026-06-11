@@ -33,8 +33,11 @@ jobs:
       - name: Pre-commit
         run: uv run pre-commit run --all-files
 
-      - name: Pytest
-        run: uv run pytest -q --cov=agentkit --cov-report=term-missing --cov-fail-under=60
+      - name: Pytest (unit, coverage-gated)
+        run: uv run pytest tests/unit -q --cov=agentkit --cov-report=term-missing --cov-fail-under=60
+
+      - name: Pytest (e2e)
+        run: uv run pytest tests/e2e -q
 
       - name: Sphinx
         run: uv run sphinx-build -W -b html docs docs/_build/html

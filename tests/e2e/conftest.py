@@ -16,8 +16,6 @@ from typing import Any
 
 import pytest
 
-import agentkit.intercept.interceptor as _interceptor_module
-
 Handler = Callable[["RecordedRequest"], "FakeResponse"]
 
 
@@ -139,21 +137,3 @@ def fake_server_factory() -> Iterator[Callable[[], FakeHttpServer]]:
 
     for s in servers:
         s.stop()
-
-
-@pytest.fixture
-def patched_interceptor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
-    """Install the real interceptor with the storage layer redirected to an in-memory list.
-
-    Yields the list of recorded rows so tests can assert against it.
-    This fixture is shared between test_interceptor_e2e.py and test_openai_agents_e2e.py.
-    """
-    rows: list[dict[str, Any]] = []
-
-    def fake_insert(_url: str, request_payload: dict[str, Any], raw: Any, *, method: str = "GET") -> None:
-        rows.append({"url": _url, "method": method, "request": request_payload, "raw": raw})
-
-    monkeypatch.setattr(_interceptor_module, "_insert_row", fake_insert)
-    _interceptor_module.init_interceptor()
-    monkeypatch.setattr(_interceptor_module, "_enabled", True)
-    return rows

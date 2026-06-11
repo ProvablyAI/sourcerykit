@@ -9,11 +9,11 @@ flowchart TD
   Agent([Agent]) -->|Initializes| Bootstrap[Bootstrap System]
   Bootstrap -->|Configures| Interceptor[HTTP Interceptor]
   Bootstrap -->|Registers| TrustedEndpoints[(Trusted Endpoints)]
-  
+
   Agent -->|Outbound HTTP| Interceptor
   Interceptor -->|Validates against| TrustedEndpoints
   Interceptor -->|Logs to| Intercepts[(Intercepts Table)]
-  
+
   Agent -->|Submits| Handoff[Handoff Payload]
   Handoff -->|Verified by| Evaluator[Evaluator]
   Evaluator -->|Queries records| Provably[Provably Backend]
@@ -29,7 +29,7 @@ flowchart TD
 
 - **HTTP Interceptor**: Intercepts outbound HTTP calls to enforce policies and record payloads. Untrusted requests are blocked before leaving the process. See [intercept](intercept.md).
 
-- **Database Tables**: 
+- **Database Tables**:
   - **Trusted Endpoints**: A registry of allowed endpoints used by the Interceptor to validate outbound requests. See [trusted-endpoints](trusted-endpoints.md).
   - **Intercepts**: An append-only table storing detailed records of every outbound HTTP request and response. The Provably backend uses these records to generate cryptographic proofs. See [intercept](intercept.md).
 
