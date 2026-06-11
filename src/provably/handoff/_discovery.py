@@ -27,7 +27,8 @@ def discover_intercepts_table(org_id: str, middleware_id: str, database_id: str)
     return _node_to_bundle(node)
 
 
-def resolve_existing_database_id(org_id: str, middleware_id: str, db_name: str) -> str:
+def resolve_existing_database_id(org_id: str, middleware_id: str, db_name: str, host: str = "") -> str:
+    candidates: list[str] = []
     for path in (
         f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/databases",
         f"/api/v1/organizations/{org_id}/databases",
@@ -43,8 +44,22 @@ def resolve_existing_database_id(org_id: str, middleware_id: str, db_name: str) 
                     db_id = extract_id(item, ["id", "database_id"])
                 except ValueError:
                     continue
-                if db_id:
-                    return db_id
+                if db_id and db_id not in candidates:
+                    candidates.append(db_id)
+    # Multiple registrations can share a name (e.g. two `neondb`s pointing at different
+    # hosts). Prefer the one whose stored connection host matches `host`, else verification
+    # could bind to a different physical database. List payloads omit `uri`, so confirm via
+    # the detail endpoint. With no `host` (or no match) we keep the legacy first-match.
+    if host:
+        for db_id in candidates:
+            try:
+                detail = get_json(f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/databases/{db_id}")
+            except Exception:  # noqa: BLE001
+                continue
+            if str(detail.get("uri") or "").strip() == host:
+                return db_id
+    if candidates:
+        return candidates[0]
     try:
         data = get_json(f"/api/v1/organizations/{org_id}/data")
         return find_first_id(data, ("database_id",))

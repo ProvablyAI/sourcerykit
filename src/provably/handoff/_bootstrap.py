@@ -94,7 +94,7 @@ def _onboard_database(current_org: str, middleware_id: str, postgres_url: str) -
         # padding step ran above to ensure provably_intercepts exists, and the backend's
         # schema introspection will pick it up so discover_intercepts_table() can find it.
         _log.info("database_already_exists_reusing")
-        database_id = resolve_existing_database_id(current_org, middleware_id, db_name)
+        database_id = resolve_existing_database_id(current_org, middleware_id, db_name, body["uri"])
         if not database_id:
             log_failed_response(resp)
             raise RuntimeError("Database exists but could not resolve existing database_id")
