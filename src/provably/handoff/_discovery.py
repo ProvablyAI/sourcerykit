@@ -46,18 +46,14 @@ def resolve_existing_database_id(org_id: str, middleware_id: str, db_name: str, 
                     continue
                 if db_id and db_id not in candidates:
                     candidates.append(db_id)
-    # Multiple registrations can share a name (e.g. two `neondb`s pointing at different
-    # hosts). Prefer the one whose stored connection host matches `host`, else verification
-    # could bind to a different physical database. List payloads omit `uri`, so confirm via
-    # the detail endpoint. With no `host` (or no match) we keep the legacy first-match.
+    # Same name can map to several registrations on different hosts; pick the one whose
+    # stored host matches `host` so we don't bind to a different physical DB.
     if host:
-        for db_id in candidates:
-            try:
-                detail = get_json(f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/databases/{db_id}")
-            except Exception:  # noqa: BLE001
-                continue
-            if str(detail.get("uri") or "").strip() == host:
-                return db_id
+        matched = [db_id for db_id in candidates if _database_host(org_id, middleware_id, db_id) == host]
+        if matched:
+            return matched[0]
+        if len(candidates) > 1:
+            return ""  # ambiguous and none matched the host — refuse to guess
     if candidates:
         return candidates[0]
     try:
@@ -65,6 +61,15 @@ def resolve_existing_database_id(org_id: str, middleware_id: str, db_name: str, 
         return find_first_id(data, ("database_id",))
     except Exception:  # noqa: BLE001
         return ""
+
+
+def _database_host(org_id: str, middleware_id: str, database_id: str) -> str:
+    """Stored connection host for a database (the list endpoint omits it; the detail one has it)."""
+    try:
+        detail = get_json(f"/api/v1/organizations/{org_id}/middlewares/{middleware_id}/databases/{database_id}")
+    except Exception:  # noqa: BLE001
+        return ""
+    return str(detail.get("uri") or "").strip()
 
 
 def resolve_existing_collection_id(org_id: str, middleware_id: str, database_id: str, table_id: str) -> str:
