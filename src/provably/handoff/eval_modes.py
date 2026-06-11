@@ -33,7 +33,7 @@ def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
     try:
         at_path = _get_by_json_path(indexed_root, claim.json_path)
     except (KeyError, IndexError, TypeError, ValueError) as exc:
-        return {**base, "result": "CAUGHT", "detail": f"json_path: {exc}"}
+        return {**base, "result": "ERROR", "detail": f"json_path: {exc}"}
 
     base["indexed_at_path"] = canonical_json(at_path)
 
@@ -43,7 +43,7 @@ def evaluate_claim(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
         return _eval_schema_type(claim, at_path, base)
     if mode == "range_threshold":
         return _eval_range_threshold(claim, at_path, base)
-    return {**base, "result": "CAUGHT", "detail": f"unknown verification_mode: {mode}"}
+    return {**base, "result": "ERROR", "detail": f"unknown verification_mode: {mode}"}
 
 
 def _base_verdict(claim: HandoffClaim, indexed_root: Any) -> dict[str, Any]:
@@ -71,23 +71,23 @@ def _eval_field_extraction(claim: HandoffClaim, at_path: Any, base: dict[str, An
 def _eval_schema_type(claim: HandoffClaim, at_path: Any, base: dict[str, Any]) -> dict[str, Any]:
     schema = claim.expected_json_schema
     if not schema:
-        return {**base, "result": "CAUGHT", "detail": "expected_json_schema is required for schema_type"}
+        return {**base, "result": "ERROR", "detail": "expected_json_schema is required for schema_type"}
     try:
         jsonschema.validate(at_path, schema)
     except jsonschema.ValidationError as exc:
         return {**base, "result": "CAUGHT", "detail": exc.message}
     except jsonschema.SchemaError as exc:
-        return {**base, "result": "CAUGHT", "detail": f"invalid schema: {exc}"}
+        return {**base, "result": "ERROR", "detail": f"invalid schema: {exc}"}
     return {**base, "result": "PASS"}
 
 
 def _eval_range_threshold(claim: HandoffClaim, at_path: Any, base: dict[str, Any]) -> dict[str, Any]:
     if claim.range_min is None and claim.range_max is None:
-        return {**base, "result": "CAUGHT", "detail": "range_threshold requires range_min and/or range_max"}
+        return {**base, "result": "ERROR", "detail": "range_threshold requires range_min and/or range_max"}
     try:
         value = _coerce_number(at_path)
     except (TypeError, ValueError) as exc:
-        return {**base, "result": "CAUGHT", "detail": f"indexed value not numeric: {exc}"}
+        return {**base, "result": "ERROR", "detail": f"indexed value not numeric: {exc}"}
     if claim.range_min is not None and value < float(claim.range_min):
         return {**base, "result": "CAUGHT", "detail": f"value {value} below range_min {claim.range_min}"}
     if claim.range_max is not None and value > float(claim.range_max):
