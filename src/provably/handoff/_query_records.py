@@ -18,8 +18,10 @@ the evaluator (and the dashboard) compares against the LLM's claim.
 
 from __future__ import annotations
 
+import requests
+
 from provably.handoff._http import org_id as env_org_id
-from provably.handoff._http import post_json, query_record_page_url
+from provably.handoff._http import post_json, post_raw, query_record_page_url
 from provably.handoff._preprocess import wait_for_proof_completed
 from provably.handoff._resources import extract_id
 from provably.log import get_logger
@@ -29,6 +31,11 @@ _log = get_logger(__name__)
 
 def _sql_escape(s: str) -> str:
     return s.replace("'", "''")
+
+
+def _proof_already_exists(resp: requests.Response) -> bool:
+    """True when generate_proof 400s because a proof for this query already exists."""
+    return resp.status_code == 400 and "already exists" in (resp.text or "").lower()
 
 
 def create_query_record_for_intercept(
@@ -76,9 +83,7 @@ def create_query_record_for_intercept(
 
     oid = (org_id or env_org_id()).strip()
     if not oid or not middleware_id or not collection_id:
-        raise ValueError(
-            "create_query_record_for_intercept requires org_id, middleware_id, collection_id"
-        )
+        raise ValueError("create_query_record_for_intercept requires org_id, middleware_id, collection_id")
 
     if row_id is not None:
         # Single integer equality — accepted by all Provably engine versions.
@@ -92,7 +97,13 @@ def create_query_record_for_intercept(
     )
     query_id = extract_id(query_rec if isinstance(query_rec, dict) else {}, ["query_id", "id"])
 
-    post_json(f"/api/v1/organizations/{oid}/queries/{query_id}/generate_proof", {})
+    proof_resp = post_raw(f"/api/v1/organizations/{oid}/queries/{query_id}/generate_proof", {})
+    # A deterministic query (same SQL over the same rows) hashes to an existing query
+    # record whose proof was already generated; the backend then 400s with "proof already
+    # exists". That is success, not failure — the proof we need is already there, so skip
+    # straight to waiting for it instead of raising and losing the query record.
+    if not proof_resp.ok and not _proof_already_exists(proof_resp):
+        proof_resp.raise_for_status()
     wait_for_proof_completed(oid, query_id, timeout_s=proof_timeout_s)
 
     url = query_record_page_url(oid, query_id)
