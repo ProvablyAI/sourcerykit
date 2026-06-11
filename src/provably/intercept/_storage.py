@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
+from contextvars import ContextVar, Token
 from typing import Any
 
 import psycopg2
@@ -13,6 +15,23 @@ from provably.handoff._preprocess import preprocess_after_intercept_write
 from provably.intercept._self_egress import is_self_egress
 from provably.log import get_logger
 from provably.trusted_endpoints import ensure_trusted_endpoints_table, is_trusted_endpoint
+
+# Cumulative ms spent in preprocess during the current intercept_context, so callers can
+# attribute that time to the SDK rather than to the wrapped tool/HTTP call.
+_ctx_preprocess_ms: ContextVar[float] = ContextVar("provably_preprocess_ms", default=0.0)
+
+
+def reset_preprocess_ms() -> Token[float]:
+    return _ctx_preprocess_ms.set(0.0)
+
+
+def restore_preprocess_ms(token: Token[float]) -> None:
+    _ctx_preprocess_ms.reset(token)
+
+
+def preprocess_ms() -> float:
+    """Cumulative preprocess time (ms) recorded so far in the current intercept_context."""
+    return _ctx_preprocess_ms.get()
 
 _log = get_logger(__name__)
 _DDL_DONE = False
@@ -167,7 +186,9 @@ def _write_row(
         conn.commit()
         _log.info("intercept_stored", agent_id=agent_id, action_name=action_name, url=url, method=method)
         if row_id is not None:
+            t0 = time.perf_counter()
             preprocess_after_intercept_write()
+            _ctx_preprocess_ms.set(_ctx_preprocess_ms.get() + (time.perf_counter() - t0) * 1000.0)
         return row_id
     finally:
         conn.close()
