@@ -1,12 +1,12 @@
-"""Tests for agentkit.intercept._storage — hash_payload and add_intercept_row."""
+"""Tests for sourcerykit.intercept._storage — hash_payload and add_intercept_row."""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agentkit.errors import AgentKitTrustError
-from agentkit.intercept._storage import add_intercept_row, hash_payload
+from sourcerykit.errors import SourceryKitTrustError
+from sourcerykit.intercept._storage import add_intercept_row, hash_payload
 
 # ---------------------------------------------------------------------------
 # hash_payload
@@ -57,7 +57,7 @@ def _make_engine_begin_mock(returned_id: uuid.UUID | None = None) -> MagicMock:
 
 class TestAddInterceptRow:
     async def test_returns_none_during_self_egress(self) -> None:
-        with patch("agentkit.intercept._storage.is_self_egress", return_value=True):
+        with patch("sourcerykit.intercept._storage.is_self_egress", return_value=True):
             result = await add_intercept_row(
                 url="https://example.com",
                 method="GET",
@@ -70,10 +70,10 @@ class TestAddInterceptRow:
 
     async def test_raises_trust_error_when_endpoint_not_trusted(self) -> None:
         with (
-            patch("agentkit.intercept._storage.is_self_egress", return_value=False),
-            patch("agentkit.intercept._storage.is_endpoint_trusted", AsyncMock(return_value=False)),
+            patch("sourcerykit.intercept._storage.is_self_egress", return_value=False),
+            patch("sourcerykit.intercept._storage.is_endpoint_trusted", AsyncMock(return_value=False)),
         ):
-            with pytest.raises(AgentKitTrustError, match="endpoint not registered"):
+            with pytest.raises(SourceryKitTrustError, match="endpoint not registered"):
                 await add_intercept_row(
                     url="https://untrusted.com",
                     method="GET",
@@ -87,10 +87,10 @@ class TestAddInterceptRow:
         expected_id = uuid.uuid4()
         engine = _make_engine_begin_mock(returned_id=expected_id)
         with (
-            patch("agentkit.intercept._storage.is_self_egress", return_value=False),
-            patch("agentkit.intercept._storage.is_endpoint_trusted", AsyncMock(return_value=True)),
-            patch("agentkit.intercept._storage.get_engine", return_value=engine),
-            patch("agentkit.handoff._preprocess.run_preprocess", AsyncMock()),
+            patch("sourcerykit.intercept._storage.is_self_egress", return_value=False),
+            patch("sourcerykit.intercept._storage.is_endpoint_trusted", AsyncMock(return_value=True)),
+            patch("sourcerykit.intercept._storage.get_engine", return_value=engine),
+            patch("sourcerykit.handoff._preprocess.run_preprocess", AsyncMock()),
         ):
             result = await add_intercept_row(
                 url="https://trusted.com",

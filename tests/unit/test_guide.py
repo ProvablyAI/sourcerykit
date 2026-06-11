@@ -1,6 +1,6 @@
-"""Tests for agentkit.handoff._guide."""
+"""Tests for sourcerykit.handoff._guide."""
 
-from agentkit.handoff._guide import default_instructions, field_descriptions
+from sourcerykit.handoff._guide import default_instructions, field_descriptions
 
 
 class TestFieldDescriptions:

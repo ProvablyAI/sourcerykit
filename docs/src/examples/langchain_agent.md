@@ -2,7 +2,7 @@
 ```
 
 ## Source Code
-The full, runnable source code for this example is available below, or you can view the raw [source directly on GitHub](https://github.com/ProvablyAI/verifiable-data-agentkit/blob/main/examples/langchain_agent/agent_run.py).
+The full, runnable source code for this example is available below, or you can view the raw [source directly on GitHub](https://github.com/ProvablyAI/sourcerykit/blob/main/examples/langchain_agent/agent_run.py).
 
 <details>
 <summary><b>Click to expand and view the full source code</b></summary>

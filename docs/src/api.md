@@ -1,7 +1,7 @@
 # Public API
 
 ```{eval-rst}
-.. automodule:: agentkit
+.. automodule:: sourcerykit
    :members:
    :undoc-members:
    :show-inheritance:

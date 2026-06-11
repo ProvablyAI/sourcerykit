@@ -1,9 +1,9 @@
-"""Tests for agentkit.provably._answer_model."""
+"""Tests for sourcerykit.provably._answer_model."""
 
 import pytest
 from pydantic import ValidationError
 
-from agentkit.provably._answer_model import AggregateAnswer, QueryAnswer, ResultsetAnswer, TabularData
+from sourcerykit.provably._answer_model import AggregateAnswer, QueryAnswer, ResultsetAnswer, TabularData
 
 # ---------------------------------------------------------------------------
 # TabularData

@@ -1,4 +1,4 @@
-"""Tests for agentkit.intercept._loader.load_latest_intercept_payload."""
+"""Tests for sourcerykit.intercept._loader.load_latest_intercept_payload."""
 
 import json
 from typing import Any
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agentkit.errors import AgentKitStorageError
-from agentkit.intercept._loader import load_latest_intercept_payload
+from sourcerykit.errors import SourceryKitStorageError
+from sourcerykit.intercept._loader import load_latest_intercept_payload
 
 
 def _make_engine(row: Any = None, raise_exc: Exception | None = None) -> MagicMock:
@@ -40,7 +40,7 @@ def _make_row(request_payload: str | None = None, raw_response: str | None = Non
 class TestLoadLatestInterceptPayload:
     async def test_returns_empty_dict_and_none_when_no_row(self) -> None:
         engine = _make_engine(row=None)
-        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+        with patch("sourcerykit.intercept._loader.get_engine", return_value=engine):
             req, resp = await load_latest_intercept_payload("agent-1", "action-a")
         assert req == {}
         assert resp is None
@@ -51,7 +51,7 @@ class TestLoadLatestInterceptPayload:
             raw_response=json.dumps({"status": "ok"}),
         )
         engine = _make_engine(row=row)
-        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+        with patch("sourcerykit.intercept._loader.get_engine", return_value=engine):
             req, resp = await load_latest_intercept_payload("agent-1", "action-a")
         assert req == {"method": "POST", "url": "https://api.example.com"}
         assert resp == {"status": "ok"}
@@ -59,7 +59,7 @@ class TestLoadLatestInterceptPayload:
     async def test_returns_empty_request_when_payload_is_none(self) -> None:
         row = _make_row(request_payload=None, raw_response=None)
         engine = _make_engine(row=row)
-        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
+        with patch("sourcerykit.intercept._loader.get_engine", return_value=engine):
             req, resp = await load_latest_intercept_payload("agent-1", "action-a")
         assert req == {}
         assert resp is None
@@ -67,13 +67,13 @@ class TestLoadLatestInterceptPayload:
     async def test_raises_storage_error_on_corrupt_request_payload(self) -> None:
         row = _make_row(request_payload="not-valid-json", raw_response=None)
         engine = _make_engine(row=row)
-        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
-            with pytest.raises(AgentKitStorageError, match="request_payload"):
+        with patch("sourcerykit.intercept._loader.get_engine", return_value=engine):
+            with pytest.raises(SourceryKitStorageError, match="request_payload"):
                 await load_latest_intercept_payload("agent-1", "action-a")
 
     async def test_raises_storage_error_on_corrupt_raw_response(self) -> None:
         row = _make_row(request_payload=json.dumps({}), raw_response="not-valid-json")
         engine = _make_engine(row=row)
-        with patch("agentkit.intercept._loader.get_engine", return_value=engine):
-            with pytest.raises(AgentKitStorageError, match="raw_response"):
+        with patch("sourcerykit.intercept._loader.get_engine", return_value=engine):
+            with pytest.raises(SourceryKitStorageError, match="raw_response"):
                 await load_latest_intercept_payload("agent-1", "action-a")

@@ -1,18 +1,18 @@
-"""Tests for agentkit.schemas — HandoffClaim, HandoffPayload, VerificationMode, etc."""
+"""Tests for sourcerykit.schemas — HandoffClaim, HandoffPayload, VerificationMode, etc."""
 
 import uuid
 
 import pytest
 from pydantic import ValidationError
 
-from agentkit.schemas import (
+from sourcerykit.schemas import (
     HandoffClaim,
     HandoffPayload,
     Outcome,
     SourceryKitAgentResponse,
     VerificationMode,
 )
-from agentkit.schemas.agent_response import ClaimedValue
+from sourcerykit.schemas.agent_response import ClaimedValue
 
 _ORG = uuid.uuid4()
 _QID = uuid.uuid4()

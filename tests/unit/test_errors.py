@@ -1,10 +1,10 @@
-"""Tests for agentkit.provably._errors — error hierarchy and provably_error_handler."""
+"""Tests for sourcerykit.provably._errors — error hierarchy and provably_error_handler."""
 
 import httpx
 import pytest
 
-from agentkit.errors import AgentKitError
-from agentkit.provably._errors import (
+from sourcerykit.errors import SourceryKitError
+from sourcerykit.provably._errors import (
     ProvablyAPIError,
     ProvablyConnectionError,
     ProvablyDataError,
@@ -18,8 +18,8 @@ from agentkit.provably._errors import (
 
 
 class TestErrorHierarchy:
-    def test_provably_error_is_agentkit_error(self) -> None:
-        assert issubclass(ProvablyError, AgentKitError)
+    def test_provably_error_is_sourcerykit_error(self) -> None:
+        assert issubclass(ProvablyError, SourceryKitError)
 
     def test_api_error_is_provably_error(self) -> None:
         assert issubclass(ProvablyAPIError, ProvablyError)

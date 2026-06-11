@@ -1,4 +1,4 @@
-"""Tests for agentkit.provably._http.ProvablyHTTPClient."""
+"""Tests for sourcerykit.provably._http.ProvablyHTTPClient."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from agentkit.config import Settings
-from agentkit.provably._http import ProvablyHTTPClient
+from sourcerykit.config import Settings
+from sourcerykit.provably._http import ProvablyHTTPClient
 
 _ORG = "00000000-0000-0000-0000-000000000001"
 

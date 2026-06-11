@@ -13,7 +13,7 @@ echo "==> ruff"
 uv run ruff check
 
 echo "==> unit (coverage gate 60%)"
-uv run pytest tests/unit -q --cov=agentkit --cov-report=term-missing --cov-fail-under=60
+uv run pytest tests/unit -q --cov=sourcerykit --cov-report=term-missing --cov-fail-under=60
 
 echo "==> e2e"
 uv run pytest tests/e2e -q

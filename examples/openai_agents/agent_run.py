@@ -21,7 +21,7 @@ from agents import Agent, Runner, function_tool, set_default_openai_api, set_def
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from agentkit import (  # noqa: E402
+from sourcerykit import (
     SourceryKitAgentResponse,
     async_intercept_context,
     bootstrap_system,

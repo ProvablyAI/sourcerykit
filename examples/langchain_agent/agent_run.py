@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.tools import tool
 
-from agentkit import (  # noqa: E402
+from sourcerykit import (
     SourceryKitAgentResponse,
     async_intercept_context,
     bootstrap_system,

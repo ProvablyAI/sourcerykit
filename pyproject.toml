@@ -3,14 +3,21 @@ requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
-name = "provably-sdk"
+name = "sourcerykit"
 version = "0.2.0"
 description = "Provably Python SDK — runtime init, HTTP intercept, handoff transport, deterministic evaluator, trusted-endpoint registry."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
 authors = [{ name = "Provably Technologies Ltd" }]
-keywords = ["provably", "verifiable", "agent", "handoff", "interceptor"]
+keywords = [
+    "sourcerykit",
+    "provably",
+    "verifiable",
+    "agent",
+    "handoff",
+    "interceptor",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
@@ -51,15 +58,15 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2"
-Issues = "https://github.com/ProvablyAI/verifiable-data-agentkit-v2/issues"
+Homepage = "https://github.com/ProvablyAI/sourcerykit"
+Issues = "https://github.com/ProvablyAI/sourcerykit/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agentkit"]
+packages = ["src/sourcerykit"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/agentkit",
+    "src/sourcerykit",
     "README.md",
     "LICENSE.md",
     "CHANGELOG.md",
@@ -75,7 +82,7 @@ exclude = [".cache", ".venv", "venv", "dist", "build", ".git"]
 select = ["E", "F", "I", "UP", "W"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agentkit"]
+known-first-party = ["sourcerykit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -112,7 +119,7 @@ ignore_missing_imports = true
 warn_required_dynamic_aliases = true
 
 [tool.coverage.run]
-source = ["agentkit"]
+source = ["sourcerykit"]
 branch = true
 
 [tool.coverage.report]

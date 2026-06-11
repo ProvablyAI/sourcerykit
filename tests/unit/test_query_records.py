@@ -1,12 +1,12 @@
-"""Tests for agentkit.handoff._query_records.create_query_record_for_intercept."""
+"""Tests for sourcerykit.handoff._query_records.create_query_record_for_intercept."""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agentkit.errors import AgentKitBootstrapError
-from agentkit.handoff._query_records import create_query_record_for_intercept
+from sourcerykit.errors import SourceryKitBootstrapError
+from sourcerykit.handoff._query_records import create_query_record_for_intercept
 
 _MW_ID = uuid.uuid4()
 _COLL_ID = uuid.uuid4()
@@ -32,8 +32,8 @@ class TestCreateQueryRecordForIntercept:
     async def test_returns_query_id_and_url(self) -> None:
         svc = _mock_service()
         with (
-            patch("agentkit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
-            patch("agentkit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff._query_records.service", svc),
         ):
             qid, url = await create_query_record_for_intercept("action_a", agent_id="agent-1")
         assert qid == _QID
@@ -42,8 +42,8 @@ class TestCreateQueryRecordForIntercept:
     async def test_calls_run_query_with_middleware_and_collection(self) -> None:
         svc = _mock_service()
         with (
-            patch("agentkit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
-            patch("agentkit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff._query_records.service", svc),
         ):
             await create_query_record_for_intercept("action_a", agent_id="agent-1")
         svc.run_query.assert_called_once_with(_MW_ID, _COLL_ID, svc.run_query.call_args[0][2])
@@ -51,8 +51,8 @@ class TestCreateQueryRecordForIntercept:
     async def test_calls_wait_for_proof_computation(self) -> None:
         svc = _mock_service()
         with (
-            patch("agentkit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
-            patch("agentkit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff._query_records.service", svc),
         ):
             await create_query_record_for_intercept("action_a", agent_id="agent-1")
         svc.wait_for_proof_computation.assert_called_once_with(_QID)
@@ -61,10 +61,10 @@ class TestCreateQueryRecordForIntercept:
         svc = _mock_service()
         row_id = uuid.uuid4()
         with (
-            patch("agentkit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
-            patch("agentkit.handoff._query_records.service", svc),
-            patch("agentkit.handoff._query_records.select_intercept_by_id") as mock_by_id,
-            patch("agentkit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
+            patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.select_intercept_by_id") as mock_by_id,
+            patch("sourcerykit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
         ):
             mock_by_id.return_value = "SELECT * WHERE id = 0"
             await create_query_record_for_intercept("action_a", agent_id="agent-1", row_id=row_id)
@@ -74,10 +74,10 @@ class TestCreateQueryRecordForIntercept:
     async def test_uses_action_name_filter_without_row_id(self) -> None:
         svc = _mock_service()
         with (
-            patch("agentkit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
-            patch("agentkit.handoff._query_records.service", svc),
-            patch("agentkit.handoff._query_records.select_intercept_by_id") as mock_by_id,
-            patch("agentkit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
+            patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.select_intercept_by_id") as mock_by_id,
+            patch("sourcerykit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
         ):
             mock_by_action.return_value = "SELECT * WHERE action_name = 'action_a'"
             await create_query_record_for_intercept("action_a", agent_id="agent-1")
@@ -88,24 +88,24 @@ class TestCreateQueryRecordForIntercept:
         svc = _mock_service()
         with (
             patch(
-                "agentkit.handoff._query_records.get_bootstrap",
+                "sourcerykit.handoff._query_records.get_bootstrap",
                 return_value=_mock_bootstrap(middleware_id=None),
             ),
-            patch("agentkit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.service", svc),
         ):
-            with pytest.raises(AgentKitBootstrapError):
+            with pytest.raises(SourceryKitBootstrapError):
                 await create_query_record_for_intercept("action_a", agent_id="agent-1")
 
     async def test_raises_bootstrap_error_when_collection_id_missing(self) -> None:
         svc = _mock_service()
         with (
             patch(
-                "agentkit.handoff._query_records.get_bootstrap",
+                "sourcerykit.handoff._query_records.get_bootstrap",
                 return_value=_mock_bootstrap(collection_id=None),
             ),
-            patch("agentkit.handoff._query_records.service", svc),
+            patch("sourcerykit.handoff._query_records.service", svc),
         ):
-            with pytest.raises(AgentKitBootstrapError):
+            with pytest.raises(SourceryKitBootstrapError):
                 await create_query_record_for_intercept("action_a", agent_id="agent-1")
 
     async def test_raises_value_error_for_empty_action_name(self) -> None:

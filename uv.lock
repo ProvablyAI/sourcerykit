@@ -1541,7 +1541,7 @@ wheels = [
 ]
 
 [[package]]
-name = "provably-sdk"
+name = "sourcerykit"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [

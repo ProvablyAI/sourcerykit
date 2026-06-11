@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# provably-sdk — developer Makefile
+# sourcerykit — developer Makefile
 # ----------------------------------------------------------------------------
 # All targets are thin wrappers over `uv`. The aliases here match what
 # .github/workflows/ci.yml runs, so "green locally" maps 1:1 to "green in CI".
@@ -12,7 +12,7 @@
 # ----------------------------------------------------------------------------
 
 UV ?= uv
-PYTEST_ARGS ?= --cov=agentkit --cov-report=term-missing --cov-fail-under=60
+PYTEST_ARGS ?= --cov=sourcerykit --cov-report=term-missing --cov-fail-under=60
 RUFF_ARGS ?=
 MYPY_TARGETS ?= src tests
 DOCS_DIR ?= docs
