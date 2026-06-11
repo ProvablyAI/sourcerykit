@@ -28,6 +28,8 @@ from provably.intercept._self_egress import is_self_egress
 from provably.intercept._storage import (
     insert_intercept_row,
     request_payload_dict,
+    reset_preprocess_ms,
+    restore_preprocess_ms,
 )
 from provably.trusted_endpoints import _matches_registered, normalize_url_for_trust
 
@@ -139,9 +141,11 @@ def intercept_context(
     t_agent = _ctx_agent_id.set(agent_id)
     t_action = _ctx_action_name.set(action_name)
     t_index = _ctx_intercept_index.set(intercept_index)
+    t_pp = reset_preprocess_ms()
     try:
         yield
     finally:
+        restore_preprocess_ms(t_pp)
         _ctx_intercept_index.reset(t_index)
         _ctx_action_name.reset(t_action)
         _ctx_agent_id.reset(t_agent)

@@ -2,6 +2,7 @@
 
 from ._loader import load_latest_intercept_payload as load_latest_intercept_payload
 from ._self_egress import provably_self_egress as provably_self_egress
+from ._storage import preprocess_ms as preprocess_ms
 from .interceptor import (
     clear_intercept_row_ids as clear_intercept_row_ids,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "init_interceptor",
     "intercept_context",
     "is_enabled",
+    "preprocess_ms",
     "provably_self_egress",
     "set_intercept_body_hook",
     "set_intercept_url_allowlist",
