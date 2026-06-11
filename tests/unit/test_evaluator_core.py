@@ -1,18 +1,18 @@
-"""Tests for agentkit.evaluator.evaluator."""
+"""Tests for sourcerykit.evaluator.evaluator."""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agentkit.evaluator.evaluator import (
+from sourcerykit.evaluator.evaluator import (
     _coerce_query_result_to_indexed_value,
     _extract_timings,
     _resolve_outcome,
     evaluate_handoff,
 )
-from agentkit.schemas import HandoffClaim, HandoffPayload, Outcome, VerificationMode
-from agentkit.schemas.agent_response import ClaimedValue
+from sourcerykit.schemas import HandoffClaim, HandoffPayload, Outcome, VerificationMode
+from sourcerykit.schemas.agent_response import ClaimedValue
 
 _ORG = uuid.uuid4()
 _QID = uuid.uuid4()
@@ -139,19 +139,19 @@ class TestEvaluateHandoff:
         }
 
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.verify_claim_endpoints",
+            "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.service.verify_proof",
+            "sourcerykit.evaluator.evaluator.service.verify_proof",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.service.wait_for_proof_verification",
+            "sourcerykit.evaluator.evaluator.service.wait_for_proof_verification",
             AsyncMock(return_value=verify_result),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.get_settings",
+            "sourcerykit.evaluator.evaluator.get_settings",
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
@@ -164,15 +164,15 @@ class TestEvaluateHandoff:
         payload = _make_payload([_make_claim()])
 
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.verify_claim_endpoints",
+            "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
             AsyncMock(side_effect=ValueError("untrusted endpoint")),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.service.verify_proof",
+            "sourcerykit.evaluator.evaluator.service.verify_proof",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.get_settings",
+            "sourcerykit.evaluator.evaluator.get_settings",
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
@@ -184,19 +184,19 @@ class TestEvaluateHandoff:
         payload = _make_payload([_make_claim()])
 
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.verify_claim_endpoints",
+            "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.service.verify_proof",
+            "sourcerykit.evaluator.evaluator.service.verify_proof",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.service.wait_for_proof_verification",
+            "sourcerykit.evaluator.evaluator.service.wait_for_proof_verification",
             AsyncMock(side_effect=RuntimeError("proof failed")),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.get_settings",
+            "sourcerykit.evaluator.evaluator.get_settings",
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
@@ -208,11 +208,11 @@ class TestEvaluateHandoff:
         payload = _make_payload([])
 
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.verify_claim_endpoints",
+            "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
             AsyncMock(return_value=None),
         )
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.get_settings",
+            "sourcerykit.evaluator.evaluator.get_settings",
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 

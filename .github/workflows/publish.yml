@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/provably-sdk
+      url: https://pypi.org/p/sourcerykit
     permissions:
       id-token: write
       contents: read

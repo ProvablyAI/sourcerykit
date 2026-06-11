@@ -1,12 +1,12 @@
-"""Tests for agentkit.intercept.interceptor — async_intercept_context and related helpers."""
+"""Tests for sourcerykit.intercept.interceptor — async_intercept_context and related helpers."""
 
 import uuid
 from unittest.mock import patch
 
 import pytest
 
-import agentkit.intercept.interceptor as interceptor_mod
-from agentkit.intercept.interceptor import (
+import sourcerykit.intercept.interceptor as interceptor_mod
+from sourcerykit.intercept.interceptor import (
     _ctx_action_name,
     _ctx_agent_id,
     async_intercept_context,
@@ -131,10 +131,10 @@ class TestGetInterceptRowId:
 class TestInitInterceptor:
     def test_installs_hooks_without_error(self) -> None:
         with (
-            patch("agentkit.intercept.interceptor.init_httpx_hooks") as mock_httpx,
-            patch("agentkit.intercept.interceptor.init_aiohttp_hooks") as mock_aiohttp,
+            patch("sourcerykit.intercept.interceptor.init_httpx_hooks") as mock_httpx,
+            patch("sourcerykit.intercept.interceptor.init_aiohttp_hooks") as mock_aiohttp,
         ):
-            from agentkit.intercept.interceptor import init_interceptor
+            from sourcerykit.intercept.interceptor import init_interceptor
 
             init_interceptor()
             mock_httpx.assert_called_once()

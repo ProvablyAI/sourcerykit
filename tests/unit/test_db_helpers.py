@@ -1,8 +1,8 @@
-"""Tests for agentkit.db helpers — ConnectionInfo, _intercepts, _trusted_endpoints."""
+"""Tests for sourcerykit.db helpers — ConnectionInfo, _intercepts, _trusted_endpoints."""
 
 import uuid
 
-from agentkit.db._engine import ConnectionInfo
+from sourcerykit.db._engine import ConnectionInfo
 
 # ---------------------------------------------------------------------------
 # ConnectionInfo
@@ -37,7 +37,7 @@ class TestConnectionInfo:
 
 class TestInsertIntercept:
     def test_returns_insert_statement(self) -> None:
-        from agentkit.db._intercepts import insert_intercept
+        from sourcerykit.db._intercepts import insert_intercept
 
         stmt = insert_intercept(
             agent_id="agent-1",
@@ -53,7 +53,7 @@ class TestInsertIntercept:
         assert isinstance(stmt, Insert)
 
     def test_returning_id_clause_present(self) -> None:
-        from agentkit.db._intercepts import insert_intercept
+        from sourcerykit.db._intercepts import insert_intercept
 
         stmt = insert_intercept("a", "b", "https://c.com", {}, {}, "hash")
         compiled = str(stmt.compile())
@@ -62,7 +62,7 @@ class TestInsertIntercept:
 
 class TestSelectInterceptById:
     def test_returns_string_with_id(self) -> None:
-        from agentkit.db._intercepts import select_intercept_by_id
+        from sourcerykit.db._intercepts import select_intercept_by_id
 
         row_id = uuid.uuid4()
         sql = select_intercept_by_id(row_id)
@@ -72,7 +72,7 @@ class TestSelectInterceptById:
 
 class TestSelectInterceptsByAction:
     def test_returns_string_with_action_name(self) -> None:
-        from agentkit.db._intercepts import select_intercepts_by_action
+        from sourcerykit.db._intercepts import select_intercepts_by_action
 
         sql = select_intercepts_by_action("my_action")
         assert isinstance(sql, str)
@@ -83,7 +83,7 @@ class TestSelectInterceptsByAgentIdAndAction:
     def test_returns_select_object(self) -> None:
         from sqlalchemy.sql.selectable import Select
 
-        from agentkit.db._intercepts import select_intercepts_by_agent_id_and_action
+        from sourcerykit.db._intercepts import select_intercepts_by_agent_id_and_action
 
         stmt = select_intercepts_by_agent_id_and_action("agent-1", "action-a")
         assert isinstance(stmt, Select)
@@ -98,7 +98,7 @@ class TestSelectTrustedEndpointPrefix:
     def test_returns_select_object(self) -> None:
         from sqlalchemy.sql.selectable import Select
 
-        from agentkit.db._trusted_endpoints import select_trusted_endpoint_prefix
+        from sourcerykit.db._trusted_endpoints import select_trusted_endpoint_prefix
 
         org_id = uuid.uuid4()
         stmt = select_trusted_endpoint_prefix(org_id, "https://example.com")
@@ -109,7 +109,7 @@ class TestSelectActiveTrustedEndpoints:
     def test_returns_select_object(self) -> None:
         from sqlalchemy.sql.selectable import Select
 
-        from agentkit.db._trusted_endpoints import select_active_trusted_endpoints
+        from sourcerykit.db._trusted_endpoints import select_active_trusted_endpoints
 
         org_id = uuid.uuid4()
         stmt = select_active_trusted_endpoints(org_id)
@@ -120,14 +120,14 @@ class TestInsertTrustedEndpointDb:
     def test_returns_insert_object(self) -> None:
         from sqlalchemy.sql.dml import Insert
 
-        from agentkit.db._trusted_endpoints import insert_trusted_endpoint
+        from sourcerykit.db._trusted_endpoints import insert_trusted_endpoint
 
         org_id = uuid.uuid4()
         stmt = insert_trusted_endpoint(org_id, "https://example.com", "My label")
         assert isinstance(stmt, Insert)
 
     def test_insert_without_label(self) -> None:
-        from agentkit.db._trusted_endpoints import insert_trusted_endpoint
+        from sourcerykit.db._trusted_endpoints import insert_trusted_endpoint
 
         org_id = uuid.uuid4()
         stmt = insert_trusted_endpoint(org_id, "https://example.com")

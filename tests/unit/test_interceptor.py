@@ -1,4 +1,4 @@
-"""Tests for agentkit.intercept.interceptor — _record and hook integration."""
+"""Tests for sourcerykit.intercept.interceptor — _record and hook integration."""
 
 import uuid
 from typing import Any
@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-import agentkit.intercept.interceptor as interceptor_mod
-from agentkit.intercept.interceptor import (
+import sourcerykit.intercept.interceptor as interceptor_mod
+from sourcerykit.intercept.interceptor import (
     _record,
     async_intercept_context,
 )
@@ -22,13 +22,13 @@ def _reset_globals() -> None:
 class TestRecord:
     async def test_does_nothing_when_no_context_set(self) -> None:
         """_record is a no-op when agent_id / action_name are not in context."""
-        with patch("agentkit.intercept.interceptor.add_intercept_row", AsyncMock()) as mock_add:
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock()) as mock_add:
             await _record("https://example.com", "POST", {}, {})
             mock_add.assert_not_called()
 
     async def test_stores_row_id_when_context_active(self) -> None:
         expected_id = uuid.uuid4()
-        with patch("agentkit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=expected_id)):
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=expected_id)):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
                 await _record("https://example.com", "GET", {"q": 1}, {"data": "resp"})
 
@@ -38,7 +38,7 @@ class TestRecord:
     async def test_does_not_raise_when_add_intercept_row_fails(self) -> None:
         """Storage errors must be swallowed — never propagated to caller."""
         with patch(
-            "agentkit.intercept.interceptor.add_intercept_row",
+            "sourcerykit.intercept.interceptor.add_intercept_row",
             AsyncMock(side_effect=RuntimeError("db down")),
         ):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
@@ -46,7 +46,7 @@ class TestRecord:
             # If we get here, the error was swallowed correctly
 
     async def test_row_id_is_none_when_add_returns_none(self) -> None:
-        with patch("agentkit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=None)):
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=None)):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
                 await _record("https://example.com", "GET", {}, {})
         # last_intercept_row_id should still be None if row_id was None
@@ -62,7 +62,7 @@ class TestRecord:
             call_count += 1
             return result
 
-        with patch("agentkit.intercept.interceptor.add_intercept_row", fake_add):
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", fake_add):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
                 await _record("https://a.com", "GET", {}, {})
                 await _record("https://b.com", "GET", {}, {})

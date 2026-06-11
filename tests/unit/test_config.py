@@ -1,12 +1,12 @@
-"""Tests for agentkit.config.Settings and get_settings."""
+"""Tests for sourcerykit.config.Settings and get_settings."""
 
 import uuid
 from collections.abc import Generator
 
 import pytest
 
-from agentkit.config import Settings, get_settings
-from agentkit.errors import AgentKitConfigError
+from sourcerykit.config import Settings, get_settings
+from sourcerykit.errors import SourceryKitConfigError
 
 _VALID_ORG = "00000000-0000-0000-0000-000000000001"
 
@@ -45,26 +45,26 @@ class TestSettings:
         assert s.provably_mcp == "https://mcp.provably.ai"
 
     def test_raises_config_error_when_api_key_missing(self) -> None:
-        with pytest.raises(AgentKitConfigError, match="AGENTKIT_API_KEY"):
+        with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_API_KEY"):
             Settings(api_key="", org_id=uuid.UUID(_VALID_ORG), postgres_url="postgresql://x")
 
     def test_raises_config_error_when_org_id_is_nil(self) -> None:
         nil_uuid = uuid.UUID(int=0)
-        with pytest.raises(AgentKitConfigError, match="AGENTKIT_ORG_ID"):
+        with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_ORG_ID"):
             Settings(api_key="k", org_id=nil_uuid, postgres_url="postgresql://x")
 
     def test_raises_config_error_when_postgres_url_missing(self) -> None:
-        with pytest.raises(AgentKitConfigError, match="AGENTKIT_POSTGRES_URL"):
+        with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_POSTGRES_URL"):
             Settings(api_key="k", org_id=uuid.UUID(_VALID_ORG), postgres_url="")
 
     def test_raises_config_error_lists_all_missing_fields(self) -> None:
         nil = uuid.UUID(int=0)
-        with pytest.raises(AgentKitConfigError) as exc_info:
+        with pytest.raises(SourceryKitConfigError) as exc_info:
             Settings(api_key="", org_id=nil, postgres_url="")
         msg = str(exc_info.value)
-        assert "AGENTKIT_API_KEY" in msg
-        assert "AGENTKIT_ORG_ID" in msg
-        assert "AGENTKIT_POSTGRES_URL" in msg
+        assert "SOURCERYKIT_API_KEY" in msg
+        assert "SOURCERYKIT_ORG_ID" in msg
+        assert "SOURCERYKIT_POSTGRES_URL" in msg
 
     def test_is_frozen(self) -> None:
         s = Settings(api_key="k", org_id=uuid.UUID(_VALID_ORG), postgres_url="postgresql://x")
@@ -79,39 +79,39 @@ class TestSettings:
 
 class TestGetSettings:
     def test_reads_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("AGENTKIT_API_KEY", "env-key")
-        monkeypatch.setenv("AGENTKIT_ORG_ID", _VALID_ORG)
-        monkeypatch.setenv("AGENTKIT_POSTGRES_URL", "postgresql://env/db")
+        monkeypatch.setenv("SOURCERYKIT_API_KEY", "env-key")
+        monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
+        monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://env/db")
         s = get_settings()
         assert s.api_key == "env-key"
         assert str(s.org_id) == _VALID_ORG
         assert s.postgres_url == "postgresql://env/db"
 
     def test_optional_env_vars_override_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("AGENTKIT_API_KEY", "k")
-        monkeypatch.setenv("AGENTKIT_ORG_ID", _VALID_ORG)
-        monkeypatch.setenv("AGENTKIT_POSTGRES_URL", "postgresql://x")
-        monkeypatch.setenv("AGENTKIT_PROVABLY_APP_URL", "https://custom-app.example.com")
+        monkeypatch.setenv("SOURCERYKIT_API_KEY", "k")
+        monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
+        monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
+        monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "https://custom-app.example.com")
         s = get_settings()
         assert s.provably_app == "https://custom-app.example.com"
 
     def test_raises_config_error_when_env_vars_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         for key in (
-            "AGENTKIT_API_KEY",
-            "AGENTKIT_ORG_ID",
-            "AGENTKIT_POSTGRES_URL",
-            "AGENTKIT_PROVABLY_APP_URL",
-            "AGENTKIT_PROVABLY_API_URL",
-            "AGENTKIT_PROVABLY_MCP_URL",
+            "SOURCERYKIT_API_KEY",
+            "SOURCERYKIT_ORG_ID",
+            "SOURCERYKIT_POSTGRES_URL",
+            "SOURCERYKIT_PROVABLY_APP_URL",
+            "SOURCERYKIT_PROVABLY_API_URL",
+            "SOURCERYKIT_PROVABLY_MCP_URL",
         ):
             monkeypatch.delenv(key, raising=False)
-        with pytest.raises(AgentKitConfigError):
+        with pytest.raises(SourceryKitConfigError):
             get_settings()
 
     def test_result_is_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("AGENTKIT_API_KEY", "k")
-        monkeypatch.setenv("AGENTKIT_ORG_ID", _VALID_ORG)
-        monkeypatch.setenv("AGENTKIT_POSTGRES_URL", "postgresql://x")
+        monkeypatch.setenv("SOURCERYKIT_API_KEY", "k")
+        monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
+        monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
         s1 = get_settings()
         s2 = get_settings()
         assert s1 is s2

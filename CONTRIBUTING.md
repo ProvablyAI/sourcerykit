@@ -3,7 +3,7 @@ Thank you for your interest in making SourceryKit better! We welcome all contrib
 
 
 ## Ways to Contribute
-- **Report bugs**: Open an issue on [GitHub Issues](https://github.com/ProvablyAI/provably-python-sdk/issues). Include clear reproduction steps, expected vs. actual behavior, and your environment details.
+- **Report bugs**: Open an issue on [GitHub Issues](https://github.com/ProvablyAI/sourcerykit/issues). Include clear reproduction steps, expected vs. actual behavior, and your environment details.
 - **Request features**: Open an issue describing your proposed feature and its use case. We encourage community discussion before starting work on large functional additions.
 - **Improve documentation**: Contributions for clarification, typo fixes, or missing examples are always welcome.
 - **Submit code**: Follow the development process detailed below.

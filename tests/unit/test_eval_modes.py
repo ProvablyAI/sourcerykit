@@ -1,17 +1,17 @@
-"""Tests for agentkit.evaluator._eval_modes."""
+"""Tests for sourcerykit.evaluator._eval_modes."""
 
 import uuid
 from typing import Any
 
 import pytest
 
-from agentkit.evaluator._eval_modes import (
+from sourcerykit.evaluator._eval_modes import (
     _get_by_json_path,
     canonical_json,
     evaluate_claim,
 )
-from agentkit.schemas import HandoffClaim, VerificationMode
-from agentkit.schemas.agent_response import ClaimedValue
+from sourcerykit.schemas import HandoffClaim, VerificationMode
+from sourcerykit.schemas.agent_response import ClaimedValue
 
 _QID = uuid.uuid4()
 

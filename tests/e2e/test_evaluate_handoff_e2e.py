@@ -13,7 +13,7 @@ What is NOT mocked:
 Scenarios:
   A — PASS: stored aggregate value matches the claim
   B — CAUGHT: stored value differs from the claim
-  C — CAUGHT: verify_claim_endpoints raises AgentKitTrustError
+  C — CAUGHT: verify_claim_endpoints raises SourceryKitTrustError
   D — ERROR: proof verification polling returns "Failed"
 """
 
@@ -23,13 +23,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from agentkit.config import Settings
-from agentkit.errors import AgentKitTrustError
-from agentkit.evaluator.evaluator import evaluate_handoff
-from agentkit.provably._api import ProvablyAPI
-from agentkit.provably._http import ProvablyHTTPClient
-from agentkit.schemas import HandoffClaim, HandoffPayload, Outcome, VerificationMode
-from agentkit.schemas.agent_response import ClaimedValue
+from sourcerykit.config import Settings
+from sourcerykit.errors import SourceryKitTrustError
+from sourcerykit.evaluator.evaluator import evaluate_handoff
+from sourcerykit.provably._api import ProvablyAPI
+from sourcerykit.provably._http import ProvablyHTTPClient
+from sourcerykit.schemas import HandoffClaim, HandoffPayload, Outcome, VerificationMode
+from sourcerykit.schemas.agent_response import ClaimedValue
 from tests.e2e.conftest import FakeHttpServer
 
 _ORG = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -86,29 +86,29 @@ def _provably_settings(fake_server: FakeHttpServer) -> Settings:
 def _wired_service(_provably_settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch the Provably service layer to use a real HTTP client pointed at the fake server.
 
-    The evaluator imports ``service`` from ``agentkit.provably.service`` and calls
+    The evaluator imports ``service`` from ``sourcerykit.provably.service`` and calls
     ``service.verify_proof`` and ``service.wait_for_proof_verification``.
     Those methods call ``get_api()`` which calls ``get_http()``.
 
     We patch:
-      - ``agentkit.provably._api.get_http`` to return our ProvablyHTTPClient
-      - ``agentkit.provably.service.get_api`` to return our ProvablyAPI
-      - ``agentkit.evaluator.evaluator.get_settings`` to return fake_settings
+      - ``sourcerykit.provably._api.get_http`` to return our ProvablyHTTPClient
+      - ``sourcerykit.provably.service.get_api`` to return our ProvablyAPI
+      - ``sourcerykit.evaluator.evaluator.get_settings`` to return fake_settings
     """
     http_client = ProvablyHTTPClient(settings=_provably_settings)
     api = ProvablyAPI(settings=_provably_settings)
 
-    monkeypatch.setattr("agentkit.provably._api.get_http", lambda: http_client)
-    monkeypatch.setattr("agentkit.provably.service.get_api", lambda: api)
+    monkeypatch.setattr("sourcerykit.provably._api.get_http", lambda: http_client)
+    monkeypatch.setattr("sourcerykit.provably.service.get_api", lambda: api)
     monkeypatch.setattr(
-        "agentkit.evaluator.evaluator.get_settings",
+        "sourcerykit.evaluator.evaluator.get_settings",
         lambda: _provably_settings,
     )
 
 
 def _mock_trust_gate_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "agentkit.evaluator.evaluator.verify_claim_endpoints",
+        "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
         AsyncMock(return_value=None),
     )
 
@@ -189,8 +189,8 @@ class TestEvaluateHandoffE2E:
         """CAUGHT: trust gate fires before any HTTP calls are made."""
         qid = uuid.uuid4()
         monkeypatch.setattr(
-            "agentkit.evaluator.evaluator.verify_claim_endpoints",
-            AsyncMock(side_effect=AgentKitTrustError("untrusted endpoint")),
+            "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
+            AsyncMock(side_effect=SourceryKitTrustError("untrusted endpoint")),
         )
         payload = _make_payload(_make_claim(qid))
 

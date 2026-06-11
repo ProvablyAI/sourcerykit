@@ -1,13 +1,13 @@
-"""Tests for agentkit.trusted_endpoints.service"""
+"""Tests for sourcerykit.trusted_endpoints.service"""
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agentkit.errors import AgentKitStorageError, AgentKitTrustError
-from agentkit.schemas import HandoffClaim, HandoffPayload
-from agentkit.trusted_endpoints.service import (
+from sourcerykit.errors import SourceryKitStorageError, SourceryKitTrustError
+from sourcerykit.schemas import HandoffClaim, HandoffPayload
+from sourcerykit.trusted_endpoints.service import (
     insert_trusted_endpoint,
     is_endpoint_trusted,
     sanitize_and_extract_trusted_url,
@@ -43,7 +43,7 @@ class TestSanitizeAndExtractTrustedUrl:
         assert sanitize_and_extract_trusted_url("  https://example.com  ") == "https://example.com"
 
     def test_raises_trust_error_when_no_netloc(self) -> None:
-        with pytest.raises(AgentKitTrustError):
+        with pytest.raises(SourceryKitTrustError):
             sanitize_and_extract_trusted_url("///not-a-url")
 
 
@@ -93,8 +93,8 @@ class TestIsEndpointTrusted:
     async def test_returns_true_when_db_says_trusted(self) -> None:
         mock_engine = _make_connect_mock(scalar_return=True)
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
             assert await is_endpoint_trusted("https://trusted.example.com") is True
@@ -102,8 +102,8 @@ class TestIsEndpointTrusted:
     async def test_returns_false_when_db_says_not_trusted(self) -> None:
         mock_engine = _make_connect_mock(scalar_return=False)
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
             assert await is_endpoint_trusted("https://untrusted.example.com") is False
@@ -111,20 +111,20 @@ class TestIsEndpointTrusted:
     async def test_raises_storage_error_on_db_failure(self) -> None:
         mock_engine = _make_connect_mock(raise_exc=RuntimeError("db down"))
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
-            with pytest.raises(AgentKitStorageError):
+            with pytest.raises(SourceryKitStorageError):
                 await is_endpoint_trusted("https://example.com")
 
     async def test_url_is_sanitized_before_query(self) -> None:
         """A URL with a path and query string should be sanitized before lookup."""
         mock_engine = _make_connect_mock(scalar_return=True)
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
-            patch("agentkit.trusted_endpoints.service.select_trusted_endpoint_prefix") as mock_stmt,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.select_trusted_endpoint_prefix") as mock_stmt,
         ):
             ms.return_value.org_id = _ORG
             mock_stmt.return_value = MagicMock()
@@ -143,8 +143,8 @@ class TestInsertTrustedEndpoint:
     async def test_inserts_successfully(self) -> None:
         mock_engine = _make_begin_mock()
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
             await insert_trusted_endpoint("https://new.example.com", display_label="My EP")
@@ -153,15 +153,15 @@ class TestInsertTrustedEndpoint:
     async def test_raises_storage_error_on_db_failure(self) -> None:
         mock_engine = _make_begin_mock(raise_exc=RuntimeError("fail"))
         with (
-            patch("agentkit.trusted_endpoints.service.get_engine", return_value=mock_engine),
-            patch("agentkit.trusted_endpoints.service.get_settings") as ms,
+            patch("sourcerykit.trusted_endpoints.service.get_engine", return_value=mock_engine),
+            patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
-            with pytest.raises(AgentKitStorageError):
+            with pytest.raises(SourceryKitStorageError):
                 await insert_trusted_endpoint("https://example.com")
 
     async def test_rejects_display_label_over_255_chars(self) -> None:
-        with patch("agentkit.trusted_endpoints.service.get_settings") as ms:
+        with patch("sourcerykit.trusted_endpoints.service.get_settings") as ms:
             ms.return_value.org_id = _ORG
             with pytest.raises(ValueError, match="display_label"):
                 await insert_trusted_endpoint("https://example.com", display_label="x" * 256)
@@ -175,7 +175,7 @@ class TestInsertTrustedEndpoint:
 class TestVerifyClaimEndpoints:
     async def test_passes_when_all_source_urls_trusted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "agentkit.trusted_endpoints.service.is_endpoint_trusted",
+            "sourcerykit.trusted_endpoints.service.is_endpoint_trusted",
             AsyncMock(return_value=True),
         )
         payload = HandoffPayload(claims=[HandoffClaim(action_name="a", request_payload={"url": "https://api.ok.com"})])
@@ -183,16 +183,16 @@ class TestVerifyClaimEndpoints:
 
     async def test_raises_when_endpoint_not_trusted(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "agentkit.trusted_endpoints.service.is_endpoint_trusted",
+            "sourcerykit.trusted_endpoints.service.is_endpoint_trusted",
             AsyncMock(return_value=False),
         )
         payload = HandoffPayload(claims=[HandoffClaim(action_name="a", request_payload={"url": "https://bad.com"})])
-        with pytest.raises((ValueError, AgentKitTrustError, AgentKitStorageError)):
+        with pytest.raises((ValueError, SourceryKitTrustError, SourceryKitStorageError)):
             await verify_claim_endpoints(payload)
 
     async def test_empty_claims_does_not_raise(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
-            "agentkit.trusted_endpoints.service.is_endpoint_trusted",
+            "sourcerykit.trusted_endpoints.service.is_endpoint_trusted",
             AsyncMock(return_value=True),
         )
         await verify_claim_endpoints(HandoffPayload())  # must not raise

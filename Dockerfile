@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ----------------------------------------------------------------------------
-# provably-sdk container layout
+# sourcerykit container layout
 # ----------------------------------------------------------------------------
 # Stage 1 (builder)  : produces a wheel from the current source tree.
 # Stage 2 (runtime)  : minimal image with just the wheel installed, suitable
@@ -12,10 +12,10 @@
 # the uv-based workflow.
 #
 # Build:
-#   docker build -t provably-sdk:runtime .
+#   docker build -t sourcerykit:runtime .
 #
 # Smoke-import:
-#   docker run --rm provably-sdk:runtime
+#   docker run --rm sourcerykit:runtime
 # ----------------------------------------------------------------------------
 
 ARG PYTHON_VERSION=3.12
@@ -59,4 +59,4 @@ RUN pip install --upgrade pip \
     && pip install /dist/*.whl \
     && rm -rf /dist
 
-CMD ["python", "-c", "import importlib.metadata as m, agentkit; print('provably-sdk', m.version('provably-sdk'), 'imported as', agentkit.__name__)"]
+CMD ["python", "-c", "import importlib.metadata as m, sourcerykit; print('sourcerykit', m.version('sourcerykit'), 'imported as', sourcerykit.__name__)"]
