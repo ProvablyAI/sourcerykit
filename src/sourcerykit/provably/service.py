@@ -378,9 +378,12 @@ class ProvablyService:
 
         start_time = asyncio.get_running_loop().time()
 
+        api_client = get_api()
+        current_delay = 0.05
+
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("get_preprocess_status"):
-                preprocess = await get_api().get_preprocess_status(middleware_id, table_id)
+                preprocess = await api_client.get_preprocess_status(middleware_id, table_id)
 
             status = preprocess.get("status")
 
@@ -394,7 +397,8 @@ class ProvablyService:
 
             # If status is 'pending' or 'processing', wait and try again
             _log.debug("preprocess_in_progress", table_id=str(table_id), status=status)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(current_delay)
+            current_delay = min(current_delay * 2, 0.1)
 
         raise TimeoutError(f"Preprocessing for table {table_id} timed out after {timeout}s")
 
@@ -440,9 +444,12 @@ class ProvablyService:
         """
         start_time = asyncio.get_running_loop().time()
 
+        api_client = get_api()
+        current_delay = 0.05
+
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_computation"):
-                data = await get_api().get_query(query_id)
+                data = await api_client.get_query(query_id)
 
             proof = data.get("proof")
 
@@ -459,7 +466,8 @@ class ProvablyService:
 
             # If status is 'Pending' (or proof is still null), we continue waiting
             _log.debug("proof_generation_pending", query_id=str(query_id))
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(current_delay)
+            current_delay = min(current_delay * 2, 0.1)
 
         raise TimeoutError(f"Timed out waiting for proof {query_id} after {timeout}s")
 
@@ -501,9 +509,12 @@ class ProvablyService:
         """
         start_time = asyncio.get_running_loop().time()
 
+        api_client = get_api()
+        current_delay = 0.05
+
         while (asyncio.get_running_loop().time() - start_time) < timeout:
             async with provably_error_handler("wait_for_proof_verification"):
-                data = await get_api().get_query(query_id, api_key=integration_api_key)
+                data = await api_client.get_query(query_id, api_key=integration_api_key)
 
             proof = data.get("proof")
 
@@ -524,7 +535,8 @@ class ProvablyService:
                 query_id=str(query_id),
                 status=proof.get("verification_status") if proof else "null",
             )
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(current_delay)
+            current_delay = min(current_delay * 2, 0.1)
 
         raise TimeoutError(f"Verification for query {query_id} timed out after {timeout}s")
 
