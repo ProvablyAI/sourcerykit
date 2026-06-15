@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![status: v0.2](https://img.shields.io/badge/status-v0.2-blue)](CHANGELOG.md)
+[![status: v1.0](https://img.shields.io/badge/status-v1.0-blue)](CHANGELOG.md)
 [![python: 3.12+](https://img.shields.io/badge/python-3.12+-blue)](pyproject.toml)
 [![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](LICENSE.md)
 
