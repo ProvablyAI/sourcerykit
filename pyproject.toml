@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sourcerykit"
-version = "0.2.0"
+version = "1.0"
 description = "Provably Python SDK — runtime init, HTTP intercept, handoff transport, deterministic evaluator, trusted-endpoint registry."
 readme = "README.md"
 requires-python = ">=3.12"
