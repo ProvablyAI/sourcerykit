@@ -2,7 +2,7 @@
 This walkthrough breaks down the lifecycle of an autonomous, verifiable agent run using the SourceryKit SDK. You will see how to configure policies, intercept live calls, run an agent with a structured output contract, and evaluate data integrity.
 
 ## Prerequisites
-Before executing the walkthrough steps, your environment needs to be configured with your project keys and storage url. 
+Before executing the walkthrough steps, your environment needs to be configured with your project keys and storage url.
 
 ### Option A: The Easy Way (Interactive Wizard)
 The fastest way to generate your keys and set up your environment automatically is to run the interactive setup wizard:
