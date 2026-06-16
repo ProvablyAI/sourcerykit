@@ -1,7 +1,5 @@
 """Tests for sourcerykit.provably._http.ProvablyHTTPClient."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
