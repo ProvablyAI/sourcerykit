@@ -132,6 +132,22 @@ pip install sourcerykit
 ```
 
 
+## Quick Setup Wizard
+The fastest way to get everything configured is to use the interactive onboarding wizard. The CLI handles your account provisioning, organization workspace initialization, and real-time validation of your remote Postgres database.
+
+Run the wizard using your package manager or command line entry point:
+
+```bash
+sourcerykit wizard
+```
+
+The wizard will guide you through:
+- **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
+- **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
+- **Database Handshake**: Enter your database details, test the connection, and ensure it's accessible.
+- **Save Config**: Automatically write your credentials and tokens straight to a local .env file.
+
+
 ## Configuration
 Set up these three environment variables to get things running:
 - `SOURCERYKIT_API_KEY` — Your Provably API key (grab this from your dashboard).
