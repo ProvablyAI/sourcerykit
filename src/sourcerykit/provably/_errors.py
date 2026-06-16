@@ -85,6 +85,12 @@ async def provably_auth_error_handler(service: str) -> AsyncIterator[None]:
                 status_code=status,
                 response_body=body,
             ) from e
+        if status == 409:
+            raise ProvablyResourceAlreadyExistsError(
+                message=f"Resource already exists for {service_name}: {body}",
+                status_code=status,
+                response_body=body,
+            ) from e
         raise ProvablyAuthError(
             message=f"Provably API rejected {service_name}: {body}",
             status_code=status,

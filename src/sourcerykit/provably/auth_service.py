@@ -26,7 +26,6 @@ class ProvablyAuthService:
         """
         async with provably_auth_error_handler("create_account"):
             await get_api().create_account(user)
-            return
 
     async def login(self, user: User) -> dict[str, Any]:
         """Authenticate with email and password.
