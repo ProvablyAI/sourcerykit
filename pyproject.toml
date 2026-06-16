@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sourcerykit"
 version = "1.0"
-description = "Provably Python SDK — runtime init, HTTP intercept, handoff transport, deterministic evaluator, trusted-endpoint registry."
+description = "SourceryKit"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
@@ -36,6 +36,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "structlog>=24.1",
     "msgspec>=0.18.0",
+    "questionary >= 2.1",
 ]
 
 [project.optional-dependencies]
@@ -126,3 +127,7 @@ branch = true
 fail_under = 60
 show_missing = true
 exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
+
+[project.scripts]
+sourcerykit = "sourcerykit.cli.main:main"
+sourcerykit-setup = "sourcerykit.cli.main:main"
