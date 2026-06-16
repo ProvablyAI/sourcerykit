@@ -67,6 +67,12 @@ handoff
 trusted-endpoints
 ```
 
+```{toctree}
+:maxdepth: 1
+:caption: Migration Guides
+
+migrations/v1_0/v1_0
+```
 
 ```{toctree}
 :maxdepth: 1
