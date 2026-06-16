@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="docs/logo.svg" alt="SourceryKit" width="280" />
+  <img src="https://github.com/ProvablyAI/sourcerykit/blob/main/docs/logo.svg" alt="SourceryKit" width="280" />
 </div>
 
 <div align="center">
 
-[![status: v1.0](https://img.shields.io/badge/status-v1.0-blue)](CHANGELOG.md)
-[![python: 3.12+](https://img.shields.io/badge/python-3.12+-blue)](pyproject.toml)
-[![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](LICENSE.md)
+[![status: v1.0](https://img.shields.io/badge/status-v1.0-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
+[![python: 3.12+](https://img.shields.io/badge/python-3.12+-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/pyproject.toml)
+[![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
 
 </div>
 
@@ -15,7 +15,7 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides v
 ---
 
 > [!IMPORTANT]
-> Upgrading the SDK from v0.2 to v1.0? See the [v1.0 migration guide](docs/migrations/v1_0/v1_0.md).
+> Upgrading the SDK from v0.2 to v1.0? See the [v1.0 migration guide](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/migrations/v1_0/v1_0.md).
 
 
 ## How Does It Work?
@@ -141,27 +141,27 @@ Set up these three environment variables to get things running:
 > [!NOTE]
 > Only hosted, publicly accessible Postgres instances are supported. Local databases will not work.
 
-You can set these in your shell, a .env file, or your deployment environment. For a full list of options, see [.env.example](.env.example).
+You can set these in your shell, a .env file, or your deployment environment. For a full list of options, see [.env.example](https://github.com/ProvablyAI/sourcerykit/blob/main/.env.example).
 
 
 ## More Docs
 Want to dig into the details? Check out the specific guides:
 
-- [Architecture Overview](docs/architecture.md)
-- [HTTP Interception](docs/intercept.md)
-- [Managing Trusted Endpoints](docs/trusted-endpoints.md)
-- [Handoff Contracts & Evaluation](docs/handoff.md)
+- [Architecture Overview](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/architecture.md)
+- [HTTP Interception](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/intercept.md)
+- [Managing Trusted Endpoints](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/trusted-endpoints.md)
+- [Handoff Contracts & Evaluation](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/handoff.md)
 
 
 ## Contributing
-We welcome fixes, features, and doc updates! Check out [CONTRIBUTING.md](CONTRIBUTING.md) to see how to run tests and open up a pull request.
+We welcome fixes, features, and doc updates! Check out [CONTRIBUTING.md](https://github.com/ProvablyAI/sourcerykit/blob/main/CONTRIBUTING.md) to see how to run tests and open up a pull request.
 
 ## License
 
-This project is licensed under the [Business Source License 1.1](LICENSE.md).
+This project is licensed under the [Business Source License 1.1](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md).
 
 - Copyright © 2026 Provably Technologies LTD
 - You may not offer the Software as a commercial hosted service without purchasing a commercial license from [Provably Technologies Ltd](https://provably.ai).
 - On 2029-05-07, the license will automatically convert to GPL-3.0-or-later.
 
-See the [LICENSE](LICENSE.md) file for full terms and details.
+See the [LICENSE](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md) file for full terms and details.
