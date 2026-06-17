@@ -11,11 +11,11 @@ Welcome to the developer documentation for the Provably Python SDK (**SourceryKi
 * Learn about [Handoff & Evaluation](handoff.md) to construct structured data claims for deterministic validation.
 * Review [Trusted Endpoints](trusted-endpoints.md) to administer strict target destination routing policies.
 
-## Ecosystem Framework Examples
+## Cookbooks
 Explore how to integrate SourceryKit seamlessly into your favorite production development stack:
-* **Local Stacks:** Check out the [Local Server example](examples/local_model/README.md) (Ollama, vLLM, llama.cpp, oMLX).
-* **API Providers:** Review the [OpenAI Agents SDK example](examples/openai_agents/README.md) using OpenRouter configurations.
-* **Orchestration Toolchains:** See the [LangChain example](examples/langchain_agent/README.md) for full trust-gate compliance.
+* **OpenAI Agents SDK:** Review the [OpenAI Agents SDK example](cookbooks/openai_agents/README.md).
+* **LangChain SDK:** See the [LangChain example](cookbooks/langchain_agent/README.md).
+* **Claude Agent SDK:** Review the [Claude Agent SDK example](cookbooks/claude_agent/README.md).
 
 ## API Reference & Development
 * Explore the [API Reference](api.md) for a complete mapping of all public functions, classes, and types.
@@ -50,10 +50,11 @@ example
 
 ```{toctree}
 :maxdepth: 1
-:caption: Ecosystem Examples
+:caption: Cookbooks
 
-src/examples/openai_agents
-src/examples/langchain_agent
+src/cookbooks/openai_agents
+src/cookbooks/langchain_agent
+src/cookbooks/claude_agent
 ```
 
 
