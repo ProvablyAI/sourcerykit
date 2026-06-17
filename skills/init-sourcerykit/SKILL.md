@@ -5,6 +5,8 @@ description: >
   environment setup, bootstrapping, HTTP interception, trusted endpoints, handoff
   payloads, and evaluation. Invoke for tasks like "add SourceryKit", "wrap my tool
   with interception", "verify agent output", or "set up verifiable guardrails".
+argument-hint: >
+    Framework, tool URLs, and target verification flow (field extraction or range threshold)
 ---
 
 
@@ -14,6 +16,32 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It adds verif
 guardrails to AI agents by intercepting outbound HTTP calls, enforcing endpoint
 allow-lists, and evaluating whether an agent's claimed output matches the raw data
 that was actually fetched.
+
+## When to Use
+
+- Adding verifiable guardrails to a new or existing AI agent.
+- Converting a plain API tool into an intercepted, auditable tool flow.
+- Enforcing structured output so claims can be verified against raw responses.
+- Investigating why evaluation returns `CAUGHT` (fabricated/altered values detected) or `ERROR` (configuration or connectivity failure).
+
+## Workflow (with decision points)
+
+1. Validate prerequisites.
+2. Bootstrap once at startup.
+3. Register trusted endpoints.
+4. Wrap every outbound HTTP request in an intercept context.
+5. Enforce `SourceryKitAgentResponse` (or subclass) as structured output.
+6. Build a handoff payload with action names matching intercept labels.
+7. Evaluate payload and inspect outcome.
+8. If outcome is not `PASS`, notify the user, branch into troubleshooting, and re-run.
+
+### Branching logic
+
+- If you are inside a web framework: run `await bootstrap_system()` in startup/lifespan, never per request.
+- If your tool calls multiple external URLs: insert all URLs with `insert_trusted_endpoint(...)` before execution.
+- If claimed values must fall within an acceptable numeric range of the intercepted value: use `verification_mode="range_threshold"`; otherwise default to `field_extraction`.
+- If evaluation returns `CAUGHT`: verify JSONPath depth and claimed values first.
+- If evaluation returns `ERROR`: verify env vars, hosted Postgres connectivity, and bootstrap timing.
 
 ## Quick AI Context / Rules Injection
 > Copy this block directly into your `.cursorrules` file or system prompt window to ground your coding assistant:
@@ -329,6 +357,19 @@ if __name__ == "__main__":
 | Forgetting `output_type` / `response_format` on the agent | Without it `claimed_values` will always be empty |
 | Calling `bootstrap_system()` inside a request handler | Move it to the app startup / lifespan hook |
 | "Cannot run nested event loop" error | You're calling `asyncio.run()` inside an already-running loop — use `await` instead, or use `asyncio.get_event_loop().run_until_complete()` only if no loop is running |
+
+
+## Completion Checks
+
+Treat integration as done only when all checks pass:
+
+- `bootstrap_system()` is called exactly once during process startup.
+- Every outbound network call in agent tools is inside `async_intercept_context(...)`.
+- Every outbound URL is registered via `insert_trusted_endpoint(...)`.
+- Agent output type is `SourceryKitAgentResponse` (or subclass) and includes non-empty `claimed_values`.
+- Each claim `action_name` exactly matches the intercept context `action_name`.
+- `intercept_agent_id` exactly matches the context `agent_id`.
+- `evaluate_handoff(...)` runs for the terminal payload and returns a handled outcome (`PASS`, `CAUGHT`, or `ERROR`).
 
 
 ## Code Generation Checklist
