@@ -43,8 +43,7 @@ that was actually fetched.
 - If evaluation returns `CAUGHT`: verify JSONPath depth and claimed values first.
 - If evaluation returns `ERROR`: verify env vars, hosted Postgres connectivity, and bootstrap timing.
 
-## Quick AI Context / Rules Injection
-> Copy this block directly into your `.cursorrules` file or system prompt window to ground your coding assistant:
+## Quick AI Context
 > "We are using SourceryKit for verifiable data integrity. All agent execution frameworks must enforce `SourceryKitAgentResponse` (or an explicit subclass) as their structured output signature, all outbound API tool requests must be wrapped within an `async_intercept_context` boundary, and every terminal task must pass a serialized payload to `evaluate_handoff` for verification checking."
 
 ## Installation
