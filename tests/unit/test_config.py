@@ -45,7 +45,7 @@ class TestSettings:
         assert s.provably_mcp == "https://mcp.provably.ai"
 
     def test_raises_config_error_when_api_key_missing(self) -> None:
-        with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_API_KEY"):
+        with pytest.raises(SourceryKitConfigError, match="PROVABLY_API_KEY"):
             Settings(api_key="", org_id=uuid.UUID(_VALID_ORG), postgres_url="postgresql://x")
 
     def test_raises_config_error_when_org_id_is_nil(self) -> None:
@@ -62,7 +62,7 @@ class TestSettings:
         with pytest.raises(SourceryKitConfigError) as exc_info:
             Settings(api_key="", org_id=nil, postgres_url="")
         msg = str(exc_info.value)
-        assert "SOURCERYKIT_API_KEY" in msg
+        assert "PROVABLY_API_KEY" in msg
         assert "SOURCERYKIT_ORG_ID" in msg
         assert "SOURCERYKIT_POSTGRES_URL" in msg
 
@@ -79,7 +79,7 @@ class TestSettings:
 
 class TestGetSettings:
     def test_reads_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SOURCERYKIT_API_KEY", "env-key")
+        monkeypatch.setenv("PROVABLY_API_KEY", "env-key")
         monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
         monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://env/db")
         s = get_settings()
@@ -88,7 +88,7 @@ class TestGetSettings:
         assert s.postgres_url == "postgresql://env/db"
 
     def test_optional_env_vars_override_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SOURCERYKIT_API_KEY", "k")
+        monkeypatch.setenv("PROVABLY_API_KEY", "k")
         monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
         monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
         monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "https://custom-app.example.com")
@@ -97,7 +97,7 @@ class TestGetSettings:
 
     def test_raises_config_error_when_env_vars_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         for key in (
-            "SOURCERYKIT_API_KEY",
+            "PROVABLY_API_KEY",
             "SOURCERYKIT_ORG_ID",
             "SOURCERYKIT_POSTGRES_URL",
             "SOURCERYKIT_PROVABLY_APP_URL",
@@ -109,7 +109,7 @@ class TestGetSettings:
             get_settings()
 
     def test_result_is_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("SOURCERYKIT_API_KEY", "k")
+        monkeypatch.setenv("PROVABLY_API_KEY", "k")
         monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
         monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
         s1 = get_settings()

@@ -59,7 +59,7 @@ Copy this block into a `.env` file at the project root and fill in real values:
 
 ```bash
 # Provably API key — created under "User settings → API Key → Active key" at https://app.provably.ai
-SOURCERYKIT_API_KEY=zk-XXX
+PROVABLY_API_KEY=zk-XXX
 
 # Your organisation UUID — visible in the Provably dashboard settings
 SOURCERYKIT_ORG_ID=00000000-0000-0000-0000-000000000000

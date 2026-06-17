@@ -125,7 +125,7 @@ class TestSaveToEnv:
             _save_to_env("my-api-key", "my-org-id", "postgresql://u:p@h:5432/db")
 
         assert mock_set_key.call_count == 3
-        mock_set_key.assert_any_call(".env", "SOURCERYKIT_API_KEY", "my-api-key")
+        mock_set_key.assert_any_call(".env", "PROVABLY_API_KEY", "my-api-key")
         mock_set_key.assert_any_call(".env", "SOURCERYKIT_ORG_ID", "my-org-id")
         mock_set_key.assert_any_call(".env", "SOURCERYKIT_POSTGRES_URL", "postgresql://u:p@h:5432/db")
 

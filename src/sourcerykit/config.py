@@ -20,7 +20,7 @@ class Settings:
     """All environment variables consumed by sourcerykit."""
 
     api_key: str
-    """SOURCERYKIT_API_KEY — Provably API key."""
+    """PROVABLY_API_KEY — Provably API key."""
 
     org_id: uuid.UUID
     """SOURCERYKIT_ORG_ID — Provably organisation ID."""
@@ -41,7 +41,7 @@ class Settings:
         """Validate required fields after initialization."""
         missing = []
         if not self.api_key:
-            missing.append("SOURCERYKIT_API_KEY")
+            missing.append("PROVABLY_API_KEY")
         if not self.org_id or self.org_id == UUID_NIL:
             missing.append("SOURCERYKIT_ORG_ID")
         if not self.postgres_url:
@@ -77,7 +77,7 @@ def get_settings() -> Settings:
         _org_id = UUID_NIL
 
     return Settings(
-        api_key=_url("SOURCERYKIT_API_KEY"),
+        api_key=_url("PROVABLY_API_KEY"),
         org_id=_org_id,
         postgres_url=_url("SOURCERYKIT_POSTGRES_URL"),
         provably_app=_url("SOURCERYKIT_PROVABLY_APP_URL") or DEFAULT_PROVABLY_APP_URL,

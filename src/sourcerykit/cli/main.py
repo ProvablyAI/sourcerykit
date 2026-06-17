@@ -32,7 +32,7 @@ def _print_credentials(api_key: str, org_id: str, postgres_url: str) -> None:
     print("\n" + "π" * 65)
     print(" 🎉 SOURCERYKIT CREDENTIALS GENERATED")
     print("π" * 65)
-    print(f" SOURCERYKIT_API_KEY      = {api_key}")
+    print(f" PROVABLY_API_KEY      = {api_key}")
     print(f" SOURCERYKIT_ORG_ID       = {org_id}")
     print(f" SOURCERYKIT_POSTGRES_URL = {postgres_url}")
     print("π" * 65 + "\n")
@@ -58,7 +58,7 @@ def _save_to_env(api_key: str, org_id: str, postgres_url: str) -> None:
     try:
         Path(path).touch(exist_ok=True)
 
-        set_key(path, "SOURCERYKIT_API_KEY", api_key)
+        set_key(path, "PROVABLY_API_KEY", api_key)
         set_key(path, "SOURCERYKIT_ORG_ID", org_id)
         set_key(path, "SOURCERYKIT_POSTGRES_URL", postgres_url)
 

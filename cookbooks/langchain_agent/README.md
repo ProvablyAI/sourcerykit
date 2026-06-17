@@ -27,7 +27,7 @@ Alternatively, you can manually export these environment variables in your termi
 | Variable | Required | Description |
 |---|---|---|
 | `MODEL_NAME` | **yes** | Targeted model architecture identifier string passed to create_agent (e.g., `openrouter:openai/gpt-4o-mini`). |
-| `SOURCERYKIT_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
+| `PROVABLY_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
 | `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
 | `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
 
@@ -44,7 +44,7 @@ Alternatively, you can manually export these environment variables in your termi
 2. Export your configured secrets into your current shell or place them in a local `.env` file:
       ```bash
    export MODEL_NAME="openrouter:openai/gpt-4o-mini"
-   export SOURCERYKIT_API_KEY="zk_..."
+   export PROVABLY_API_KEY="zk_..."
    export SOURCERYKIT_ORG_ID="org_..."
    export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@remote-host-ip:5432/db"
    ```

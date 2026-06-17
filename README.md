@@ -159,7 +159,7 @@ First, create an account at [app.provably.ai](https://app.provably.ai). Once log
 - **API Key**: Navigate to **Settings -> API Key** to generate or copy your active secret string.
 
 Set up these three environment variables to get things running:
-- `SOURCERYKIT_API_KEY` — Your Provably API key (grab this from your dashboard).
+- `PROVABLY_API_KEY` — Your Provably API key (grab this from your dashboard).
 - `SOURCERYKIT_ORG_ID` — Your organization ID (grab this from your dashboard).
 - `SOURCERYKIT_POSTGRES_URL` — The connection string for your Postgres database, used for storing intercepts and trusted endpoints. Only PostgreSQL is supported. Format: `postgresql://user:password@ipaddress:port/database_name`
 

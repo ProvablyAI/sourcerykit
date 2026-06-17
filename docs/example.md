@@ -15,7 +15,7 @@ sourcerykit wizard
 Alternatively, you can manually export these environment variables in your terminal or save them inside a local `.env` file (see the [SourceryKit README](https://github.com/ProvablyAI/sourcerykit/blob/main/README.md) for more details on how to get your Organization ID from the URL and your API Key from your dashboard settings):
 
 ```bash
-export SOURCERYKIT_API_KEY="your_provably_api_key"
+export PROVABLY_API_KEY="your_provably_api_key"
 export SOURCERYKIT_ORG_ID="your_provably_org_id"
 export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@remote-host-ip:5432/your_db"
 ```

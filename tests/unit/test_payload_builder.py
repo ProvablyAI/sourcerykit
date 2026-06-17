@@ -25,7 +25,7 @@ def _mock_settings() -> MagicMock:
 
 @pytest.fixture
 def _env(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("SOURCERYKIT_API_KEY", "k")
+    monkeypatch.setenv("PROVABLY_API_KEY", "k")
     monkeypatch.setenv("SOURCERYKIT_ORG_ID", str(_ORG))
     monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
     monkeypatch.setenv("SOURCERYKIT_PROVABLY_MCP_URL", "https://mcp.example.com")

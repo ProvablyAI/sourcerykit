@@ -30,7 +30,7 @@ Alternatively, you can manually export these environment variables in your termi
 | `MODEL_URL` | **yes** | Base URL routing endpoint for the LLM processing interface (e.g., `https://openrouter.ai/api/v1`). |
 | `MODEL_API_KEY` | **yes** | API authentication token for the targeting model processing engine. |
 | `MODEL_NAME` | **yes** | Targeted model engine name (e.g., `openai/gpt-4o-mini`). |
-| `SOURCERYKIT_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
+| `PROVABLY_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
 | `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
 | `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
 
@@ -47,7 +47,7 @@ Alternatively, you can manually export these environment variables in your termi
    export MODEL_URL="https://openrouter.ai/api/v1"
    export MODEL_API_KEY="sk-or-..."
    export MODEL_NAME="openai/gpt-4o-mini"
-   export SOURCERYKIT_API_KEY="zk_..."
+   export PROVABLY_API_KEY="zk_..."
    export SOURCERYKIT_ORG_ID="org_..."
    export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@remote-host-ip:5432/db"
    ```
