@@ -49,7 +49,7 @@ Alternatively, you can manually export these environment variables in your termi
    export MODEL_NAME="openai/gpt-4o-mini"
    export SOURCERYKIT_API_KEY="zk_..."
    export SOURCERYKIT_ORG_ID="org_..."
-   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/db"
+   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@remote-host-ip:5432/db"
    ```
 3. Run the example:
       ```bash
