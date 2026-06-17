@@ -1,5 +1,5 @@
 ---
-name: sourcerykit-integration
+name: init-sourcerykit
 description: >
   Use when integrating SourceryKit into an AI agent project. Covers installation,
   environment setup, bootstrapping, HTTP interception, trusted endpoints, handoff
