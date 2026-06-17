@@ -133,6 +133,31 @@ pip install sourcerykit
 
 
 ## Configuration
+To get things running, SourceryKit must be configured with your project variables. You can set them automatically using our wizard or map them out manually.
+
+### Option A: Quick Setup Wizard (Recommended)
+The fastest way to get everything configured is to use the interactive onboarding wizard. The CLI handles your account provisioning, organization workspace initialization, and real-time validation of your remote Postgres database.
+
+Run the wizard using your package manager or command line entry point:
+
+```bash
+sourcerykit wizard
+```
+
+The wizard will guide you through:
+- **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
+- **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
+- **Database Handshake**: Enter your database details, test the connection, and ensure it's accessible.
+- **Save Config**: Automatically write your credentials and tokens straight to a local .env file.
+
+> [!IMPORTANT]
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
+
+### Option B: Manual Configuration
+First, create an account at [app.provably.ai](https://app.provably.ai). Once logged in, you can locate your credentials as follows:
+- **Organization ID**: Copy this unique UUID string directly from your browser's URL bar while viewed inside your dashboard workspace session.
+- **API Key**: Navigate to **Settings -> API Key** to generate or copy your active secret string.
+
 Set up these three environment variables to get things running:
 - `SOURCERYKIT_API_KEY` — Your Provably API key (grab this from your dashboard).
 - `SOURCERYKIT_ORG_ID` — Your organization ID (grab this from your dashboard).

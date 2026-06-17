@@ -10,8 +10,20 @@ This example demonstrates how to integrate SourceryKit with the [OpenAI Agents S
 ---
 
 ## Environment Configuration
+Before running the agent, your environment must be configured with your project keys and storage database URL.
 
-Configure the workspace using your target system variables or an explicit `.env` file mapping:
+### Option A: The Easy Way (Interactive Wizard)
+The fastest way to configure your environment file automatically is to run the interactive setup wizard:
+
+```bash
+sourcerykit wizard
+```
+
+> [!IMPORTANT]
+> The wizard is scoped strictly to **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like MODEL_URL or MODEL_API_KEY). Those must still be set up separately in your environment.
+
+### Option B: Manual Configuration
+Alternatively, you can manually export these environment variables in your terminal or save them inside a local `.env` file (see the [SourceryKit README](https://github.com/ProvablyAI/sourcerykit/blob/main/README.md) for more details on how to get your Organization ID from the URL and your API Key from your dashboard settings):
 
 | Variable | Required | Description |
 |---|---|---|

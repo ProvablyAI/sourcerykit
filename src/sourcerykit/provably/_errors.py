@@ -36,6 +36,80 @@ class ProvablyDataError(ProvablyError):
     pass
 
 
+class ProvablyAuthError(ProvablyAPIError):
+    """Base exception for authentication / account errors."""
+
+    pass
+
+
+class ProvablyResourceAlreadyExistsError(ProvablyAuthError):
+    """Raised when a resource (account, organisation handle, etc.) already exists."""
+
+    pass
+
+
+class ProvablyUnauthorizedError(ProvablyAuthError):
+    """Raised when credentials are invalid or the request is unauthorized (HTTP 401)."""
+
+    pass
+
+
+@asynccontextmanager
+async def provably_auth_error_handler(service: str) -> AsyncIterator[None]:
+    """
+    Standardizes error handling and logging across auth service methods.
+
+    Args:
+        service: A slug representing the operation.
+    """
+    service_name = service.replace("_", " ")
+    try:
+        yield
+    except httpx.HTTPStatusError as e:
+        status = e.response.status_code
+        body = e.response.text
+        _log.error(
+            f"provably_auth_rejected_{service}",
+            status_code=status,
+            path=str(e.request.url),
+            response=body[:500],
+        )
+        if status == 400:
+            try:
+                e.response.json().get("description", "")
+            except Exception:
+                raise
+        if status == 401:
+            raise ProvablyUnauthorizedError(
+                message=f"Invalid credentials for {service_name}.",
+                status_code=status,
+                response_body=body,
+            ) from e
+        if status == 409:
+            raise ProvablyResourceAlreadyExistsError(
+                message=f"Resource already exists for {service_name}: {body}",
+                status_code=status,
+                response_body=body,
+            ) from e
+        raise ProvablyAuthError(
+            message=f"Provably API rejected {service_name}: {body}",
+            status_code=status,
+            response_body=body,
+        ) from e
+
+    except (ValueError, TypeError, KeyError) as e:
+        _log.error(f"provably_data_invalid_{service}", error=str(e))
+        raise ProvablyDataError(f"Provably API returned invalid data for {service_name}: {e}") from e
+
+    except httpx.RequestError as e:
+        _log.error(f"provably_network_unreachable_{service}", error=str(e))
+        raise ProvablyConnectionError(f"Could not reach Provably API to perform {service_name}.") from e
+
+    except Exception as e:
+        _log.error(f"provably_unexpected_error_{service}", error=str(e))
+        raise ProvablyError(f"Unexpected error during {service_name}: {e}") from e
+
+
 @asynccontextmanager
 async def provably_error_handler(service: str) -> AsyncIterator[None]:
     """

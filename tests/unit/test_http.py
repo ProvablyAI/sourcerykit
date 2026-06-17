@@ -1,7 +1,5 @@
 """Tests for sourcerykit.provably._http.ProvablyHTTPClient."""
 
-from __future__ import annotations
-
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -100,3 +98,30 @@ class TestProvablyHTTPClientPost:
             await client.post("/path", json={}, api_key="custom-key")
             _, kwargs = mock_req.call_args
             assert kwargs.get("api_key") == "custom-key"
+
+
+class TestProvablyHTTPClientPreAuth:
+    def test_pre_auth_sets_content_type_only(self) -> None:
+        with patch("sourcerykit.provably._http.get_bootstrap_settings", return_value="https://api.provably.ai"):
+            client = ProvablyHTTPClient(pre_auth=True)
+        assert "Content-Type" in client._headers
+        assert "x-api-key" not in client._headers
+
+    def test_pre_auth_base_url_from_bootstrap_settings(self) -> None:
+        with patch("sourcerykit.provably._http.get_bootstrap_settings", return_value="https://custom.provably.ai"):
+            client = ProvablyHTTPClient(pre_auth=True)
+        assert client.base_url == "https://custom.provably.ai"
+
+    async def test_pre_auth_token_sets_authorization_header(self) -> None:
+        with patch("sourcerykit.provably._http.get_bootstrap_settings", return_value="https://api.provably.ai"):
+            client = ProvablyHTTPClient(pre_auth=True)
+
+        mock_response = MagicMock()
+        mock_response.content = b'{"token": "abc"}'
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"token": "abc"}
+
+        with patch.object(client, "_request", AsyncMock(return_value=mock_response)) as mock_req:
+            await client.get("/api/v1/user/key", token="my-jwt-token")
+            _, kwargs = mock_req.call_args
+            assert kwargs.get("token") == "my-jwt-token"

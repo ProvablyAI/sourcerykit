@@ -10,6 +10,10 @@ from sourcerykit.errors import SourceryKitConfigError
 # TODO: Replace with uuid.NIL once the repository drops support for Python < 3.14
 UUID_NIL = getattr(uuid, "NIL", uuid.UUID(int=0))
 
+DEFAULT_PROVABLY_API_URL = "https://api.provably.ai"
+DEFAULT_PROVABLY_APP_URL = "https://app.provably.ai"
+DEFAULT_PROVABLY_MCP_URL = "https://mcp.provably.ai"
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -24,13 +28,13 @@ class Settings:
     postgres_url: str
     """SOURCERYKIT_POSTGRES_URL — URL for the agent's Postgres database."""
 
-    provably_app: str = "https://app.provably.ai"
+    provably_app: str = DEFAULT_PROVABLY_APP_URL
     """SOURCERYKIT_PROVABLY_APP_URL — URL of the Provably APP."""
 
-    provably_api: str = "https://api.provably.ai"
+    provably_api: str = DEFAULT_PROVABLY_API_URL
     """SOURCERYKIT_PROVABLY_API_URL — URL of the Provably API."""
 
-    provably_mcp: str = "https://mcp.provably.ai"
+    provably_mcp: str = DEFAULT_PROVABLY_MCP_URL
     """SOURCERYKIT_PROVABLY_MCP_URL — URL of the Provably MCP server."""
 
     def __post_init__(self) -> None:
@@ -76,7 +80,16 @@ def get_settings() -> Settings:
         api_key=_url("SOURCERYKIT_API_KEY"),
         org_id=_org_id,
         postgres_url=_url("SOURCERYKIT_POSTGRES_URL"),
-        provably_app=_url("SOURCERYKIT_PROVABLY_APP_URL") or "https://app.provably.ai",
-        provably_api=_url("SOURCERYKIT_PROVABLY_API_URL") or "https://api.provably.ai",
-        provably_mcp=_url("SOURCERYKIT_PROVABLY_MCP_URL") or "https://mcp.provably.ai",
+        provably_app=_url("SOURCERYKIT_PROVABLY_APP_URL") or DEFAULT_PROVABLY_APP_URL,
+        provably_api=_url("SOURCERYKIT_PROVABLY_API_URL") or DEFAULT_PROVABLY_API_URL,
+        provably_mcp=_url("SOURCERYKIT_PROVABLY_MCP_URL") or DEFAULT_PROVABLY_MCP_URL,
     )
+
+
+def get_bootstrap_settings() -> str:
+    """Return the Provably API URL without requiring full settings validation.
+
+    Safe to call before ``api_key``, ``org_id``, or ``postgres_url`` are configured.
+    """
+    raw = (os.getenv("SOURCERYKIT_PROVABLY_API_URL") or "").strip().rstrip("/")
+    return raw or DEFAULT_PROVABLY_API_URL
