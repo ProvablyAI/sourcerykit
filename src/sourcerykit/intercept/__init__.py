@@ -1,4 +1,4 @@
-"""Intercept phase: monkey-patch ``httpx`` and ``aiohttp`` and record responses into Postgres."""
+"""Intercept phase: monkey-patch ``httpx``, ``aiohttp`` and ``requests`` and record responses into Postgres."""
 
 from sourcerykit.intercept.interceptor import (
     async_intercept_context,

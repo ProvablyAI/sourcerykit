@@ -29,6 +29,7 @@ dependencies = [
     "greenlet>=3.0",
     "httpx>=0.26",
     "aiohttp>=3.9",
+    "requests >=2.34",
     "jsonschema>=4.0",
     "psycopg[binary]>=3.1",
     "pydantic>=2.6",
