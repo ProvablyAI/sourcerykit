@@ -66,7 +66,7 @@ async def run_verifiable_agent():
     await sourcerykit.bootstrap_system()
 
     # 2. Tell the registry which URL is allowed
-    await sourcerykit.insert_trusted_endpoint("https://api.example.com/data")
+    await sourcerykit.insert_trusted_endpoint(url="https://api.example.com/data")
 
     # 3. Make a network call inside an intercept context
     async with sourcerykit.async_intercept_context(agent_id="demo-agent", action_name="get_data"):
@@ -112,7 +112,7 @@ async def run_verifiable_agent():
     )
 
     # 6. Ask the evaluator for a verdict
-    result = await sourcerykit.evaluate_handoff(payload)
+    result = await sourcerykit.evaluate_handoff(payload=payload)
     print(f"Evaluation Outcome: {result.get('outcome')}") # PASS, CAUGHT, or ERROR
 ```
 

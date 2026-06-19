@@ -15,7 +15,7 @@ All database operations in the SDK are asynchronous. Register a trusted destinat
 from sourcerykit import insert_trusted_endpoint
 
 # Register an allowed endpoint in the database
-await insert_trusted_endpoint("https://api.example.com/v1/data")
+await insert_trusted_endpoint(url="https://api.example.com/v1/data")
 
 ```
 

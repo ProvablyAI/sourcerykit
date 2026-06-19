@@ -143,7 +143,7 @@ For other frameworks: place the `await bootstrap_system()` call inside whatever 
 ### 2 — Register trusted endpoints
 
 ```python
-await insert_trusted_endpoint("https://api.example.com/data")
+await insert_trusted_endpoint(url="https://api.example.com/data")
 ```
 
 Any outbound call to a URL **not** on this list is blocked by the interceptor.
@@ -259,7 +259,7 @@ payload = await build_handoff_payload(
 ```python
 from sourcerykit import evaluate_handoff
 
-result = await evaluate_handoff(payload)
+result = await evaluate_handoff(payload=payload)
 outcome = result.get("outcome")  # "PASS", "CAUGHT", or "ERROR"
 ```
 
@@ -307,7 +307,7 @@ async def main() -> None:
     await bootstrap_system()
 
     # 2. Register every external URL the agent may call
-    await insert_trusted_endpoint(API_URL)
+    await insert_trusted_endpoint(url=API_URL)
 
     # 3. Configure and run the agent
     agent = Agent(
@@ -336,7 +336,7 @@ async def main() -> None:
         intercept_agent_id="demo",
     )
 
-    verdict = await evaluate_handoff(payload)
+    verdict = await evaluate_handoff(payload=payload)
     print("Outcome:", verdict.get("outcome"))  # PASS, CAUGHT, or ERROR
 
 

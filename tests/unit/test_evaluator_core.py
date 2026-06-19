@@ -155,7 +155,7 @@ class TestEvaluateHandoff:
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.PASS
         assert result["errors"] == []
         assert len(result["per_claim"]) == 1
@@ -176,7 +176,7 @@ class TestEvaluateHandoff:
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.CAUGHT
         assert any("trust gate" in e for e in result["errors"])
 
@@ -200,7 +200,7 @@ class TestEvaluateHandoff:
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.ERROR
         assert len(result["errors"]) == 1
 
@@ -216,7 +216,7 @@ class TestEvaluateHandoff:
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.PASS
         assert result["per_claim"] == []
         assert result["errors"] == []

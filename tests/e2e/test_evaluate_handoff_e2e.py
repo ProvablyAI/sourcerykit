@@ -153,7 +153,7 @@ class TestEvaluateHandoffE2E:
         _mock_trust_gate_pass(monkeypatch)
         payload = _make_payload(_make_claim(qid, claimed="open"))
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         assert result["outcome"] == Outcome.PASS
         assert result["errors"] == []
@@ -175,7 +175,7 @@ class TestEvaluateHandoffE2E:
         _mock_trust_gate_pass(monkeypatch)
         payload = _make_payload(_make_claim(qid, claimed="open"))
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         assert result["outcome"] == Outcome.CAUGHT
         assert result["per_claim"][0]["result"] == Outcome.CAUGHT
@@ -194,7 +194,7 @@ class TestEvaluateHandoffE2E:
         )
         payload = _make_payload(_make_claim(qid))
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         assert result["outcome"] == Outcome.CAUGHT
         assert any("trust gate" in e for e in result["errors"])
@@ -215,7 +215,7 @@ class TestEvaluateHandoffE2E:
         _mock_trust_gate_pass(monkeypatch)
         payload = _make_payload(_make_claim(qid))
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         assert result["outcome"] == Outcome.ERROR
         assert len(result["errors"]) == 1
@@ -234,7 +234,7 @@ class TestEvaluateHandoffE2E:
         _mock_trust_gate_pass(monkeypatch)
         payload = _make_payload(_make_claim(qid, claimed="open"))
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         verdict = result["per_claim"][0]
         assert "proof_time_ms" in verdict
@@ -263,7 +263,7 @@ class TestEvaluateHandoffE2E:
             _make_claim(qid_b, claimed="yes"),
         )
 
-        result = await evaluate_handoff(payload)
+        result = await evaluate_handoff(payload=payload)
 
         assert result["outcome"] == Outcome.CAUGHT
         assert len(result["per_claim"]) == 2
@@ -285,7 +285,7 @@ class TestEvaluateHandoffE2E:
         _mock_trust_gate_pass(monkeypatch)
         payload = _make_payload(_make_claim(qid, claimed="open"))
 
-        await evaluate_handoff(payload)
+        await evaluate_handoff(payload=payload)
 
         # All requests to the fake server should carry the configured API key
         for req in fake_server.requests:

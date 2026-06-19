@@ -74,7 +74,7 @@ async def main(tamper: bool = False) -> None:
 
     # 3. Seed all outbound endpoints
     print("Seeding trusted endpoints…")
-    await insert_trusted_endpoint(_OPEN_METEO_BASE_URL)
+    await insert_trusted_endpoint(url=_OPEN_METEO_BASE_URL)
 
     # 4. Initialize and run the agent
     agent = Agent(
@@ -124,7 +124,7 @@ async def main(tamper: bool = False) -> None:
 
     # 7. Submit the payload for evaluation against database logs
     print("Evaluating handoff payload...")
-    eval_result = await evaluate_handoff(payload)
+    eval_result = await evaluate_handoff(payload=payload)
 
     print("\nEvaluation Result:")
     print(json.dumps(eval_result, indent=2))

@@ -2,7 +2,7 @@
 The Interceptor acts as an automated network recorder and policy enforcer for Python agents. It hooks into outbound HTTP calls to ensure every network interaction is observed, verified, and audited without requiring modifications to your application's core logic.
 
 ## Core Functions
-The Interceptor patches popular Python HTTP libraries (including httpx, and aiohttp) to evaluate and record network traffic:
+The Interceptor patches popular Python HTTP libraries (including `httpx`, `aiohttp` and `requests`) to evaluate and record network traffic:
 
 - **Policy Enforcement**: Before a request leaves the process, its destination URL is verified against the trusted endpoints registry. Untrusted requests are blocked immediately.
 - **Audit Logging**: Every processed request and response is logged into the append-only `intercepts` database table, creating a tamper-evident audit trail for proof generation.

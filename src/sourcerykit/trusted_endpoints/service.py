@@ -62,7 +62,7 @@ async def is_endpoint_trusted(url: str) -> bool:
         raise SourceryKitStorageError("Failed to query trusted endpoints") from e
 
 
-async def insert_trusted_endpoint(url: str, display_label: str | None = None) -> None:
+async def insert_trusted_endpoint(*, url: str, display_label: str | None = None) -> None:
     """Insert an active trusted endpoint for the configured org, ignoring conflicts."""
 
     # Sanitize the URL string

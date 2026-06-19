@@ -14,7 +14,7 @@ from sourcerykit.trusted_endpoints.service import verify_claim_endpoints
 _log = get_logger(__name__)
 
 
-async def evaluate_handoff(payload: HandoffPayload) -> dict[str, Any]:
+async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
     """Validates trusted endpoints and verifies cryptographic proof loops for all payload claims."""
 
     # TODO: Refactor.

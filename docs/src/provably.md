@@ -1,7 +1,7 @@
-#
- ##
+# 
+ ## 
 <div align="center">
-
+  
   <a href="https://provably.ai/" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ProvablyAI/.github/main/images/provably-pie-logotype-white.png" width="250">
@@ -9,9 +9,9 @@
       <img alt="Provably Logo" src="https://raw.githubusercontent.com/ProvablyAI/.github/main/images/provably-pie-logotype-white.png">
     </picture>
   </a>
-
+  
   ### Building Verifiable Databases for integrity in distributed systems
-
+  
   [![Website](https://img.shields.io/badge/Website-provably.ai-black?logo=google-chrome&logoColor=white)](https://provably.ai)
   [![Slack](https://img.shields.io/badge/Slack-Join_Community-4A154B?logo=slack&logoColor=white)](https://slack.provably.ai)
   [![Telegram](https://img.shields.io/badge/Telegram-Join_Chat-26A5E4?logo=telegram&logoColor=white)](https://t.me/ProvablyAI)
@@ -21,7 +21,7 @@
 ---
 
 ### 🌐 About Us
-Provably enables AI, databases, and blockchains to create and exchange verifiable data. We believe systems shouldn’t just prove *who* sent the data, but that the data itself is **correct and complete**.
+Provably enables AI, databases, and blockchains to create and exchange verifiable data. We believe systems shouldn’t just prove *who* sent the data, but that the data itself is **correct and complete**. 
 
 Our technology enables trustless data exchange for AI with reliable, error-free responses, programmable compliance for blockchain infrastructure, analytics and reporting on private data, and more. We are a European team of engineers and researchers specializing in cryptography and distributed systems.
 
@@ -39,7 +39,7 @@ Our work is grounded in formal cryptographic research. We developed **QEDB**, a 
 
 #### 🤖 SourceryKit
 
-SourceryKit is a Python SDK that gives agents tools to build accurate and reliable workflows in minutes. Agents can verify their own work and each other's **handoffs** at runtime across APIs, databases, MCP servers, and backend tools.
+SourceryKit is a Python SDK that gives agents tools to build accurate and reliable workflows in minutes. Agents can verify their own work and each other's **handoffs** at runtime across APIs, databases, MCP servers, and backend tools. 
 
 * **Runtime Verification:** Verify tool calls, API responses, database results, and MCP handoffs while the agent is working.
 * **Verifiable Handoffs and Guardrails:** Agents can prove and verify that content came from a source system, so errors can be caught and healed before they propagate.
