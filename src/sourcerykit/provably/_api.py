@@ -28,6 +28,33 @@ class ProvablyAPI:
         return f"/api/v1/organizations/{self.org_id}"
 
     # ------------------------------------------------------------------
+    # Feedback
+    # ------------------------------------------------------------------
+    async def create_feedback(self, body: dict[str, Any], files: dict[str, Any] | None = None) -> None:
+        """
+        Send a feedback.
+        """
+        path = "/api/v1/feedback"
+
+        await get_http().post_multipart(path, body, files=files)
+        return
+
+    # ------------------------------------------------------------------
+    # Organizations
+    # ------------------------------------------------------------------
+
+    async def list_organizations(self) -> list[dict[str, Any]]:
+        """
+        List all organizations accessible to the authenticated user (via API key).
+
+        Returns:
+            list[dict[str, Any]]: List of organization objects (each contains at least ``id`` and ``name``).
+        """
+        path = "/api/v1/organizations"
+        result: list[dict[str, Any]] = await get_http().get(path)
+        return result
+
+    # ------------------------------------------------------------------
     # Middlewares
     # ------------------------------------------------------------------
 

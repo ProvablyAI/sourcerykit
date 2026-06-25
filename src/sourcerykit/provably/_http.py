@@ -141,14 +141,14 @@ class ProvablyHTTPClient:
         path: str,
         data: dict[str, Any],
         *,
+        files: dict[str, Any] | None = None,
         api_key: str | None = None,
         token: str | None = None,
     ) -> Any:
-        # httpx only sends multipart/form-data (with a proper boundary) when the
-        # `files` parameter is used.  Plain text fields are encoded as
-        # (None, value) tuples so no actual file upload is implied.
-        files = {key: (None, str(value)) for key, value in data.items()}
-        return await self._fetch("POST", path, api_key=api_key, token=token, files=files)
+        processed_payload = {key: (None, str(value)) for key, value in data.items()}
+        if files:
+            processed_payload.update(files)
+        return await self._fetch("POST", path, api_key=api_key, token=token, files=processed_payload)
 
 
 @functools.lru_cache(maxsize=1)
