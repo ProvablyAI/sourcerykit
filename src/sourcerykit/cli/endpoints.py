@@ -13,7 +13,7 @@ endpoints = typer.Typer(no_args_is_help=True)
 
 
 @endpoints.command()
-def add(url: str, label: str = typer.Option(None, "--label", "-l", help="optional display label")) -> None:
+def add(url: str, label: str | None = typer.Option(None, "--label", "-l", help="optional display label")) -> None:
     require_settings()
     try:
         sanitize_and_extract_trusted_url(url)
