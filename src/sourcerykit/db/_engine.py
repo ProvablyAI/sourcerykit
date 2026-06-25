@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
@@ -91,8 +91,8 @@ def get_connection_info() -> ConnectionInfo:
 
     return ConnectionInfo(
         name=parsed.path.lstrip("/"),
-        username=parsed.username or "",
-        password=parsed.password or "",
+        username=unquote(parsed.username or ""),
+        password=unquote(parsed.password or ""),
         provider=provider,
         uri=uri,
     )

@@ -3,7 +3,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import Insert, Select, and_, exists, literal, select
+from sqlalchemy import Delete, Insert, Select, and_, delete, exists, literal, select
 from sqlalchemy.dialects.postgresql import insert
 
 from sourcerykit.db._schema import trusted_endpoints
@@ -89,4 +89,19 @@ def insert_trusted_endpoint(org_id: uuid.UUID, normalized_url: str, display_labe
             index_elements=[trusted_endpoints.c.org_id, trusted_endpoints.c.normalized_url],
             index_where=trusted_endpoints.c.revoked_at.is_(None),
         )
+    )
+
+
+def delete_trusted_endpoint(org_id: uuid.UUID, normalized_url: str) -> Delete:
+    """Delete an endpoint.
+
+    Equivalent raw SQL::
+
+        DELETE FROM trusted_endpoints
+        WHERE org_id = :org_id AND normalized_url = :normalized_url
+    """
+    return (
+        delete(trusted_endpoints)
+        .where(trusted_endpoints.c.org_id == org_id)
+        .where(trusted_endpoints.c.normalized_url == normalized_url)
     )

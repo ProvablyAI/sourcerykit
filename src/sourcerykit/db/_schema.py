@@ -10,8 +10,16 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 metadata = MetaData()
+
+
+async def ensure_schema(engine: AsyncEngine) -> None:
+    """Idempotent: create all tables if they don't exist."""
+    async with engine.begin() as conn:
+        await conn.run_sync(metadata.create_all)
+
 
 PROVABLY_INTERCEPTS_TABLE = "provably_intercepts"
 
