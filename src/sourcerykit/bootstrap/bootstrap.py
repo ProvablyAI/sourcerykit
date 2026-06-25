@@ -1,8 +1,11 @@
 from sourcerykit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
 from sourcerykit.config import get_settings
 from sourcerykit.db._engine import get_engine
-from sourcerykit.db._schema import metadata
-from sourcerykit.errors import SourceryKitBootstrapError, SourceryKitError, SourceryKitStorageError
+from sourcerykit.db._schema import ensure_schema
+from sourcerykit.errors import (
+    SourceryKitConfigError,
+    SourceryKitStorageError,
+)
 from sourcerykit.intercept.interceptor import init_interceptor
 from sourcerykit.logger import get_logger
 
@@ -14,24 +17,25 @@ async def bootstrap_system() -> None:
     _log.info("system_bootstrap_started")
 
     # Validate configuration
-    get_settings()
+    settings = get_settings()
+
+    if not settings.postgres_url:
+        raise SourceryKitConfigError("SOURCERYKIT_POSTGRES_URL is required. Run 'sourcerykit init' first.")
 
     # Initialize database schemas
     try:
-        async with get_engine().begin() as conn:
-            await conn.run_sync(metadata.create_all)
+        await ensure_schema(get_engine())
     except Exception as e:
         _log.error("bootstrap_db_schema_failed", error=str(e))
         raise SourceryKitStorageError("Failed to create database schema during bootstrap") from e
 
-    # Initialize all required Provably resources
-    try:
-        await _BOOTSTRAP_INSTANCE.run_handshake()
-    except SourceryKitError:
-        raise
-    except Exception as e:
-        _log.error("bootstrap_handshake_failed_unexpected", error=str(e))
-        raise SourceryKitBootstrapError("Unexpected error during Provably handshake") from e
+    # Populate from cached settings or run handshake
+    if settings.has_bootstrap_ids:
+        _log.info("bootstrap_using_cached_ids")
+        _BOOTSTRAP_INSTANCE.load_from(settings)
+    else:
+        _log.info("bootstrap_running_handshake")
+        await _BOOTSTRAP_INSTANCE.run_handshake(project_name=settings.project_name)
 
     init_interceptor()
     _log.info("system_bootstrap_completed")
