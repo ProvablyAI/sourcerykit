@@ -5,7 +5,7 @@ from collections.abc import Generator
 
 import pytest
 
-from sourcerykit.config import Settings, get_settings
+from sourcerykit.config import Settings, get_settings, load_app_dir_config, load_local_env
 from sourcerykit.errors import SourceryKitConfigError
 
 _VALID_ORG = "00000000-0000-0000-0000-000000000001"
@@ -15,8 +15,12 @@ _VALID_ORG = "00000000-0000-0000-0000-000000000001"
 def _clear_settings_cache() -> Generator[None, None, None]:
     """Clear lru_cache between tests so env var changes are picked up."""
     get_settings.cache_clear()
+    load_app_dir_config.cache_clear()
+    load_local_env.cache_clear()
     yield
     get_settings.cache_clear()
+    load_app_dir_config.cache_clear()
+    load_local_env.cache_clear()
 
 
 # ---------------------------------------------------------------------------
@@ -46,25 +50,24 @@ class TestSettings:
 
     def test_raises_config_error_when_api_key_missing(self) -> None:
         with pytest.raises(SourceryKitConfigError, match="PROVABLY_API_KEY"):
-            Settings(api_key="", org_id=uuid.UUID(_VALID_ORG), postgres_url="postgresql://x")
+            Settings(api_key="", org_id=uuid.UUID(_VALID_ORG))
 
     def test_raises_config_error_when_org_id_is_nil(self) -> None:
         nil_uuid = uuid.UUID(int=0)
         with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_ORG_ID"):
-            Settings(api_key="k", org_id=nil_uuid, postgres_url="postgresql://x")
+            Settings(api_key="k", org_id=nil_uuid)
 
-    def test_raises_config_error_when_postgres_url_missing(self) -> None:
-        with pytest.raises(SourceryKitConfigError, match="SOURCERYKIT_POSTGRES_URL"):
-            Settings(api_key="k", org_id=uuid.UUID(_VALID_ORG), postgres_url="")
+    def test_postgres_url_defaults_to_empty(self) -> None:
+        s = Settings(api_key="k", org_id=uuid.UUID(_VALID_ORG))
+        assert s.postgres_url == ""
 
     def test_raises_config_error_lists_all_missing_fields(self) -> None:
         nil = uuid.UUID(int=0)
         with pytest.raises(SourceryKitConfigError) as exc_info:
-            Settings(api_key="", org_id=nil, postgres_url="")
+            Settings(api_key="", org_id=nil)
         msg = str(exc_info.value)
         assert "PROVABLY_API_KEY" in msg
         assert "SOURCERYKIT_ORG_ID" in msg
-        assert "SOURCERYKIT_POSTGRES_URL" in msg
 
     def test_is_frozen(self) -> None:
         s = Settings(api_key="k", org_id=uuid.UUID(_VALID_ORG), postgres_url="postgresql://x")
@@ -96,6 +99,8 @@ class TestGetSettings:
         assert s.provably_app == "https://custom-app.example.com"
 
     def test_raises_config_error_when_env_vars_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from unittest.mock import patch
+
         for key in (
             "PROVABLY_API_KEY",
             "SOURCERYKIT_ORG_ID",
@@ -105,7 +110,11 @@ class TestGetSettings:
             "SOURCERYKIT_PROVABLY_MCP_URL",
         ):
             monkeypatch.delenv(key, raising=False)
-        with pytest.raises(SourceryKitConfigError):
+        with (
+            patch("sourcerykit.config.load_app_dir_config", return_value={}),
+            patch("sourcerykit.config.load_local_env", return_value={}),
+            pytest.raises(SourceryKitConfigError),
+        ):
             get_settings()
 
     def test_result_is_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
