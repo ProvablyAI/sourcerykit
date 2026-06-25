@@ -2,6 +2,7 @@
 
 import json
 import sys
+from urllib.parse import quote
 
 import psycopg
 import questionary
@@ -93,7 +94,7 @@ def ask_postgres_url() -> str:
     password = answers["password"].strip()
     database = answers["database"].strip()
 
-    return f"postgresql://{username}:{password}@{host}:{port}/{database}"
+    return f"postgresql://{quote(username, safe='')}:{quote(password, safe='')}@{host}:{port}/{database}"
 
 
 def run_connectivity_check(postgres_url: str, quiet: bool = False) -> bool:
