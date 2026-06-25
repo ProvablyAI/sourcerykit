@@ -8,28 +8,21 @@ This example demonstrates how to integrate SourceryKit with the [Claude Agent SD
 
 
 ## Environment Configuration
-Before running the agent, your environment must be configured with your project keys and storage database URL.
-
-### Option A: The Easy Way (Interactive Wizard)
-The fastest way to configure your environment file automatically is to run the interactive setup wizard:
+Before running the agent, run the interactive setup wizard to configure your SourceryKit project variables automatically:
 
 ```bash
-sourcerykit wizard
+sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard is scoped strictly to **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like MODEL_NAME or ANTHROPIC_API_KEY). Those must still be set up separately in your environment.
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like `MODEL_NAME` or `ANTHROPIC_API_KEY`). Those must still be set up separately in your environment.
 
-### Option B: Manual Configuration
-Alternatively, you can manually export these environment variables in your terminal or save them inside a local `.env` file (see the [SourceryKit README](https://github.com/ProvablyAI/sourcerykit/blob/main/README.md) for more details on how to get your Organization ID from the URL and your API Key from your dashboard settings):
+You will also need to set these LLM-provider variables manually:
 
 | Variable | Required | Description |
 |---|---|---|
 | `MODEL_NAME` | **yes** | Targeted model architecture identifier string passed to create_agent (e.g., `claude-haiku-4-5`). |
 | `ANTHROPIC_API_KEY` | **yes** | API authentication token. |
-| `PROVABLY_API_KEY` | **yes** | Your active integration key obtained from the Provably dashboard. |
-| `SOURCERYKIT_ORG_ID` | **yes** | Workspace identifier token used to scope policy queries. |
-| `SOURCERYKIT_POSTGRES_URL` | **yes** | Dedicated database DSN string for transaction record persistence. |
 
 ---
 
@@ -39,13 +32,10 @@ Alternatively, you can manually export these environment variables in your termi
    ```bash
    pip install sourcerykit claude-agent-sdk python-dotenv httpx pydantic
    ```
-2. Export your configured secrets into your current shell or place them in a local `.env` file:
-      ```bash
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
+   ```bash
    export MODEL_NAME="claude-haiku-4-5"
    export ANTHROPIC_API_KEY="sk-ant-..."
-   export PROVABLY_API_KEY="zk_..."
-   export SOURCERYKIT_ORG_ID="org_..."
-   export SOURCERYKIT_POSTGRES_URL="postgresql://postgres:postgres@remote-host-ip:5432/db"
    ```
 3. Run the example:
       ```bash

@@ -2,22 +2,10 @@
 This walkthrough breaks down the lifecycle of an autonomous, verifiable agent run using the SourceryKit SDK. You will see how to configure policies, intercept live calls, run an agent with a structured output contract, and evaluate data integrity.
 
 ## Prerequisites
-Before executing the walkthrough steps, your environment needs to be configured with your project keys and storage url.
-
-### Option A: The Easy Way (Interactive Wizard)
-The fastest way to generate your keys and set up your environment automatically is to run the interactive setup wizard:
+Before executing the walkthrough steps, your environment needs to be configured with your project keys and storage URL. Run the interactive setup wizard to handle everything automatically:
 
 ```bash
-sourcerykit wizard
-```
-
-### Option B: Manual Configuration
-Alternatively, you can manually export these environment variables in your terminal or save them inside a local `.env` file (see the [SourceryKit README](https://github.com/ProvablyAI/sourcerykit/blob/main/README.md) for more details on how to get your Organization ID from the URL and your API Key from your dashboard settings):
-
-```bash
-export PROVABLY_API_KEY="your_provably_api_key"
-export SOURCERYKIT_ORG_ID="your_provably_org_id"
-export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@remote-host-ip:5432/your_db"
+sourcerykit init
 ```
 
 > [!NOTE]

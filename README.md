@@ -133,15 +133,10 @@ pip install sourcerykit
 
 
 ## Configuration
-To get things running, SourceryKit must be configured with your project variables. You can set them automatically using our wizard or map them out manually.
-
-### Option A: Quick Setup Wizard (Recommended)
-The fastest way to get everything configured is to use the interactive onboarding wizard. The CLI handles your account provisioning, organization workspace initialization, and real-time validation of your remote Postgres database.
-
-Run the wizard using your package manager or command line entry point:
+To get things running, SourceryKit must be configured with your project variables. The interactive CLI handles account provisioning, organization workspace initialization, database validation, and persists credentials globally (OS application folder) and locally (project `.env`).
 
 ```bash
-sourcerykit wizard
+sourcerykit init
 ```
 
 The wizard will guide you through:
@@ -153,21 +148,12 @@ The wizard will guide you through:
 > [!IMPORTANT]
 > The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
 
-### Option B: Manual Configuration
-First, create an account at [app.provably.ai](https://app.provably.ai). Once logged in, you can locate your credentials as follows:
-- **Organization ID**: Copy this unique UUID string directly from your browser's URL bar while viewed inside your dashboard workspace session.
-- **API Key**: Navigate to **Settings -> API Key** to generate or copy your active secret string.
+For a full list of environment variables, see [.env.example](https://github.com/ProvablyAI/sourcerykit/blob/main/.env.example).
 
-Set up these three environment variables to get things running:
-- `PROVABLY_API_KEY` — Your Provably API key (grab this from your dashboard).
-- `SOURCERYKIT_ORG_ID` — Your organization ID (grab this from your dashboard).
-- `SOURCERYKIT_POSTGRES_URL` — The connection string for your Postgres database, used for storing intercepts and trusted endpoints. Only PostgreSQL is supported. Format: `postgresql://user:password@ipaddress:port/database_name`
-
-> [!NOTE]
-> Only hosted, publicly accessible Postgres instances are supported. Local databases will not work.
-
-You can set these in your shell, a .env file, or your deployment environment. For a full list of options, see [.env.example](https://github.com/ProvablyAI/sourcerykit/blob/main/.env.example).
-
+For a full list of CLI commands, run:
+```bash
+sourcerykit --help
+```
 
 ## More Docs
 Want to dig into the details? Check out the specific guides:
