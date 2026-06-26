@@ -132,5 +132,4 @@ show_missing = true
 exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
 
 [project.scripts]
-sourcerykit = "sourcerykit.cli.main:main"
-sourcerykit-setup = "sourcerykit.cli.main:main"
+sourcerykit = "sourcerykit.cli.main:app"
