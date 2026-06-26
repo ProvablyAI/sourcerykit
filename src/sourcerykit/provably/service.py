@@ -7,7 +7,7 @@ import uuid
 from typing import Any
 
 from sourcerykit.db._engine import ConnectionInfo
-from sourcerykit.db._schema import PROVABLY_INTERCEPTS_TABLE
+from sourcerykit.db._schema import INTERCEPTS_TABLE
 from sourcerykit.logger import get_logger
 from sourcerykit.provably._api import get_api
 from sourcerykit.provably._errors import provably_error_handler
@@ -249,15 +249,13 @@ class ProvablyService:
             # Find the Schema and Table
             # We assume the table exists within one of the schemas of this database
             for schema in db.get("schemas", []):
-                table = next((t for t in schema.get("tables", []) if t.get("name") == PROVABLY_INTERCEPTS_TABLE), None)
+                table = next((t for t in schema.get("tables", []) if t.get("name") == INTERCEPTS_TABLE), None)
 
                 if table:
                     return {"schema_id": uuid.UUID(str(schema["id"])), "table_id": uuid.UUID(str(table["id"]))}
 
             # Table not found
-            raise ValueError(
-                f"Table '{PROVABLY_INTERCEPTS_TABLE}' not found in any schema for database '{database.name}'"
-            )
+            raise ValueError(f"Table '{INTERCEPTS_TABLE}' not found in any schema for database '{database.name}'")
 
     # ------------------------------------------------------------------
     # Columns
@@ -313,9 +311,9 @@ class ProvablyService:
             ProvablyDataError: If the response is malformed.
         """
         integration = {
-            "description": PROVABLY_INTERCEPTS_TABLE,
+            "description": INTERCEPTS_TABLE,
             "is_enabled": True,
-            "name": PROVABLY_INTERCEPTS_TABLE,
+            "name": INTERCEPTS_TABLE,
             "role": "developer",
             "type": "agent",
             "collections": [str(collection_id)],
@@ -344,11 +342,11 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_integration_intercepts_id"):
-            integrations = await get_api().list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
+            integrations = await get_api().list_integrations(query=INTERCEPTS_TABLE)
 
-            candidates = [i for i in integrations if i.get("name") == PROVABLY_INTERCEPTS_TABLE]
+            candidates = [i for i in integrations if i.get("name") == INTERCEPTS_TABLE]
             if not candidates:
-                raise ValueError(f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' was found.")
+                raise ValueError(f"No integration named '{INTERCEPTS_TABLE}' was found.")
 
             # collections and api_key are only present in get_integration_by_id
             full_records = await asyncio.gather(
@@ -361,15 +359,14 @@ class ProvablyService:
             )
             if match is None:
                 raise ValueError(
-                    f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' with access to "
-                    f"collection {collection_id} was found."
+                    f"No integration named '{INTERCEPTS_TABLE}' with access to collection {collection_id} was found."
                 )
 
             print("MATCH: ", match)
 
             api_key = match.get("api_key")
             if not api_key:
-                raise ValueError(f"Integration '{PROVABLY_INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
+                raise ValueError(f"Integration '{INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
 
             return str(api_key)
 

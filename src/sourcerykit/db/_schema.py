@@ -21,10 +21,10 @@ async def ensure_schema(engine: AsyncEngine) -> None:
         await conn.run_sync(metadata.create_all)
 
 
-PROVABLY_INTERCEPTS_TABLE = "provably_intercepts"
+INTERCEPTS_TABLE = "intercepts"
 
-provably_intercepts = Table(
-    PROVABLY_INTERCEPTS_TABLE,
+intercepts = Table(
+    INTERCEPTS_TABLE,
     metadata,
     Column(
         "id",
@@ -47,9 +47,9 @@ provably_intercepts = Table(
 )
 
 Index(
-    "ix_provably_intercepts_agent_action",
-    provably_intercepts.c.agent_id,
-    provably_intercepts.c.action_name,
+    "ix_intercepts_agent_action",
+    intercepts.c.agent_id,
+    intercepts.c.action_name,
 )
 
 TRUSTED_ENDPOINTS_TABLE = "trusted_endpoints"
