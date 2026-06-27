@@ -3,10 +3,12 @@
 from sqlalchemy import (
     VARCHAR,
     Column,
+    ForeignKey,
     Index,
     MetaData,
     Table,
     Text,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
@@ -80,3 +82,58 @@ Index(
     postgresql_where=trusted_endpoints.c.revoked_at.is_(None),
     unique=True,
 )
+
+TRACES_TABLE = "traces"
+
+traces = Table(
+    TRACES_TABLE,
+    metadata,
+    Column(
+        "id",
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    ),
+    Column("task", Text, nullable=False, server_default=text("''")),
+    Column(
+        "created_at",
+        TIMESTAMP(timezone=False),
+        nullable=False,
+        server_default=text("NOW()"),
+    ),
+)
+
+TRACE_INTERCEPTS_TABLE = "trace_intercepts"
+
+trace_intercepts = Table(
+    TRACE_INTERCEPTS_TABLE,
+    metadata,
+    Column(
+        "id",
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    ),
+    Column("trace_id", UUID(as_uuid=True), ForeignKey("traces.id"), nullable=False),
+    Column("intercept_id", UUID(as_uuid=True), ForeignKey("intercepts.id"), nullable=False),
+    Column("query_id", UUID(as_uuid=True), nullable=False),
+    Column("verification_mode", VARCHAR(50), nullable=False),
+    Column("claimed_value", Text),
+    Column("outcome", VARCHAR(20)),
+    Column("details", Text),
+    Column(
+        "created_at",
+        TIMESTAMP(timezone=False),
+        nullable=False,
+        server_default=text("NOW()"),
+    ),
+    Column(
+        "updated_at",
+        TIMESTAMP(timezone=False),
+        server_default=text("NOW()"),
+        onupdate=func.now(),
+    ),
+)
+
+Index("ix_trace_intercepts_trace_id", trace_intercepts.c.trace_id)
+Index("ix_trace_intercepts_query_id", trace_intercepts.c.query_id)

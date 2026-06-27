@@ -72,6 +72,4 @@ def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) ->
         SELECT * FROM intercepts
         WHERE action_name = :action_name AND agent_id = :agent_id
     """
-    return select(intercepts).where(
-        and_(intercepts.c.action_name == action_name, intercepts.c.agent_id == agent_id)
-    )
+    return select(intercepts).where(and_(intercepts.c.action_name == action_name, intercepts.c.agent_id == agent_id))
