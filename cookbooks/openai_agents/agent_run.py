@@ -119,6 +119,7 @@ async def main(tamper: bool = False) -> None:
             ],
         },
         run_id=uuid.uuid4(),
+        prompt=prompt,
         intercept_agent_id="demo",
     )
 
