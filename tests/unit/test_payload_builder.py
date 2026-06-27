@@ -39,7 +39,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload(None)
+            hp = await build_handoff_payload(None, prompt="test")
         assert hp.claims == []
         assert hp.task == DEFAULT_HANDOFF_TASK
 
@@ -50,7 +50,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload(None)
+            hp = await build_handoff_payload(None, prompt="test")
         assert isinstance(hp.field_guide, dict)
         assert len(hp.field_guide) > 0
 
@@ -61,7 +61,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload(None, task="My custom task")
+            hp = await build_handoff_payload(None, prompt="test", task="My custom task")
         assert hp.task == "My custom task"
 
     async def test_raises_if_bootstrap_has_no_integration_key(self, _env: None) -> None:
@@ -71,7 +71,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
         ):
             with pytest.raises(RuntimeError, match="bootstrap"):
-                await build_handoff_payload(None)
+                await build_handoff_payload(None, prompt="test")
 
     async def test_run_id_forwarded(self, _env: None) -> None:
         rid = uuid.uuid4()
@@ -81,7 +81,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload(None, run_id=rid)
+            hp = await build_handoff_payload(None, prompt="test", run_id=rid)
         assert hp.run_id == rid
 
     async def test_integration_api_key_from_bootstrap(self, _env: None) -> None:
@@ -91,7 +91,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload(None)
+            hp = await build_handoff_payload(None, prompt="test")
         assert hp.integration_api_key == "my-int-key"
 
     async def test_reasoning_extracted_from_blob(self, _env: None) -> None:
@@ -101,5 +101,5 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
-            hp = await build_handoff_payload({"reasoning": "because reasons"})
+            hp = await build_handoff_payload({"reasoning": "because reasons"}, prompt="test")
         assert hp.reasoning == "because reasons"
