@@ -473,6 +473,16 @@ class ProvablyService:
             result = await get_api().run_query(middleware_id, collection_id, sql)
             return uuid.UUID(str(result["query_id"]))
 
+    async def get_query(self, query_id: uuid.UUID) -> dict[str, Any]:
+        """Retrieve a query record by ID."""
+        async with provably_error_handler("get_query"):
+            return await get_api().get_query(query_id)
+
+    async def get_query_proof(self, proof_id: uuid.UUID) -> bytes:
+        """Download the full proof data for a given proof ID."""
+        async with provably_error_handler("get_query_proof"):
+            return await get_api().get_query_proof(proof_id)
+
     async def wait_for_proof_computation(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
         """
         Polls the query status until it reaches a terminal state (completed or failed).

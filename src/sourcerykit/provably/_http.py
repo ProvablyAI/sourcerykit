@@ -126,6 +126,19 @@ class ProvablyHTTPClient:
     ) -> Any:
         return await self._fetch("GET", path, api_key=api_key, token=token, params=params)
 
+    async def get_raw(
+        self,
+        path: str,
+        *,
+        api_key: str | None = None,
+        token: str | None = None,
+    ) -> bytes:
+        """GET that returns raw response bytes instead of parsed JSON."""
+        _log.debug("provably_api_request_raw", method="GET", path=path)
+        response = await self._request("GET", path, api_key=api_key, token=token)
+        response.raise_for_status()
+        return response.content
+
     async def post(
         self,
         path: str,
