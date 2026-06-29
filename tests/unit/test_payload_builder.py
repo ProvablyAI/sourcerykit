@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from sourcerykit.config import get_settings, load_app_dir_config, load_local_env
 from sourcerykit.handoff.payload_builder import DEFAULT_HANDOFF_TASK, build_handoff_payload
 
 _ORG = uuid.UUID("00000000-0000-0000-0000-000000000001")
@@ -23,8 +24,21 @@ def _mock_settings() -> MagicMock:
     return settings
 
 
+def _mock_engine() -> MagicMock:
+    mock_conn = AsyncMock()
+    mock_ctx = AsyncMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_ctx.__aexit__ = AsyncMock(return_value=False)
+    mock_engine = MagicMock()
+    mock_engine.begin.return_value = mock_ctx
+    return mock_engine
+
+
 @pytest.fixture
 def _env(monkeypatch: pytest.MonkeyPatch) -> None:
+    get_settings.cache_clear()
+    load_app_dir_config.cache_clear()
+    load_local_env.cache_clear()
     monkeypatch.setenv("PROVABLY_API_KEY", "k")
     monkeypatch.setenv("SOURCERYKIT_ORG_ID", str(_ORG))
     monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
@@ -36,6 +50,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
@@ -47,6 +62,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
@@ -58,6 +74,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
@@ -78,6 +95,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
@@ -88,6 +106,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap("my-int-key")),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
@@ -98,6 +117,7 @@ class TestBuildHandoffPayloadEmpty:
         with (
             patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
             patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
         ):
