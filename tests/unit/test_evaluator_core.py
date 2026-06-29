@@ -154,6 +154,10 @@ class TestEvaluateHandoff:
             "sourcerykit.evaluator.evaluator.get_settings",
             MagicMock(return_value=MagicMock(api_key="test-key")),
         )
+        monkeypatch.setattr(
+            "sourcerykit.evaluator.evaluator.update_trace",
+            AsyncMock(),
+        )
 
         result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.PASS
