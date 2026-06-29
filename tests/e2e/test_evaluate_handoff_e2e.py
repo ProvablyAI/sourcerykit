@@ -104,6 +104,10 @@ def _wired_service(_provably_settings: Settings, monkeypatch: pytest.MonkeyPatch
         "sourcerykit.evaluator.evaluator.get_settings",
         lambda: _provably_settings,
     )
+    monkeypatch.setattr(
+        "sourcerykit.evaluator.evaluator.update_trace",
+        AsyncMock(),
+    )
 
 
 def _mock_trust_gate_pass(monkeypatch: pytest.MonkeyPatch) -> None:
