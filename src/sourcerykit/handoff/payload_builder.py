@@ -5,6 +5,9 @@ from typing import Any
 
 from sourcerykit.bootstrap.bootstrap import get_bootstrap
 from sourcerykit.config import get_settings
+from sourcerykit.db._engine import get_engine
+from sourcerykit.db._traces import insert_trace, insert_trace_intercept
+from sourcerykit.errors import SourceryKitStorageError
 from sourcerykit.handoff._guide import default_instructions, field_descriptions
 from sourcerykit.handoff._query_records import create_query_record_for_intercept
 from sourcerykit.intercept._loader import load_latest_intercept_payload
@@ -23,6 +26,7 @@ async def build_handoff_payload(
     fetch_and_claim: Mapping[str, Any] | dict[str, Any] | None,
     *,
     run_id: uuid.UUID | None = None,
+    prompt: str,
     task: str = DEFAULT_HANDOFF_TASK,
     intercept_agent_id: str = "fetch_and_claim",
     field_guide: dict[str, str] | None = None,
@@ -36,6 +40,18 @@ async def build_handoff_payload(
     if not provably.integration_key:
         raise RuntimeError("Provably infrastructure bootstrapping incomplete or uninitialized.")
 
+    # insert trace
+    try:
+        async with get_engine().begin() as conn:
+            result = await conn.execute(insert_trace(prompt))
+            trace_id: uuid.UUID | None = result.scalar()
+
+            if trace_id is None:
+                raise SourceryKitStorageError("Database did not return a valid UUID")
+    except Exception as e:
+        _log.error("build_handoff_payload", error=str(e))
+        raise SourceryKitStorageError("Failed to store agent trace") from e
+
     blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
 
     reasoning = str(blob.get("reasoning") or "")
@@ -47,7 +63,7 @@ async def build_handoff_payload(
 
     # Run claim resolution and trusted-endpoint fetch concurrently
     (claims, query_urls, query_ids), trusted_endpoint_registry = await asyncio.gather(
-        _build_claims(blob, intercept_agent_id),
+        _build_claims(trace_id, blob, intercept_agent_id),
         list_all_trusted_endpoints(),
     )
 
@@ -72,6 +88,7 @@ async def build_handoff_payload(
 
 
 async def _build_claims(
+    trace_id: uuid.UUID,
     fetch_and_claim_json: Any,
     intercept_agent_id: str,
 ) -> tuple[list[HandoffClaim], list[str], list[uuid.UUID]]:
@@ -88,7 +105,7 @@ async def _build_claims(
     valid_raws = [raw for raw in raw_claims if isinstance(raw, dict) and str(raw.get("action_name") or "").strip()]
 
     results = await asyncio.gather(
-        *[_resolve_claim(raw, intercept_agent_id) for raw in valid_raws],
+        *[_resolve_claim(trace_id, raw, intercept_agent_id) for raw in valid_raws],
         return_exceptions=True,
     )
 
@@ -111,6 +128,7 @@ async def _build_claims(
 
 
 async def _resolve_claim(
+    trace_id: uuid.UUID,
     raw: dict[str, Any],
     intercept_agent_id: str,
 ) -> tuple[HandoffClaim, str, uuid.UUID]:
@@ -119,6 +137,9 @@ async def _resolve_claim(
 
     # Fetch underlying response blobs and intercept row concurrently with proof query
     row_id = get_intercept_row_id(intercept_agent_id, action_name)
+
+    if row_id is None:
+        raise
 
     (request_payload, response_payload), (qid, qurl) = await asyncio.gather(
         load_latest_intercept_payload(intercept_agent_id, action_name),
@@ -134,9 +155,24 @@ async def _resolve_claim(
 
     schema = raw.get("expected_json_schema") if isinstance(raw.get("expected_json_schema"), dict) else None
 
+    claimed_value = raw.get("claimed_value")
+
+    # insert trace_intercept
+    try:
+        async with get_engine().begin() as conn:
+            result = await conn.execute(insert_trace_intercept(trace_id, row_id, qid, verification_mode, claimed_value))
+            trace_intercept_id: uuid.UUID | None = result.scalar()
+
+            if trace_intercept_id is None:
+                raise SourceryKitStorageError("Database did not return a valid UUID")
+    except Exception as e:
+        _log.error("_resolve_claim", error=str(e))
+        raise SourceryKitStorageError("Failed to store agent trace_intercept") from e
+
     claim = HandoffClaim(
+        trace_intercept_id=trace_intercept_id,
         action_name=action_name,
-        claimed_value=raw.get("claimed_value"),
+        claimed_value=claimed_value,
         request_payload=request_payload,
         response_payload=response_payload,
         query_id=qid,

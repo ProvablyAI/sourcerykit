@@ -22,13 +22,13 @@ from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, create_sdk_mcp_s
 from dotenv import load_dotenv
 
 from sourcerykit import (
+    SourceryKitAgentResponse,
+    async_intercept_context,
     bootstrap_system,
     build_handoff_payload,
     evaluate_handoff,
     insert_trusted_endpoint,
 )
-from sourcerykit.intercept.interceptor import async_intercept_context
-from sourcerykit.schemas.agent_response import SourceryKitAgentResponse
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
@@ -126,6 +126,7 @@ async def main(tamper: bool = False) -> None:
             ],
         },
         run_id=uuid.uuid4(),
+        prompt=prompt,
         intercept_agent_id="demo",
     )
 

@@ -1,8 +1,11 @@
 import asyncio
+import uuid
 from typing import Any
 
 from sourcerykit.config import get_settings
-from sourcerykit.errors import SourceryKitError
+from sourcerykit.db._engine import get_engine
+from sourcerykit.db._traces import update_trace_intercept_outcome
+from sourcerykit.errors import SourceryKitError, SourceryKitStorageError
 from sourcerykit.evaluator._eval_modes import evaluate_claim
 from sourcerykit.intercept._self_egress import provably_self_egress
 from sourcerykit.logger import get_logger
@@ -47,18 +50,30 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
     for claim, result in zip(payload.claims, verification_results):
         if isinstance(result, BaseException):
             _log.exception("failed_to_verify_claim_proof", query_id=claim.query_id)
-            errors.append(f"verification_failed: {str(result)}")
+            error = f"verification_failed: {str(result)}"
+            errors.append(error)
+            await update_trace(claim.trace_intercept_id, Outcome.CAUGHT, error)
             continue
 
         coerced_val = _coerce_query_result_to_indexed_value(result.get("result"))
+        eval_result = evaluate_claim(claim, coerced_val)
+
+        await update_trace(
+            trace_intercept_id=claim.trace_intercept_id,
+            outcome=Outcome(eval_result.get("result") or Outcome.ERROR),
+            detail=str(eval_result.get("detail") or ""),
+        )
+
         verdict = {
-            **evaluate_claim(claim, coerced_val),
+            **eval_result,
             "query_id": str(claim.query_id),
             **_extract_timings(result),
         }
         per_claim.append(verdict)
 
-    return {"outcome": _resolve_outcome(per_claim, errors), "per_claim": per_claim, "errors": errors}
+    outcome = _resolve_outcome(per_claim, errors)
+
+    return {"outcome": outcome, "per_claim": per_claim, "errors": errors}
 
 
 def _resolve_outcome(per_claim: list[dict[str, Any]], errors: list[str]) -> str:
@@ -90,3 +105,12 @@ def _extract_timings(record: dict[str, Any]) -> dict[str, float]:
         "proof_time_ms": float(proof.get("execution_time_ms") or 0.0),
         "verify_time_ms": float(proof.get("verification_time_ms") or 0.0),
     }
+
+
+async def update_trace(trace_intercept_id: uuid.UUID, outcome: Outcome, detail: str) -> None:
+    try:
+        async with get_engine().begin() as conn:
+            await conn.execute(update_trace_intercept_outcome(trace_intercept_id, outcome, detail))
+    except Exception as e:
+        _log.error("_resolve_claim", error=str(e))
+        raise SourceryKitStorageError("Failed to store agent trace_intercept") from e

@@ -7,12 +7,14 @@ from sourcerykit.cli.doctor import run_doctor
 from sourcerykit.cli.endpoints import endpoints
 from sourcerykit.cli.feedback import send_feedback
 from sourcerykit.cli.init import config_provably
+from sourcerykit.cli.trace import trace
 from sourcerykit.cli.utils import console
 from sourcerykit.cli.utils import logout as logout_session
 
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(endpoints, name="endpoints")
 app.add_typer(config, name="config")
+app.add_typer(trace, name="trace")
 
 
 @app.command(help="interactive setup wizard (account, database, project)")

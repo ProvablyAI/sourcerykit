@@ -16,6 +16,8 @@ class HandoffClaim(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+    trace_intercept_id: uuid.UUID = Field(default=UUID_NIL, description="Trace_intercept table id.")
+
     action_name: str = Field(default="", description="Name of the action that produced this claim.")
     claimed_value: Any = Field(default=None, description="Value the agent claims it observed.")
     request_payload: dict[str, Any] = Field(

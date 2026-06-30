@@ -1,4 +1,4 @@
-"""Create provably_intercepts table.
+"""Create intercepts table.
 
 Revision ID: 001
 Revises:
@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.execute("""
-        CREATE TABLE IF NOT EXISTS provably_intercepts (
+        CREATE TABLE IF NOT EXISTS intercepts (
             id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             agent_id        VARCHAR(255) NOT NULL,
             action_name     VARCHAR(255) NOT NULL,
@@ -32,11 +32,11 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE INDEX IF NOT EXISTS ix_provably_intercepts_agent_action
-        ON provably_intercepts (agent_id, action_name)
+        CREATE INDEX IF NOT EXISTS ix_intercepts_agent_action
+        ON intercepts (agent_id, action_name)
     """)
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_provably_intercepts_agent_action")
-    op.execute("DROP TABLE IF EXISTS provably_intercepts")
+    op.execute("DROP INDEX IF EXISTS ix_intercepts_agent_action")
+    op.execute("DROP TABLE IF EXISTS intercepts")
