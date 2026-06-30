@@ -83,9 +83,10 @@ async def run_verifiable_agent():
     #    Pass the keyword argument supported by your framework, e.g.:
     #      output_type=SourceryKitAgentResponse   (OpenAI Agents SDK)
     #      response_format=SourceryKitAgentResponse  (LangChain)
+    prompt = You are a helpful assistant.
     agent = Agent(
         name="demo-agent",
-        instructions="You are a helpful assistant.",
+        instructions=prompt,
         tools=[...],
         model=MODEL_NAME,
         output_type=SourceryKitAgentResponse,
@@ -108,6 +109,7 @@ async def run_verifiable_agent():
     payload = await sourcerykit.build_handoff_payload(
         payload_data,
         run_id=uuid.uuid4(),
+        prompt=prompt,
         intercept_agent_id="demo-agent",
     )
 
