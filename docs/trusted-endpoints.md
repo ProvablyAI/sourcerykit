@@ -24,28 +24,45 @@ await insert_trusted_endpoint(url="https://api.example.com/v1/data")
 - **Enforcement Scope**: Enforcement is strictly active with no "warning-only" or dry-run mode.
 
 
-## Async API Reference
+## Configuration
+
+Trusted endpoints can be managed via the CLI or programmatically through the async API.
+
+### CLI
+```bash
+sourcerykit endpoints add <url> [--label <label>]
+sourcerykit endpoints list
+sourcerykit endpoints remove <url>
+```
+
+### API
 The SDK exposes the following asynchronous functions to manage and query policies:
 
-### Check if an endpoint is trusted
+#### Check if an endpoint is trusted
 ```python
 await sourcerykit.trusted_endpoints.is_endpoint_trusted(url: str) -> bool
 ```
 Evaluates whether a given URL is active within the registry. This is called internally by the HTTP Interceptor before every outbound request.
 
-### Register a new trusted endpoint
+#### Register a new trusted endpoint
 ```python
 await sourcerykit.trusted_endpoints.insert_trusted_endpoint(url: str, display_label: str | None = None) -> None
 ```
 Inserts a new endpoint into the database. If the URL is already registered, this operation acts as a no-op.
 
-### List all trusted endpoints
+#### List all trusted endpoints
 ```python
 await sourcerykit.trusted_endpoints.list_all_trusted_endpoints() -> list[str]
 ```
 Returns a list of all active, registered endpoint URLs.
 
-### Verify all endpoints in a handoff payload
+#### Remove a trusted endpoint
+```python
+await sourcerykit.trusted_endpoints.remove_trusted_endpoint(url: str) -> None
+```
+Removes a previously registered endpoint from the registry. If the URL is not found, this operation acts as a no-op.
+
+#### Verify all endpoints in a handoff payload
 ```python
 await sourcerykit.trusted_endpoints.verify_claim_endpoints(payload: HandoffPayload) -> None
 ```
