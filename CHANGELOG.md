@@ -6,23 +6,23 @@ Major release following a full repository refactor. The package is now published
 
 ### Breaking changes
 
-- **Package renamed** — all imports change from `provably` to `sourcerykit`. (#41)
-- **`set_interceptor_context` removed** — replaced by the `intercept_context()` context manager, which correctly scopes the `ContextVar` and prevents leaks across requests. (#41)
-- **Database schema redesigned** — `provably_intercepts` and `trusted_endpoints` now use `UUID` primary keys (was `SERIAL`) with updated column types (e.g. `indexed_average` stored as `TEXT`). Run `alembic upgrade head` (migration `000` drops old tables, `001`/`002` recreate them). (#41)
+- **Package renamed** — all imports change from `provably` to `sourcerykit`. (#44)
+- **`set_interceptor_context` removed** — replaced by the `intercept_context()` context manager, which correctly scopes the `ContextVar` and prevents leaks across requests. (#44)
+- **Database schema redesigned** — `provably_intercepts` and `trusted_endpoints` now use `UUID` primary keys (was `SERIAL`) with updated column types (e.g. `indexed_average` stored as `TEXT`). Run `alembic upgrade head` (migration `000` drops old tables, `001`/`002` recreate them). (#44)
 
 ### Architecture & tooling
 
-- **Async architecture** — HTTP client migrated to `httpx` async; database layer upgraded to async SQLAlchemy. (#41)
-- **Alembic migrations** — schema changes are managed via versioned Alembic scripts. (#41)
-- **Authentication service** — `SourceryKitAuthService` handles account and organisation management against the Provably API. (#41)
-- **CLI setup wizard** — interactive `sourcerykit init` command for first-time account, org, and database configuration. (#41)
-- **Test coverage gate** — `pytest-cov` enforces a 60 % floor on the unit suite in CI. (#41)
+- **Async architecture** — HTTP client migrated to `httpx` async; database layer upgraded to async SQLAlchemy. (#44)
+- **Alembic migrations** — schema changes are managed via versioned Alembic scripts. (#44)
+- **Authentication service** — `SourceryKitAuthService` handles account and organisation management against the Provably API. (#44)
+- **CLI setup wizard** — interactive `sourcerykit init` command for first-time account, org, and database configuration. (#44)
+- **Test coverage gate** — `pytest-cov` enforces a 60 % floor on the unit suite in CI. (#44)
 
 ### Examples & onboarding
 
-- **Cookbooks** — runnable examples using Claude Agent SDK, OpenAI Agents SDK and Langchain Agent SDK. (#41)
-- **Skill** (`init-sourcerykit`) — step-by-step guided onboarding skill for adding SourceryKit to an existing agent project. (#41)
-- **SDK documentation** — full developer docs (Sphinx) covering interception, handoffs, trusted endpoints, and verification modes. (#41)
+- **Cookbooks** — runnable examples using Claude Agent SDK, OpenAI Agents SDK and Langchain Agent SDK. (#44)
+- **Skill** (`init-sourcerykit`) — step-by-step guided onboarding skill for adding SourceryKit to an existing agent project. (#44)
+- **SDK documentation** — full developer docs (Sphinx) covering interception, handoffs, trusted endpoints, and verification modes. (#44)
 
 ## 0.2.0
 
