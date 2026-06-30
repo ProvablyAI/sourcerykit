@@ -1,52 +1,92 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
 
 [project]
-name = "provably-sdk"
-version = "0.2.0"
-description = "Provably Python SDK — runtime init, HTTP intercept, handoff transport, deterministic evaluator, trusted-endpoint registry."
+name = "sourcerykit"
+version = "1.0.0b1"
+description = "SourceryKit"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "Proprietary" }
 authors = [{ name = "Provably Technologies Ltd" }]
-keywords = ["provably", "verifiable", "agent", "handoff", "interceptor"]
+keywords = [
+    "sourcerykit",
+    "provably",
+    "verifiable",
+    "agent",
+    "handoff",
+    "interceptor",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "alembic>=1.13",
+    "greenlet>=3.0",
     "httpx>=0.26",
+    "aiohttp>=3.9",
+    "requests >=2.34",
     "jsonschema>=4.0",
-    "psycopg2-binary>=2.9",
+    "psycopg[binary]>=3.1",
     "pydantic>=2.6",
+    "python-dotenv>=1.2",
     "requests>=2.31",
+    "sqlalchemy>=2.0",
     "structlog>=24.1",
+    "msgspec>=0.18.0",
+    "questionary >= 2.1",
+    "typer >= 0.26",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.3", "build>=1.2", "openai-agents>=0.0.3", "aiohttp>=3.9"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "coverage[toml]>=7.0",
+    "ruff>=0.3",
+    "build>=1.2",
+    "mypy>=1.10",
+    "pre-commit>=4.0",
+    "sphinx>=9.1",
+    "myst-parser>=5.1",
+    "types-jsonschema>=4.0",
+    "types-requests>=2.31",
+    "openai-agents>=0.0.3",
+    "sphinx-rtd-theme>=3.1",
+    "sphinxcontrib-mermaid >= 2.0",
+]
 
 [project.urls]
-Homepage = "https://github.com/ProvablyAI/provably-python-sdk"
-Issues = "https://github.com/ProvablyAI/provably-python-sdk/issues"
+Homepage = "https://github.com/ProvablyAI/sourcerykit"
+Issues = "https://github.com/ProvablyAI/sourcerykit/issues"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["provably*"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/sourcerykit"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/sourcerykit",
+    "README.md",
+    "LICENSE.md",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = [".cache", ".venv", "venv", "dist", "build", ".git"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "W"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["provably"]
+known-first-party = ["sourcerykit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -55,3 +95,41 @@ asyncio_mode = "auto"
 markers = [
     "e2e: end-to-end tests that drive the SDK against a real loopback HTTP server",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+files = ["src", "tests"]
+strict = true
+warn_unreachable = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["psycopg2", "psycopg2.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["aiohttp", "aiohttp.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["openai_agents", "openai_agents.*", "agents", "agents.*"]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+warn_required_dynamic_aliases = true
+
+[tool.coverage.run]
+source = ["sourcerykit"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
+
+[project.scripts]
+sourcerykit = "sourcerykit.cli.main:app"

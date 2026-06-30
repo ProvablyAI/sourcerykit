@@ -16,8 +16,6 @@ from typing import Any
 
 import pytest
 
-import provably.intercept.interceptor as _interceptor_module
-
 Handler = Callable[["RecordedRequest"], "FakeResponse"]
 
 
@@ -36,7 +34,7 @@ class FakeResponse:
     headers: dict[str, str] = field(default_factory=dict)
 
     def encoded(self) -> tuple[bytes, dict[str, str]]:
-        if isinstance(self.body, (dict, list)):
+        if isinstance(self.body, dict | list):
             payload = json.dumps(self.body).encode("utf-8")
             hdrs = {"Content-Type": "application/json", **self.headers}
             return payload, hdrs
@@ -58,6 +56,8 @@ class FakeHttpServer:
     def base_url(self) -> str:
         assert self._httpd is not None, "server not started"
         host, port = self._httpd.server_address[:2]
+        if isinstance(host, bytes):
+            host = host.decode("ascii")
         return f"http://{host}:{port}"
 
     def route(self, method: str, path: str, handler: Handler) -> None:
@@ -137,21 +137,3 @@ def fake_server_factory() -> Iterator[Callable[[], FakeHttpServer]]:
 
     for s in servers:
         s.stop()
-
-
-@pytest.fixture
-def patched_interceptor(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
-    """Install the real interceptor with the storage layer redirected to an in-memory list.
-
-    Yields the list of recorded rows so tests can assert against it.
-    This fixture is shared between test_interceptor_e2e.py and test_openai_agents_e2e.py.
-    """
-    rows: list[dict[str, Any]] = []
-
-    def fake_insert(_url: str, request_payload: dict, raw: Any, *, method: str = "GET") -> None:
-        rows.append({"url": _url, "method": method, "request": request_payload, "raw": raw})
-
-    monkeypatch.setattr(_interceptor_module, "_insert_row", fake_insert)
-    _interceptor_module.init_interceptor()
-    monkeypatch.setattr(_interceptor_module, "_enabled", True)
-    return rows

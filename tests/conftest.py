@@ -15,6 +15,13 @@ Both layers run by default. To run only one layer:
     pytest tests/unit          # fast inner loop
     pytest tests/e2e           # contract tests against a real loopback server
     pytest -m "not e2e"        # skip e2e tests
+
+Coverage is gated on the hermetic unit suite only (CI + Docker enforce a 60%
+floor); the threshold lives in ``[tool.coverage.report]`` in ``pyproject.toml``.
+Coverage is not in the default ``pytest`` options, so the inner loop stays fast.
+To check it locally:
+
+    pytest tests/unit --cov=sourcerykit --cov-report=term-missing
 """
 
 from __future__ import annotations
