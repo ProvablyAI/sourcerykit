@@ -18,6 +18,7 @@ Explore how to integrate SourceryKit seamlessly into your favorite production de
 * **Claude Agent SDK:** Review the [Claude Agent SDK example](cookbooks/claude_agent/README.md).
 
 ## API Reference & Development
+* Consult the [CLI Reference](cli.md) for all available commands, options, and usage examples.
 * Explore the [API Reference](api.md) for a complete mapping of all public functions, classes, and types.
 * See the [Contributing Guide](src/contribute.md) for codebase requirements, styling, and pull request procedures.
 * Check out the [Changelog](src/changelog.md) for tracking version upgrades and release history.
@@ -39,6 +40,7 @@ src/main
 src/changelog
 src/contribute
 src/license
+cli
 ```
 
 ```{toctree}
