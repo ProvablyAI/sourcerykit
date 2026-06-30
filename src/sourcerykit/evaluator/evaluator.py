@@ -80,6 +80,10 @@ def _resolve_outcome(per_claim: list[dict[str, Any]], errors: list[str]) -> str:
     """Computes the overall payload resolution state based on individual claim verdicts."""
     if errors:
         return Outcome.ERROR
+    if not per_claim:
+        # Nothing was verified — no claim reached the verifier. Verifying ZERO claims must
+        # never be reported as PASS; that would silently rubber-stamp an unverified handoff.
+        return Outcome.ERROR
     results = {str(c.get("result") or "").upper() for c in per_claim}
     if Outcome.CAUGHT in results:
         return Outcome.CAUGHT

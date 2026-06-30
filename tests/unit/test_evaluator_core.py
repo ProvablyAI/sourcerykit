@@ -58,8 +58,9 @@ class TestResolveOutcome:
         per_claim = [{"result": "ERROR"}]
         assert _resolve_outcome(per_claim, []) == Outcome.ERROR
 
-    def test_pass_when_no_claims_and_no_errors(self) -> None:
-        assert _resolve_outcome([], []) == Outcome.PASS
+    def test_error_when_no_claims_and_no_errors(self) -> None:
+        # Verifying zero claims must not be reported as PASS — nothing was actually checked.
+        assert _resolve_outcome([], []) == Outcome.ERROR
 
 
 # ---------------------------------------------------------------------------
@@ -212,7 +213,7 @@ class TestEvaluateHandoff:
         assert result["outcome"] == Outcome.ERROR
         assert len(result["errors"]) == 1
 
-    async def test_empty_claims_payload_returns_pass(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_empty_claims_payload_returns_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         payload = _make_payload([])
 
         monkeypatch.setattr(
@@ -225,6 +226,6 @@ class TestEvaluateHandoff:
         )
 
         result = await evaluate_handoff(payload=payload)
-        assert result["outcome"] == Outcome.PASS
+        assert result["outcome"] == Outcome.ERROR
         assert result["per_claim"] == []
         assert result["errors"] == []
