@@ -24,8 +24,38 @@ class ProvablyAPI:
         self.org_id = s.org_id
         self.app = s.provably_app
 
+    def _generic_path(self) -> str:
+        return "/api/v1"
+
     def _org_path(self) -> str:
         return f"/api/v1/organizations/{self.org_id}"
+
+    # ------------------------------------------------------------------
+    # Feedback
+    # ------------------------------------------------------------------
+    async def create_feedback(self, body: dict[str, Any], files: dict[str, Any] | None = None) -> None:
+        """
+        Send a feedback.
+        """
+        path = "/api/v1/feedback"
+
+        await get_http().post_multipart(path, body, files=files)
+        return
+
+    # ------------------------------------------------------------------
+    # Organizations
+    # ------------------------------------------------------------------
+
+    async def list_organizations(self) -> list[dict[str, Any]]:
+        """
+        List all organizations accessible to the authenticated user (via API key).
+
+        Returns:
+            list[dict[str, Any]]: List of organization objects (each contains at least ``id`` and ``name``).
+        """
+        path = "/api/v1/organizations"
+        result: list[dict[str, Any]] = await get_http().get(path)
+        return result
 
     # ------------------------------------------------------------------
     # Middlewares
@@ -284,6 +314,21 @@ class ProvablyAPI:
 
         result: dict[str, Any] = await get_http().get(path, api_key=api_key)
         return result
+
+    async def get_query_proof(self, proof_id: uuid.UUID, *, api_key: str | None = None) -> bytes:
+        """
+        Download the raw proof data by proof ID.
+
+        Args:
+            proof_id: The ID of the proof to retrieve.
+            api_key: Optional API key override for this request.
+
+        Returns:
+            bytes: The raw proof content.
+        """
+        path = f"{self._generic_path()}/proof_requests/{proof_id}/download"
+
+        return await get_http().get_raw(path, api_key=api_key)
 
     async def verify_proof(self, query_id: uuid.UUID, *, api_key: str | None = None) -> dict[str, Any]:
         """

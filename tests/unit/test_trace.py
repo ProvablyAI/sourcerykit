@@ -1,0 +1,188 @@
+"""Tests for sourcerykit.cli.trace."""
+
+import json
+import uuid
+from unittest.mock import patch
+
+import pytest
+import typer
+
+from sourcerykit.cli.trace import (
+    _pretty_json,
+    _proof_summary,
+    _wrap_proof,
+    list_traces,
+    show,
+)
+
+_TRACE_ID = uuid.uuid4()
+_INTERCEPT_ID = uuid.uuid4()
+_QUERY_ID = uuid.uuid4()
+
+
+def _make_trace_row(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "id": _TRACE_ID,
+        "task": "test-task",
+        "created_at": "2026-01-01T00:00:00",
+        "pass": 1,
+        "caught": 0,
+        "error": 0,
+    }
+    base.update(overrides)
+    return base
+
+
+def _make_intercept_row(**overrides: object) -> dict[str, object]:
+    base: dict[str, object] = {
+        "id": _INTERCEPT_ID,
+        "query_id": _QUERY_ID,
+        "verification_mode": "hash",
+        "claimed_value": "42",
+        "outcome": "PASS",
+        "details": "ok",
+        "created_at": "2026-01-01T00:00:01",
+        "action_name": "insert",
+        "source_url": "https://example.com",
+    }
+    base.update(overrides)
+    return base
+
+
+# ---------------------------------------------------------------------------
+# list_traces
+# ---------------------------------------------------------------------------
+
+
+class TestListTraces:
+    def test_empty(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=[]),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            list_traces(limit=20, page=1)
+        mock_console.print.assert_called_once()
+        assert "No traces" in str(mock_console.print.call_args)
+
+    def test_with_rows(self) -> None:
+        rows = [_make_trace_row()]
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=rows),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            list_traces(limit=20, page=1)
+        mock_console.print.assert_called_once()
+
+    def test_pagination_offset(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=[]) as mock_run,
+            patch("sourcerykit.cli.trace.console"),
+        ):
+            list_traces(limit=10, page=3)
+        mock_run.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# show
+# ---------------------------------------------------------------------------
+
+
+class TestShow:
+    def test_not_found(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=(None, [])),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            with pytest.raises(typer.Exit):
+                show(id=str(_TRACE_ID))
+        assert "not found" in str(mock_console.print.call_args).lower()
+
+    def test_no_intercepts(self) -> None:
+        trace_row = _make_trace_row()
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=(trace_row, [])),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            show(id=str(_TRACE_ID))
+        assert any("No intercepts" in str(c) for c in mock_console.print.call_args_list)
+
+    def test_with_intercepts(self) -> None:
+        trace_row = _make_trace_row()
+        intercept_row = _make_intercept_row()
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run") as mock_run,
+            patch("sourcerykit.cli.trace.console"),
+        ):
+            mock_run.side_effect = [
+                (trace_row, [intercept_row]),
+                {_QUERY_ID: {"sql_query": "SELECT 1", "proof": None, "result": None}},
+            ]
+            show(id=str(_TRACE_ID))
+
+    def test_invalid_uuid(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.console"),
+        ):
+            with pytest.raises(ValueError):
+                show(id="not-a-uuid")
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+
+class TestWrapProof:
+    def test_json_proof(self) -> None:
+        proof_bytes = b'{"status": "ok"}'
+        result = _wrap_proof(
+            trace_id="t1",
+            intercept_id="i1",
+            action_name="insert",
+            intercept_num=1,
+            proof_bytes=proof_bytes,
+        )
+        assert result["proof"] == {"status": "ok"}
+        assert result["trace_id"] == "t1"
+
+    def test_binary_proof(self) -> None:
+        proof_bytes = b"\x00\x01\x02"
+        result = _wrap_proof(
+            trace_id="t1",
+            intercept_id="i1",
+            action_name="insert",
+            intercept_num=1,
+            proof_bytes=proof_bytes,
+        )
+        assert "proof_base64" in result
+        assert "proof" not in result
+
+
+class TestProofSummary:
+    def test_full(self) -> None:
+        proof = {"status": "verified", "verification_status": "PASS", "execution_time_ms": 42}
+        s = _proof_summary(proof)
+        assert "verified" in s
+        assert "PASS" in s
+        assert "42" in s
+
+    def test_missing_keys(self) -> None:
+        s = _proof_summary({})
+        assert "N/A" in s
+
+
+class TestPrettyJson:
+    def test_short(self) -> None:
+        assert _pretty_json({"a": 1}) == json.dumps({"a": 1}, indent=2)
+
+    def test_truncated(self) -> None:
+        big = {f"k{i}": i for i in range(100)}
+        result = _pretty_json(big, max_lines=5)
+        assert "…" in result

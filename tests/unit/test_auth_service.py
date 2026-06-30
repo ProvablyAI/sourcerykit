@@ -138,3 +138,61 @@ class TestProvablyAuthServiceOrganization:
             result = await service.get_organizations(_TOKEN)
 
         assert result == []
+
+
+class TestProvablyAuthServiceListOrganizations:
+    async def test_returns_list(self) -> None:
+        service, mock_api = _make_service()
+        orgs = [{"id": str(_ORG_ID), "name": "My Org"}]
+        mock_main_api = MagicMock()
+        mock_main_api.list_organizations = AsyncMock(return_value=orgs)
+
+        with (
+            patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api),
+            patch("sourcerykit.provably.auth_service.get_main_api", return_value=mock_main_api),
+        ):
+            result = await service.list_organizations()
+
+        assert result == orgs
+
+    async def test_returns_empty_list(self) -> None:
+        service, mock_api = _make_service()
+        mock_main_api = MagicMock()
+        mock_main_api.list_organizations = AsyncMock(return_value=[])
+
+        with (
+            patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api),
+            patch("sourcerykit.provably.auth_service.get_main_api", return_value=mock_main_api),
+        ):
+            result = await service.list_organizations()
+
+        assert result == []
+
+    async def test_connection_error(self) -> None:
+        service, mock_api = _make_service()
+        mock_main_api = MagicMock()
+        req = httpx.Request("GET", "https://api.provably.ai/api/v1/organizations")
+        mock_main_api.list_organizations = AsyncMock(side_effect=httpx.ConnectError("refused", request=req))
+
+        with (
+            patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api),
+            patch("sourcerykit.provably.auth_service.get_main_api", return_value=mock_main_api),
+        ):
+            with pytest.raises(ProvablyConnectionError):
+                await service.list_organizations()
+
+    async def test_unauthorized(self) -> None:
+        service, mock_api = _make_service()
+        mock_main_api = MagicMock()
+        mock_request = httpx.Request("GET", "https://api.provably.ai/api/v1/organizations")
+        mock_response = httpx.Response(401, request=mock_request, text="Unauthorized")
+        mock_main_api.list_organizations = AsyncMock(
+            side_effect=httpx.HTTPStatusError("401", request=mock_request, response=mock_response)
+        )
+
+        with (
+            patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api),
+            patch("sourcerykit.provably.auth_service.get_main_api", return_value=mock_main_api),
+        ):
+            with pytest.raises(ProvablyUnauthorizedError):
+                await service.list_organizations()

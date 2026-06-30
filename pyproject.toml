@@ -29,14 +29,17 @@ dependencies = [
     "greenlet>=3.0",
     "httpx>=0.26",
     "aiohttp>=3.9",
+    "requests >=2.34",
     "jsonschema>=4.0",
     "psycopg[binary]>=3.1",
     "pydantic>=2.6",
+    "python-dotenv>=1.2",
     "requests>=2.31",
     "sqlalchemy>=2.0",
     "structlog>=24.1",
     "msgspec>=0.18.0",
     "questionary >= 2.1",
+    "typer >= 0.26",
 ]
 
 [project.optional-dependencies]
@@ -129,5 +132,4 @@ show_missing = true
 exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
 
 [project.scripts]
-sourcerykit = "sourcerykit.cli.main:main"
-sourcerykit-setup = "sourcerykit.cli.main:main"
+sourcerykit = "sourcerykit.cli.main:app"

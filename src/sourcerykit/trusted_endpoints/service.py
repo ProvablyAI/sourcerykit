@@ -5,11 +5,12 @@ from urllib.parse import urlparse
 from sourcerykit.config import get_settings
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._trusted_endpoints import (
-    insert_trusted_endpoint as db_insert_trusted_endpoint,
-)
-from sourcerykit.db._trusted_endpoints import (
+    delete_trusted_endpoint,
     select_active_trusted_endpoints,
     select_trusted_endpoint_prefix,
+)
+from sourcerykit.db._trusted_endpoints import (
+    insert_trusted_endpoint as db_insert_trusted_endpoint,
 )
 from sourcerykit.errors import SourceryKitStorageError, SourceryKitTrustError
 from sourcerykit.logger import get_logger
@@ -62,7 +63,7 @@ async def is_endpoint_trusted(url: str) -> bool:
         raise SourceryKitStorageError("Failed to query trusted endpoints") from e
 
 
-async def insert_trusted_endpoint(url: str, display_label: str | None = None) -> None:
+async def insert_trusted_endpoint(*, url: str, display_label: str | None = None) -> None:
     """Insert an active trusted endpoint for the configured org, ignoring conflicts."""
 
     # Sanitize the URL string
@@ -129,6 +130,31 @@ async def list_all_trusted_endpoints() -> list[str]:
 
     urls = await list_all_trusted_endpoints_detailed()
     return [ep["url"] for ep in urls]
+
+
+async def remove_trusted_endpoint(*, url: str) -> None:
+    """Remove an active trusted endpoint for the configured org."""
+
+    # Sanitize the URL string
+    clean_url = sanitize_and_extract_trusted_url(url)
+
+    org_id = get_settings().org_id
+    engine = get_engine()
+
+    if not is_endpoint_trusted(clean_url):
+        # TODO: handle raise
+        raise
+
+    # Remove statement
+    stmt = delete_trusted_endpoint(org_id, clean_url)
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(stmt)
+        _log.info("remove_endpoint_removed", url=clean_url)
+    except Exception as e:
+        _log.error("remove_trusted_endpoint_db_error", url=clean_url, error=str(e))
+        raise SourceryKitStorageError("Failed to remove trusted endpoint") from e
 
 
 async def verify_claim_endpoints(

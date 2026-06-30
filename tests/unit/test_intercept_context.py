@@ -133,9 +133,11 @@ class TestInitInterceptor:
         with (
             patch("sourcerykit.intercept.interceptor.init_httpx_hooks") as mock_httpx,
             patch("sourcerykit.intercept.interceptor.init_aiohttp_hooks") as mock_aiohttp,
+            patch("sourcerykit.intercept.interceptor.init_requests_hooks") as mock_requests,
         ):
             from sourcerykit.intercept.interceptor import init_interceptor
 
             init_interceptor()
             mock_httpx.assert_called_once()
             mock_aiohttp.assert_called_once()
+            mock_requests.assert_called_once()

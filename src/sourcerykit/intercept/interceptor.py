@@ -9,6 +9,7 @@ from uuid import UUID
 from sourcerykit.intercept._aiohttp_hook import init_aiohttp_hooks
 from sourcerykit.intercept._httpx_hook import init_httpx_hooks
 from sourcerykit.intercept._storage import add_intercept_row
+from sourcerykit.intercept.requests_hook import init_requests_hooks
 from sourcerykit.logger import get_logger
 from sourcerykit.utils.validation import validate_length
 
@@ -77,7 +78,8 @@ async def _record(url: str, method: str, request_payload: dict[str, Any], raw: d
 
 
 def init_interceptor() -> None:
-    """Install monkey-patches on httpx.AsyncClient and aiohttp."""
+    """Install monkey-patches on httpx.AsyncClient, aiohttp and requests."""
     init_httpx_hooks(_record)
     init_aiohttp_hooks(_record)
+    init_requests_hooks(_record)
     _log.info("intercept_hooks_installed")

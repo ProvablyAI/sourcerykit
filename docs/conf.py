@@ -7,7 +7,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-os.environ.setdefault("SOURCERYKIT_API_KEY", "dummy")
+os.environ.setdefault("PROVABLY_API_KEY", "dummy")
 os.environ.setdefault("SOURCERYKIT_ORG_ID", "123e4567-e89b-12d3-a456-426614174000")
 os.environ.setdefault("SOURCERYKIT_POSTGRES_URL", "postgresql://postgres:postgres@localhost:5432/db")
 

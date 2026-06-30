@@ -5,6 +5,7 @@ Provably auth service layer
 import uuid
 from typing import Any
 
+from sourcerykit.provably._api import get_api as get_main_api
 from sourcerykit.provably._auth_api import Organization, User, get_api
 from sourcerykit.provably._errors import provably_auth_error_handler
 
@@ -101,6 +102,20 @@ class ProvablyAuthService:
         """
         async with provably_auth_error_handler("get_organizations"):
             result = await get_api().get_organizations(token)
+            return result
+
+    async def list_organizations(self) -> list[dict[str, Any]]:
+        """List organisations accessible to the authenticated user (via API key).
+
+        Returns:
+            list[dict[str, Any]]: List of organisation objects (each contains at least ``id`` and ``name``).
+
+        Raises:
+            ProvablyAuthError: On API errors.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_auth_error_handler("list_organizations"):
+            result = await get_main_api().list_organizations()
             return result
 
 

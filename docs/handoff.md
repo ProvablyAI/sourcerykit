@@ -52,7 +52,7 @@ payload = await build_handoff_payload(
 )
 
 # Submit the payload directly to the evaluator
-result = await evaluate_handoff(payload)
+result = await evaluate_handoff(payload=payload)
 print(f"Evaluation Verdict: {result.get('outcome')}")
 # Returns: {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...], "errors": [...]}
 ```

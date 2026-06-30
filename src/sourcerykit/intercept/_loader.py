@@ -1,4 +1,4 @@
-"""Read helpers for the ``provably_intercepts`` table."""
+"""Read helpers for the ``intercepts`` table."""
 
 import json
 from typing import Any

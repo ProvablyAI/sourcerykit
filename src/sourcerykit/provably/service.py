@@ -7,7 +7,7 @@ import uuid
 from typing import Any
 
 from sourcerykit.db._engine import ConnectionInfo
-from sourcerykit.db._schema import PROVABLY_INTERCEPTS_TABLE
+from sourcerykit.db._schema import INTERCEPTS_TABLE
 from sourcerykit.logger import get_logger
 from sourcerykit.provably._api import get_api
 from sourcerykit.provably._errors import provably_error_handler
@@ -17,6 +17,22 @@ _log = get_logger(__name__)
 
 class ProvablyService:
     """High-level service for managing Provably resources."""
+
+    # ------------------------------------------------------------------
+    # Feedback
+    # ------------------------------------------------------------------
+    async def create_feedback(self, description: str, file: bytes | None) -> None:
+        """Send a feedback."""
+
+        feedback_body = {"description": description}
+
+        file_payload = {}
+
+        if file:
+            file_payload["files"] = ("attachment.dat", file)
+
+        async with provably_error_handler("create_feedback"):
+            return await get_api().create_feedback(feedback_body, files=file_payload)
 
     # ------------------------------------------------------------------
     # Middleware
@@ -119,8 +135,9 @@ class ProvablyService:
         schema_id: uuid.UUID,
         table_id: uuid.UUID,
         columns: list[uuid.UUID],
+        name: str,
     ) -> uuid.UUID:
-        """Create a new query collection for the intercepts table.
+        """Create a new query collection.
 
         Args:
             middleware_id: The ID of the middleware owning the table.
@@ -128,6 +145,7 @@ class ProvablyService:
             schema_id: The ID of the schema containing the table.
             table_id: The ID of the table to base the collection on.
             columns: List of column IDs to enable for the collection.
+            name: Collection name (the project name).
 
         Returns:
             uuid.UUID: The ID of the newly created collection.
@@ -139,7 +157,7 @@ class ProvablyService:
         """
 
         collection = {
-            "name": PROVABLY_INTERCEPTS_TABLE,
+            "name": name,
             "publicity_status": "private",
             "middleware_id": str(middleware_id),
             "database_id": str(database_id),
@@ -157,11 +175,14 @@ class ProvablyService:
             result = await get_api().create_collection(collection)
             return uuid.UUID(str(result["id"]))
 
-    async def get_collection_id(self) -> uuid.UUID:
-        """Find and return the ID of the existing intercepts collection.
+    async def get_collection_id(self, name: str) -> uuid.UUID:
+        """Find and return the ID of an existing collection by name.
+
+        Args:
+            name: The collection name to look up.
 
         Returns:
-            uuid.UUID: The ID of the collection named after the intercepts table.
+            uuid.UUID: The ID of the matching collection.
 
         Raises:
             ValueError: If no matching collection is found.
@@ -172,12 +193,23 @@ class ProvablyService:
             collections = await get_api().list_collections()
 
             try:
-                match = next(
-                    collection for collection in collections if collection.get("name") == PROVABLY_INTERCEPTS_TABLE
-                )
+                match = next(collection for collection in collections if collection.get("name") == name)
                 return uuid.UUID(str(match["id"]))
             except StopIteration:
-                raise ValueError(f"Collection with name '{PROVABLY_INTERCEPTS_TABLE}' not found")
+                raise ValueError(f"Collection with name '{name}' not found")
+
+    async def list_collections(self) -> list[dict[str, Any]]:
+        """Return all collections.
+
+        Returns:
+            list[dict[str, Any]]: Raw collection dicts from the API.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_error_handler("list_collections"):
+            return await get_api().list_collections()
 
     # ------------------------------------------------------------------
     # Data
@@ -217,15 +249,13 @@ class ProvablyService:
             # Find the Schema and Table
             # We assume the table exists within one of the schemas of this database
             for schema in db.get("schemas", []):
-                table = next((t for t in schema.get("tables", []) if t.get("name") == PROVABLY_INTERCEPTS_TABLE), None)
+                table = next((t for t in schema.get("tables", []) if t.get("name") == INTERCEPTS_TABLE), None)
 
                 if table:
                     return {"schema_id": uuid.UUID(str(schema["id"])), "table_id": uuid.UUID(str(table["id"]))}
 
             # Table not found
-            raise ValueError(
-                f"Table '{PROVABLY_INTERCEPTS_TABLE}' not found in any schema for database '{database.name}'"
-            )
+            raise ValueError(f"Table '{INTERCEPTS_TABLE}' not found in any schema for database '{database.name}'")
 
     # ------------------------------------------------------------------
     # Columns
@@ -281,9 +311,9 @@ class ProvablyService:
             ProvablyDataError: If the response is malformed.
         """
         integration = {
-            "description": PROVABLY_INTERCEPTS_TABLE,
+            "description": INTERCEPTS_TABLE,
             "is_enabled": True,
-            "name": PROVABLY_INTERCEPTS_TABLE,
+            "name": INTERCEPTS_TABLE,
             "role": "developer",
             "type": "agent",
             "collections": [str(collection_id)],
@@ -312,11 +342,11 @@ class ProvablyService:
             ProvablyConnectionError: If the network is unreachable.
         """
         async with provably_error_handler("get_integration_intercepts_id"):
-            integrations = await get_api().list_integrations(query=PROVABLY_INTERCEPTS_TABLE)
+            integrations = await get_api().list_integrations(query=INTERCEPTS_TABLE)
 
-            candidates = [i for i in integrations if i.get("name") == PROVABLY_INTERCEPTS_TABLE]
+            candidates = [i for i in integrations if i.get("name") == INTERCEPTS_TABLE]
             if not candidates:
-                raise ValueError(f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' was found.")
+                raise ValueError(f"No integration named '{INTERCEPTS_TABLE}' was found.")
 
             # collections and api_key are only present in get_integration_by_id
             full_records = await asyncio.gather(
@@ -329,15 +359,32 @@ class ProvablyService:
             )
             if match is None:
                 raise ValueError(
-                    f"No integration named '{PROVABLY_INTERCEPTS_TABLE}' with access to "
-                    f"collection {collection_id} was found."
+                    f"No integration named '{INTERCEPTS_TABLE}' with access to collection {collection_id} was found."
                 )
+
+            print("MATCH: ", match)
 
             api_key = match.get("api_key")
             if not api_key:
-                raise ValueError(f"Integration '{PROVABLY_INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
+                raise ValueError(f"Integration '{INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
 
             return str(api_key)
+
+    async def get_integration_by_id(self, integration_id: uuid.UUID) -> dict[str, Any]:
+        """Return the full integration record by ID.
+
+        Args:
+            integration_id: The ID of the integration to look up.
+
+        Returns:
+            dict[str, Any]: The raw integration record from the API.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_error_handler("get_integration_by_id"):
+            return await get_api().get_integration_by_id(integration_id)
 
     # ------------------------------------------------------------------
     # Preprocess
@@ -425,6 +472,16 @@ class ProvablyService:
         async with provably_error_handler("run_query"):
             result = await get_api().run_query(middleware_id, collection_id, sql)
             return uuid.UUID(str(result["query_id"]))
+
+    async def get_query(self, query_id: uuid.UUID) -> dict[str, Any]:
+        """Retrieve a query record by ID."""
+        async with provably_error_handler("get_query"):
+            return await get_api().get_query(query_id)
+
+    async def get_query_proof(self, proof_id: uuid.UUID) -> bytes:
+        """Download the full proof data for a given proof ID."""
+        async with provably_error_handler("get_query_proof"):
+            return await get_api().get_query_proof(proof_id)
 
     async def wait_for_proof_computation(self, query_id: uuid.UUID, timeout: int = 60) -> dict[str, Any]:
         """

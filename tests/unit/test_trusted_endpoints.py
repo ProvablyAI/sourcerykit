@@ -147,7 +147,7 @@ class TestInsertTrustedEndpoint:
             patch("sourcerykit.trusted_endpoints.service.get_settings") as ms,
         ):
             ms.return_value.org_id = _ORG
-            await insert_trusted_endpoint("https://new.example.com", display_label="My EP")
+            await insert_trusted_endpoint(url="https://new.example.com", display_label="My EP")
         mock_engine.begin.assert_called_once()
 
     async def test_raises_storage_error_on_db_failure(self) -> None:
@@ -158,13 +158,13 @@ class TestInsertTrustedEndpoint:
         ):
             ms.return_value.org_id = _ORG
             with pytest.raises(SourceryKitStorageError):
-                await insert_trusted_endpoint("https://example.com")
+                await insert_trusted_endpoint(url="https://example.com")
 
     async def test_rejects_display_label_over_255_chars(self) -> None:
         with patch("sourcerykit.trusted_endpoints.service.get_settings") as ms:
             ms.return_value.org_id = _ORG
             with pytest.raises(ValueError, match="display_label"):
-                await insert_trusted_endpoint("https://example.com", display_label="x" * 256)
+                await insert_trusted_endpoint(url="https://example.com", display_label="x" * 256)
 
 
 # ---------------------------------------------------------------------------
