@@ -2,7 +2,7 @@
 
 import json
 import sys
-from urllib.parse import quote
+from urllib.parse import quote, urlparse, urlunparse
 
 import psycopg
 import questionary
@@ -21,6 +21,14 @@ def mask_secret(value: str, show_last: int = 4) -> str:
     if not value:
         return ""
     return value[-show_last:].rjust(len(value), "*")
+
+
+def mask_postgres_url(url: str) -> str:
+    """Mask the password in a Postgres URL."""
+    parsed = urlparse(url)
+    if parsed.password:
+        return urlunparse(parsed._replace(netloc=parsed.netloc.replace(f":{parsed.password}@", ":***@")))
+    return url
 
 
 def require_settings() -> Settings:

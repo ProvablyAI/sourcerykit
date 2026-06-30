@@ -12,6 +12,7 @@ from sourcerykit.cli import logo
 from sourcerykit.cli.utils import (
     console,
     logout,
+    mask_postgres_url,
     mask_secret,
     prompt_postgres_url_with_retry,
     prompt_project_name,
@@ -293,10 +294,10 @@ def _execute_post_auth_phases(token: str, *, email: str) -> bool:
     console.print(f"   SOURCERYKIT_ORG_ID  = {org_id}\n")
     console.print(" Local config (.env):")
     console.print(f"   SOURCERYKIT_PROJECT_NAME    = {project_name}")
-    console.print(f"   SOURCERYKIT_POSTGRES_URL    = {postgres_url}")
+    console.print(f"   SOURCERYKIT_POSTGRES_URL    = {mask_postgres_url(postgres_url)}")
     console.print(f"   SOURCERYKIT_COLLECTION_ID   = {_BOOTSTRAP_INSTANCE.collection_id}")
     integration_key = _BOOTSTRAP_INSTANCE.integration_key or ""
-    console.print(f"   SOURCERYKIT_INTEGRATION_KEY = {integration_key[:12]}...\n")
+    console.print(f"   SOURCERYKIT_INTEGRATION_KEY = {mask_secret(integration_key)}\n")
     return True
 
 

@@ -1,5 +1,4 @@
 import re
-from urllib.parse import urlparse, urlunparse
 
 import questionary
 import typer
@@ -7,6 +6,7 @@ import typer
 from sourcerykit.cli.init import clear_auth_caches, create_db_tables, run_provably_handshake, save_bootstrap_ids
 from sourcerykit.cli.utils import (
     console,
+    mask_postgres_url,
     mask_secret,
     prompt_postgres_url_with_retry,
     prompt_project_name,
@@ -26,15 +26,7 @@ def list(show_key: bool = typer.Option(False, "--show-key", help="show secrets i
     console.print("\n📋 [bold]Global Config[/bold] \n")
     console.print(f"[cyan]PROVABLY_API_KEY[/cyan]       = [yellow]'{api_key_display}'[/yellow]")
 
-    if show_key:
-        pg_display = settings.postgres_url
-    else:
-        parsed = urlparse(settings.postgres_url)
-        pg_display = (
-            urlunparse(parsed._replace(netloc=parsed.netloc.replace(f":{parsed.password}@", ":***@")))
-            if parsed.password
-            else settings.postgres_url
-        )
+    pg_display = settings.postgres_url if show_key else mask_postgres_url(settings.postgres_url)
 
     console.print("\n📋 [bold]Local Config[/bold] (.env)\n")
     console.print(f"[cyan]SOURCERYKIT_POSTGRES_URL[/cyan]  = [yellow]'{pg_display}'[/yellow]")

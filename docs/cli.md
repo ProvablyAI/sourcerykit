@@ -67,6 +67,7 @@ Welcome to the SourceryKit Wizard! How would you like to proceed?
   Create a new account
   Exit
 
+🔐 Log in to your account
 Email address: user@example.com
 Password: ********
 
@@ -83,14 +84,14 @@ Project name: my-project
 🎉 SOURCERYKIT SETUP COMPLETE
 
  Global config:
-   PROVABLY_API_KEY    = zk-****-****-****-****
+   PROVABLY_API_KEY    = ***********************************1234
    SOURCERYKIT_ORG_ID  = abc123
 
  Local config (.env):
    SOURCERYKIT_PROJECT_NAME    = my-project
    SOURCERYKIT_POSTGRES_URL    = postgresql://user:***@host:5432/db
    SOURCERYKIT_COLLECTION_ID   = col_abc123
-   SOURCERYKIT_INTEGRATION_KEY = i-abc123def4...
+   SOURCERYKIT_INTEGRATION_KEY = ***********************************1234
 ```
 
 ---
@@ -224,11 +225,6 @@ sourcerykit endpoints add https://api.example.com/data --label "Example API"
 ✅ Endpoint added: https://api.example.com/data (Example API)
 ```
 
-**Error (invalid URL):**
-```
-❌ URL must use https scheme
-```
-
 ---
 
 ##### `sourcerykit endpoints list`
@@ -304,7 +300,7 @@ sourcerykit config list [--show-key]
 ```
 📋 Global Config
 
-PROVABLY_API_KEY       = 'zk-****-****-****-****'
+PROVABLY_API_KEY       = ***********************************1234
 
 📋 Local Config (.env)
 
