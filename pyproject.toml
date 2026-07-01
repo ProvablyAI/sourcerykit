@@ -58,6 +58,7 @@ dev = [
     "openai-agents>=0.0.3",
     "sphinx-rtd-theme>=3.1",
     "sphinxcontrib-mermaid >= 2.0",
+    "bump-my-version>=0.30",
 ]
 
 [project.urls]
@@ -135,3 +136,34 @@ exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
 
 [project.scripts]
 sourcerykit = "sourcerykit.cli.main:app"
+
+[tool.bumpversion]
+current_version = "1.0.0b3"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+allow_dirty = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?P<pre>a|b|rc)?(?P<pre_num>\\d+)?"
+serialize = [
+    "{major}.{minor}.{patch}{pre}{pre_num}",
+    "{major}.{minor}.{patch}",
+]
+
+[tool.bumpversion.parts.pre]
+values = ["", "a", "b", "rc"]
+optional_value = ""
+depends_on = "patch"
+
+[tool.bumpversion.parts.pre_num]
+first_value = 1
+depends_on = "pre"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "README.md"
+search = "v{current_version}"
+replace = "v{new_version}"

@@ -82,6 +82,31 @@ test-e2e: ## Run only the loopback-server e2e suite
 build: ## Build wheel + sdist into ./dist via uv build
 	$(UV) build
 
+# --- versioning -------------------------------------------------------------
+
+.PHONY: bump-release bump-patch bump-minor bump-major bump-beta bump-rc bump-push
+
+bump-release: ## Promote to stable release (e.g. 1.0.0b3 -> 1.0.0)
+	$(UV) run bump-my-version bump --new-version $(shell $(UV) run python -c "import re;print(re.sub(r'[a-z].*','', '$(shell $(UV) run bump-my-version show current_version)'))")
+
+bump-patch: ## Bump patch version (e.g. 1.0.0 -> 1.0.1)
+	$(UV) run bump-my-version bump patch
+
+bump-minor: ## Bump minor version (e.g. 1.0.0 -> 1.1.0)
+	$(UV) run bump-my-version bump minor
+
+bump-major: ## Bump major version (e.g. 1.0.0 -> 2.0.0)
+	$(UV) run bump-my-version bump major
+
+bump-beta: ## Bump beta version (e.g. 1.0.0b3 -> 1.0.0b4)
+	$(UV) run bump-my-version bump pre_num
+
+bump-rc: ## Promote to release candidate (e.g. 1.0.0b3 -> 1.0.0rc1)
+	$(UV) run bump-my-version bump pre
+
+bump-push: ## Push the last bump commit and tag to origin
+	git push --follow-tags
+
 # --- docs -------------------------------------------------------------------
 
 .PHONY: docs
