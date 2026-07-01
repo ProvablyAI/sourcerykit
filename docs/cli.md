@@ -14,7 +14,7 @@ Run `sourcerykit --help` to see all available commands.
 
 | Command | Description |
 |---------|-------------|
-| [`init`](#sourcerykit-init) | Interactive setup wizard (account, database, project) |
+| [`init`](#sourcerykit-init) | Setup wizard (account, database, project) |
 | [`doctor`](#sourcerykit-doctor) | Validate configuration and connectivity |
 | [`feedback`](#sourcerykit-feedback) | Submit feedback or bug reports |
 | [`logout`](#sourcerykit-logout) | Clear stored session |
@@ -46,7 +46,7 @@ Global config is shared across all projects. Local config is project-specific an
 
 ### `sourcerykit init`
 
-Interactive setup wizard for account creation/login, database linking, and project initialization.
+Setup wizard for account creation/login, database linking, and project initialization.
 
 ```bash
 sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME]
@@ -355,7 +355,7 @@ SOURCERYKIT_PROJECT_NAME  = 'my-project'
 
 ##### `sourcerykit config set`
 
-Interactively update configuration variables.
+Update configuration variables.
 
 ```bash
 sourcerykit config set [--api-key KEY] [--postgres-url URL] [--project-name NAME]
