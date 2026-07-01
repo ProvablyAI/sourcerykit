@@ -49,19 +49,20 @@ Global config is shared across all projects. Local config is project-specific an
 Interactive setup wizard for account creation/login, database linking, and project initialization.
 
 ```bash
-sourcerykit init [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME]
+sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME]
 ```
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--email` | Account email (non-interactive login) |
+| `--register` | Create a new account (requires `--email` and `--password`) |
+| `--email` | Account email |
 | `--password` | Account password |
 | `--postgres-url` | Full `postgresql://` URL |
 | `--project-name` | Project name |
 
 > [!NOTE]
-> `--email` and `--password` must be used together. When provided, the wizard skips the login prompt and authenticates directly. Registration still requires interactive use (email verification).
+> `--email` and `--password` must be used together. Use `--register` to create a new account, or omit it to log in with an existing account. Registration requires email verification before you can log in.
 
 **What it does:**
 - Account setup (register or login)
@@ -89,7 +90,15 @@ PostgreSQL URL: postgresql://user:pass@host:5432/db
 Project name: my-project
 ```
 
-**Non-interactive example (CI/CD):**
+**Non-interactive registration:**
+```bash
+sourcerykit init --register --email user@example.com --password secret
+# → "📧 Verification email sent"
+# → Verify your account, then run:
+# →   sourcerykit init --email user@example.com --password secret"
+```
+
+**Non-interactive login + setup (CI/CD):**
 ```bash
 sourcerykit init \
   --email user@example.com \
