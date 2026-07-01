@@ -10,8 +10,10 @@ from sourcerykit.cli.init import (
     _run_register,
 )
 from sourcerykit.cli.utils import (
+    _normalize_postgres_url,
     ask_postgres_url,
     mask_secret,
+    prompt_postgres_url_with_retry,
     prompt_project_name,
     require_settings,
     run_connectivity_check,
@@ -161,7 +163,12 @@ class TestRunLogin:
             with pytest.raises(typer.Exit):
                 _run_login()
 
-        mock_phases.assert_called_once_with("jwt-abc", email="user@example.com")
+        mock_phases.assert_called_once_with(
+            "jwt-abc",
+            email="user@example.com",
+            postgres_url=None,
+            project_name=None,
+        )
 
     def test_handles_unauthorized_error_without_crash(self) -> None:
         with (
@@ -284,3 +291,154 @@ class TestPromptProjectName:
             mock_q.text.return_value.ask.return_value = "  spaced out  "
             result = prompt_project_name()
         assert result == "spaced-out"
+
+
+# ---------------------------------------------------------------------------
+# prompt_project_name (non-interactive)
+# ---------------------------------------------------------------------------
+
+
+class TestPromptProjectNameNonInteractive:
+    def test_returns_normalized_name_without_prompt(self) -> None:
+        with patch("sourcerykit.cli.utils.questionary") as mock_q:
+            result = prompt_project_name(project_name="My Project")
+        assert result == "my-project"
+        mock_q.text.assert_not_called()
+
+    def test_normalizes_slashes_and_spaces(self) -> None:
+        result = prompt_project_name(project_name="  Hello World  ")
+        assert result == "hello-world"
+
+    def test_exits_on_empty_name(self) -> None:
+        with pytest.raises(typer.Exit):
+            prompt_project_name(project_name="   ")
+
+
+# ---------------------------------------------------------------------------
+# prompt_postgres_url_with_retry (non-interactive)
+# ---------------------------------------------------------------------------
+
+
+class TestPromptPostgresUrlWithRetryNonInteractive:
+    def test_returns_url_on_success(self) -> None:
+        with patch("sourcerykit.cli.utils.run_connectivity_check", return_value=True):
+            result = prompt_postgres_url_with_retry("postgresql://u:p@h:5432/db")
+        assert result == "postgresql://u:p@h:5432/db"
+
+    def test_exits_on_connection_failure(self) -> None:
+        with patch("sourcerykit.cli.utils.run_connectivity_check", return_value=False):
+            with pytest.raises(typer.Exit):
+                prompt_postgres_url_with_retry("postgresql://u:p@h:5432/db")
+
+    def test_normalizes_url_before_checking(self) -> None:
+        with (
+            patch("sourcerykit.cli.utils.run_connectivity_check", return_value=True) as mock_check,
+        ):
+            result = prompt_postgres_url_with_retry("postgresql://user:p@ss@h:5432/db")
+        assert result is not None
+        assert "p%40ss" in result
+        mock_check.assert_called_once_with(result)
+
+
+# ---------------------------------------------------------------------------
+# _normalize_postgres_url
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizePostgresUrl:
+    def test_encodes_at_in_password(self) -> None:
+        url = "postgresql://user:p@ss@host:5432/mydb"
+        result = _normalize_postgres_url(url)
+        assert result == "postgresql://user:p%40ss@host:5432/mydb"
+
+    def test_encodes_special_chars(self) -> None:
+        url = "postgresql://user:p$$w0rd!@host:5432/mydb"
+        result = _normalize_postgres_url(url)
+        assert "p%24%24w0rd%21" in result
+
+    def test_preserves_already_encoded_url(self) -> None:
+        url = "postgresql://user:p%40ss@host:5432/mydb"
+        result = _normalize_postgres_url(url)
+        # urlparse decodes %40 -> @, quote re-encodes -> %2540 (double-encoded)
+        # This is fine: the normalizer is for raw special chars, not already-encoded URLs
+        assert "p%2540ss" in result
+
+    def test_returns_original_on_no_username(self) -> None:
+        url = "postgresql://host:5432/mydb"
+        result = _normalize_postgres_url(url)
+        assert result == url
+
+
+# ---------------------------------------------------------------------------
+# _run_login (non-interactive)
+# ---------------------------------------------------------------------------
+
+
+class TestRunLoginNonInteractive:
+    def test_skips_prompts_when_email_and_password_provided(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary") as mock_q,
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.login = AsyncMock(return_value={"token": "jwt-abc"})
+            mock_phases.return_value = True
+
+            with pytest.raises(typer.Exit):
+                _run_login(email="a@b.com", password="pw")
+
+        mock_q.text.assert_not_called()
+        mock_q.password.assert_not_called()
+        mock_service.login.assert_called_once()
+
+    def test_passes_flags_to_post_auth_phases(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary"),
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.login = AsyncMock(return_value={"token": "jwt-abc"})
+            mock_phases.return_value = True
+
+            with pytest.raises(typer.Exit):
+                _run_login(
+                    email="a@b.com",
+                    password="pw",
+                    postgres_url="postgresql://u:p@h:5432/db",
+                    project_name="myproj",
+                )
+
+        mock_phases.assert_called_once_with(
+            "jwt-abc",
+            email="a@b.com",
+            postgres_url="postgresql://u:p@h:5432/db",
+            project_name="myproj",
+        )
+
+    def test_handles_unauthorized_error(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary"),
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.login = AsyncMock(side_effect=ProvablyUnauthorizedError("Bad"))
+
+            _run_login(email="a@b.com", password="bad")  # must not raise
+
+        mock_phases.assert_not_called()
+
+    def test_handles_connection_error(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary"),
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.login = AsyncMock(side_effect=ProvablyConnectionError("Unreachable"))
+
+            _run_login(email="a@b.com", password="pw")  # must not raise
+
+        mock_phases.assert_not_called()

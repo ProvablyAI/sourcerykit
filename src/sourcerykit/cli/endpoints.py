@@ -46,11 +46,15 @@ def list() -> None:
 
 
 @endpoints.command()
-def remove(url: str) -> None:
+def remove(
+    url: str,
+    yes: bool = typer.Option(False, "--yes", "-y", help="skip confirmation"),
+) -> None:
     require_settings()
-    confirm = questionary.confirm(f"Remove endpoint '{url}'?", default=False).ask()
-    if not confirm:
-        console.print("[yellow]Cancelled.[/yellow]")
-        return
+    if not yes:
+        confirm = questionary.confirm(f"Remove endpoint '{url}'?", default=False).ask()
+        if not confirm:
+            console.print("[yellow]Cancelled.[/yellow]")
+            return
     asyncio.run(service.remove_trusted_endpoint(url=url))
     console.print(f"[bold green]✅ Endpoint removed:[/bold green] {url}")

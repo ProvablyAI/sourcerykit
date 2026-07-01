@@ -36,71 +36,90 @@ def list(show_key: bool = typer.Option(False, "--show-key", help="show secrets i
 
 
 @config.command()
-def set() -> None:
+def set(
+    api_key: str | None = typer.Option(None, "--api-key", help="set PROVABLY_API_KEY"),
+    postgres_url: str | None = typer.Option(None, "--postgres-url", help="set SOURCERYKIT_POSTGRES_URL"),
+    project_name: str | None = typer.Option(None, "--project-name", help="set SOURCERYKIT_PROJECT_NAME"),
+) -> None:
     """Interactively set or update configuration variables."""
+    has_flags = api_key is not None or postgres_url is not None or project_name is not None
     console.print("\n⚙️  [bold]SourceryKit Configuration Setup[/bold]\n")
 
-    choices = questionary.checkbox(
-        "Which configuration variables would you like to update?",
-        choices=[
-            questionary.Choice("PROVABLY_API_KEY (global)", checked=False),
-            questionary.Choice("SOURCERYKIT_POSTGRES_URL (local)", checked=False),
-            questionary.Choice("SOURCERYKIT_PROJECT_NAME (local)", checked=False),
-        ],
-    ).ask()
+    if has_flags:
+        choices = []
+        if api_key is not None:
+            choices.append("PROVABLY_API_KEY (global)")
+        if postgres_url is not None:
+            choices.append("SOURCERYKIT_POSTGRES_URL (local)")
+        if project_name is not None:
+            choices.append("SOURCERYKIT_PROJECT_NAME (local)")
+    else:
+        choices = questionary.checkbox(
+            "Which configuration variables would you like to update?",
+            choices=[
+                questionary.Choice("PROVABLY_API_KEY (global)", checked=False),
+                questionary.Choice("SOURCERYKIT_POSTGRES_URL (local)", checked=False),
+                questionary.Choice("SOURCERYKIT_PROJECT_NAME (local)", checked=False),
+            ],
+        ).ask()
 
-    if not choices:
-        console.print("[yellow]No variables selected. Configuration unchanged.[/yellow]")
-        return
+        if not choices:
+            console.print("[yellow]No variables selected. Configuration unchanged.[/yellow]")
+            return
 
     # --- Collect inputs ---
 
-    api_key = None
+    api_key_val = None
     if "PROVABLY_API_KEY (global)" in choices:
-        api_key = questionary.password("Enter your PROVABLY_API_KEY:").ask()
         if api_key is not None:
-            api_key = api_key.strip()
-            if not api_key:
-                console.print("[red]❌ API key cannot be empty.[/red]")
-                api_key = None
-            elif not re.fullmatch(r"zk-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", api_key):
-                console.print("[red]❌ API key must match format zk-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx[/red]")
-                api_key = None
+            api_key_val = api_key.strip()
+        else:
+            api_key_val = questionary.password("Enter your PROVABLY_API_KEY:").ask()
+            if api_key_val is not None:
+                api_key_val = api_key_val.strip()
 
-    postgres_url = None
+        if api_key_val is not None:
+            if not api_key_val:
+                console.print("[red]❌ API key cannot be empty.[/red]")
+                api_key_val = None
+            elif not re.fullmatch(r"zk-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", api_key_val):
+                console.print("[red]❌ API key must match format zk-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx[/red]")
+                api_key_val = None
+
+    postgres_url_val = None
     postgres_changed = False
     if "SOURCERYKIT_POSTGRES_URL (local)" in choices:
         local_env = load_local_env()
         current_url = local_env.get("SOURCERYKIT_POSTGRES_URL", "")
-        result = prompt_postgres_url_with_retry()
+        result = prompt_postgres_url_with_retry(postgres_url)
         if result and result != current_url:
-            postgres_url = result
+            postgres_url_val = result
             postgres_changed = True
         elif result == current_url:
             console.print("[yellow]Same URL — no change.[/yellow]")
 
-    project_name = None
+    project_name_val = None
     project_changed = False
     if "SOURCERYKIT_PROJECT_NAME (local)" in choices:
         local_env = load_local_env()
         current_name = local_env.get("SOURCERYKIT_PROJECT_NAME", "")
-        result = prompt_project_name(current=current_name)
+        result = prompt_project_name(current=current_name, project_name=project_name)
         if result and result != current_name:
-            project_name = result
+            project_name_val = result
             project_changed = True
         elif result == current_name:
             console.print("[yellow]Same name — no change.[/yellow]")
 
     # --- Save config ---
 
-    if api_key:
-        save_app_dir_config(api_key=api_key)
+    if api_key_val:
+        save_app_dir_config(api_key=api_key_val)
 
     local_updates: dict[str, str] = {}
-    if postgres_url:
-        local_updates["SOURCERYKIT_POSTGRES_URL"] = postgres_url
-    if project_name:
-        local_updates["SOURCERYKIT_PROJECT_NAME"] = project_name
+    if postgres_url_val:
+        local_updates["SOURCERYKIT_POSTGRES_URL"] = postgres_url_val
+    if project_name_val:
+        local_updates["SOURCERYKIT_PROJECT_NAME"] = project_name_val
     if local_updates:
         save_local_env(**local_updates)
 

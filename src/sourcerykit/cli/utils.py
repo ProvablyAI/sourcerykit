@@ -126,11 +126,30 @@ def run_connectivity_check(postgres_url: str, quiet: bool = False) -> bool:
         return False
 
 
-def prompt_postgres_url_with_retry() -> str | None:
+def _normalize_postgres_url(url: str) -> str:
+    """Re-encode credentials in a Postgres URL so special chars don't break parsing."""
+    parsed = urlparse(url)
+    if not parsed.username:
+        return url
+    encoded_user = quote(parsed.username, safe="")
+    encoded_pass = quote(parsed.password or "", safe="")
+    netloc = f"{encoded_user}:{encoded_pass}@{parsed.hostname}:{parsed.port or 5432}"
+    return str(urlunparse(parsed._replace(netloc=netloc)))
+
+
+def prompt_postgres_url_with_retry(postgres_url: str | None = None) -> str | None:
     """Prompt for Postgres URL with connectivity check and retry loop.
 
+    If *postgres_url* is provided, validate it non-interactively (single attempt).
     Returns the validated URL, or None if the user cancelled/aborted.
     """
+    if postgres_url:
+        postgres_url = _normalize_postgres_url(postgres_url)
+        if run_connectivity_check(postgres_url):
+            return postgres_url
+        console.print("[red]❌ Database connection failed.[/red]")
+        raise typer.Exit(code=1)
+
     while True:
         postgres_url = ask_postgres_url()
         if not postgres_url:
@@ -145,11 +164,19 @@ def prompt_postgres_url_with_retry() -> str | None:
             return None
 
 
-def prompt_project_name(current: str = "") -> str | None:
+def prompt_project_name(current: str = "", project_name: str | None = None) -> str | None:
     """Prompt for a project name with validation and normalization.
 
+    If *project_name* is provided, normalize and return it without prompting.
     Returns the normalized name, or None if the user cancelled.
     """
+    if project_name:
+        normalized = project_name.strip().lower().replace(" ", "-")
+        if not normalized:
+            console.print("[red]❌ Project name cannot be empty.[/red]")
+            raise typer.Exit(code=1)
+        return normalized
+
     label = f" (Current: {current})" if current else ""
     raw = questionary.text(
         f"Enter project name{label}:",

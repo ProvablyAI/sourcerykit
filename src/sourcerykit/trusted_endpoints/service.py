@@ -141,9 +141,8 @@ async def remove_trusted_endpoint(*, url: str) -> None:
     org_id = get_settings().org_id
     engine = get_engine()
 
-    if not is_endpoint_trusted(clean_url):
-        # TODO: handle raise
-        raise
+    if not await is_endpoint_trusted(clean_url):
+        raise SourceryKitTrustError(f"Endpoint '{clean_url}' is not trusted")
 
     # Remove statement
     stmt = delete_trusted_endpoint(org_id, clean_url)
