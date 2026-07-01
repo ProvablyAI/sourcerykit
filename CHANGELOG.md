@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0b4
+
 ### Tooling
 - Integrated `bump-my-version` for automated version management
 

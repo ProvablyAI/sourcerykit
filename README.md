@@ -4,7 +4,7 @@
   <br />
 
   [![PyPI Version](https://img.shields.io/pypi/v/sourcerykit.svg?color=blue)](https://pypi.org/project/sourcerykit/)
-  [![status: v1.0.0b3](https://img.shields.io/badge/status-v1.0.0b3-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
+  [![status: v1.0.0b4](https://img.shields.io/badge/status-v1.0.0b4-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
   [![python: 3.12+](https://img.shields.io/badge/python-3.12+-slate)](https://github.com/ProvablyAI/sourcerykit/blob/main/pyproject.toml)
   [![license: BSL 1.1](https://img.shields.io/badge/license-BSL%201.1-crimson)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
   [![CI Build](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml/badge.svg)](https://github.com/ProvablyAI/sourcerykit/actions)
