@@ -19,12 +19,19 @@ app.add_typer(trace, name="trace")
 
 @app.command(help="interactive setup wizard (account, database, project)")
 def init(
-    email: str | None = typer.Option(None, "--email", help="account email (non-interactive login)"),
+    register: bool = typer.Option(False, "--register", help="create a new account (requires --email and --password)"),
+    email: str | None = typer.Option(None, "--email", help="account email"),
     password: str | None = typer.Option(None, "--password", help="account password"),
     postgres_url: str | None = typer.Option(None, "--postgres-url", help="full postgres:// URL"),
     project_name: str | None = typer.Option(None, "--project-name", help="project name"),
 ) -> None:
-    config_provably(email=email, password=password, postgres_url=postgres_url, project_name=project_name)
+    config_provably(
+        register=register,
+        email=email,
+        password=password,
+        postgres_url=postgres_url,
+        project_name=project_name,
+    )
 
 
 @app.command(help="validate configuration and connectivity")

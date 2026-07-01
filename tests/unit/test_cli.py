@@ -143,6 +143,52 @@ class TestRunRegister:
 
 
 # ---------------------------------------------------------------------------
+# _run_register (non-interactive)
+# ---------------------------------------------------------------------------
+
+
+class TestRunRegisterNonInteractive:
+    def test_creates_account_and_exits(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary") as mock_q,
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.create_account = AsyncMock(return_value=None)
+
+            with pytest.raises(typer.Exit):
+                _run_register(email="new@example.com", password="pw")
+
+        mock_service.create_account.assert_called_once()
+        mock_q.prompt.assert_not_called()
+        mock_q.press_any_key_to_continue.assert_not_called()
+
+    def test_handles_already_registered_error(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary"),
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.create_account = AsyncMock(side_effect=ProvablyUnauthorizedError("Already registered"))
+
+            result = _run_register(email="new@example.com", password="pw")
+
+        assert result == ""
+
+    def test_handles_connection_error(self) -> None:
+        with (
+            patch("sourcerykit.cli.init.questionary"),
+            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            mock_service.create_account = AsyncMock(side_effect=ProvablyConnectionError("Unreachable"))
+
+            result = _run_register(email="new@example.com", password="pw")
+
+        assert result == ""
+
+
+# ---------------------------------------------------------------------------
 # _run_login
 # ---------------------------------------------------------------------------
 
