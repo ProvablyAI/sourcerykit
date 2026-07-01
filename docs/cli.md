@@ -49,8 +49,19 @@ Global config is shared across all projects. Local config is project-specific an
 Interactive setup wizard for account creation/login, database linking, and project initialization.
 
 ```bash
-sourcerykit init
+sourcerykit init [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME]
 ```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--email` | Account email (non-interactive login) |
+| `--password` | Account password |
+| `--postgres-url` | Full `postgresql://` URL |
+| `--project-name` | Project name |
+
+> [!NOTE]
+> `--email` and `--password` must be used together. When provided, the wizard skips the login prompt and authenticates directly. Registration still requires interactive use (email verification).
 
 **What it does:**
 - Account setup (register or login)
@@ -76,6 +87,15 @@ PostgreSQL URL: postgresql://user:pass@host:5432/db
 
 📦 Name your project
 Project name: my-project
+```
+
+**Non-interactive example (CI/CD):**
+```bash
+sourcerykit init \
+  --email user@example.com \
+  --password secret \
+  --postgres-url "postgresql://user:pass@host:5432/db" \
+  --project-name my-project
 ```
 
 **Output:** Saves credentials to global config and local `.env` file.
@@ -155,12 +175,21 @@ All 6 checks passed!
 Submit feedback or bug reports.
 
 ```bash
-sourcerykit feedback
+sourcerykit feedback [--description TEXT] [--attach-file PATH]
 ```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--description` | Feedback description |
+| `--attach-file` | Path to file to attach |
 
 **Input:** Interactive prompts for description and optional file attachment.
 
-**Output:** Sends feedback to the SourceryKit team.
+**Non-interactive example:**
+```bash
+sourcerykit feedback --description "Found a bug in the init flow" --attach-file logs.txt
+```
 
 ---
 
@@ -252,7 +281,7 @@ sourcerykit endpoints list
 Remove a trusted endpoint from the allow-list.
 
 ```bash
-sourcerykit endpoints remove <URL>
+sourcerykit endpoints remove <URL> [--yes]
 ```
 
 **Arguments:**
@@ -260,11 +289,16 @@ sourcerykit endpoints remove <URL>
 |----------|----------|-------------|
 | `URL` | Yes | Endpoint URL to remove |
 
-**Input:** Confirmation prompt.
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--yes` / `-y` | Skip confirmation prompt |
+
+**Input:** Confirmation prompt (unless `--yes` is passed).
 
 **Example:**
 ```bash
-sourcerykit endpoints remove https://api.example.com/data
+sourcerykit endpoints remove https://api.example.com/data -y
 ```
 
 **Output:**
@@ -315,13 +349,26 @@ SOURCERYKIT_PROJECT_NAME  = 'my-project'
 Interactively update configuration variables.
 
 ```bash
-sourcerykit config set
+sourcerykit config set [--api-key KEY] [--postgres-url URL] [--project-name NAME]
 ```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--api-key` | Set `PROVABLY_API_KEY` |
+| `--postgres-url` | Set `SOURCERYKIT_POSTGRES_URL` |
+| `--project-name` | Set `SOURCERYKIT_PROJECT_NAME` |
 
 **Input:** Interactive checkbox to select variables to update:
 - `PROVABLY_API_KEY` (global)
 - `SOURCERYKIT_POSTGRES_URL` (local)
 - `SOURCERYKIT_PROJECT_NAME` (local)
+
+**Non-interactive example:**
+```bash
+sourcerykit config set --project-name new-name
+sourcerykit config set --postgres-url "postgresql://user:pass@newhost:5432/db"
+```
 
 **Output:** Saves changes and re-bootstraps if database or project name changed.
 
