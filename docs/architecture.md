@@ -4,22 +4,9 @@ The SourceryKit SDK adds verifiable guardrails to Python agents by making outbou
 ## Core Flow
 SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint policies, records interactions, and enables deterministic evaluation of claims.
 
-```mermaid
-flowchart TD
-  Agent([Agent]) -->|Initializes| Bootstrap[Bootstrap System]
-  Bootstrap -->|Configures| Interceptor[HTTP Interceptor]
-  Bootstrap -->|Registers| TrustedEndpoints[(Trusted Endpoints)]
-
-  Agent -->|Outbound HTTP| Interceptor
-  Interceptor -->|Validates against| TrustedEndpoints
-  Interceptor -->|Logs to| Intercepts[(Intercepts Table)]
-
-  Agent -->|Submits| Handoff[Handoff Payload]
-  Handoff -->|Verified by| Evaluator[Evaluator]
-  Evaluator -->|Queries records| Provably[Provably Backend]
-  Provably -->|Generates proofs from| Intercepts
-  Evaluator -->|Returns Verdict| Agent
-```
+<div align="center">
+  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/architecture.svg" alt="architecture" width="550" />
+</div>
 
 ## Component Overview
 
