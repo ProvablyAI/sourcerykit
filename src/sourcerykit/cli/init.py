@@ -52,14 +52,21 @@ def _collect_register_inputs() -> dict[str, Any]:
 
 
 # --- Credential collection and account setup ---
-def _run_register() -> str:
-    """Handles the user registration setup path."""
-    inputs = _collect_register_inputs()
-    if not inputs:
-        return ""
+def _run_register(email: str | None = None, password: str | None = None) -> str:
+    """Handles the user registration setup path.
 
-    email: str = inputs.get("email", "").strip()
-    user = User(email=email, password=inputs["password"])
+    When *email* and *password* are provided, skips interactive prompts and
+    exits after printing verification instructions (non-interactive mode).
+    """
+    if email and password:
+        register_email = email.strip()
+        user = User(email=register_email, password=password)
+    else:
+        inputs = _collect_register_inputs()
+        if not inputs:
+            return ""
+        register_email = inputs.get("email", "").strip()
+        user = User(email=register_email, password=inputs["password"])
 
     # --- Create account ---
     try:
@@ -68,12 +75,20 @@ def _run_register() -> str:
         console.print("\n[bold]📧 Verification email sent[/bold]")
         console.print(" We've sent a verification link to your email inbox.")
         console.print(" Please check your mail and verify your account to continue.")
+
+        if email and password:
+            console.print("\n[bold]📌 NEXT STEPS:[/bold]")
+            console.print(" 1. Click the link in your email to verify your account.")
+            console.print(" 2. Then run:\n")
+            console.print(f"   sourcerykit init --email {email} --password ******\n")
+            raise typer.Exit()
+
         console.print("\n[bold]📌 NEXT STEPS:[/bold]")
         console.print(" 1. Click the link in your email to verify your account.")
         console.print(" 2. Return here, choose 'Log in', and link your database.\n")
 
         questionary.press_any_key_to_continue("Press any key to return to the main menu...").ask()
-        return email
+        return register_email
 
     except ProvablyUnauthorizedError:
         console.print(
@@ -85,27 +100,41 @@ def _run_register() -> str:
         return ""
 
 
-def _run_login(*, prefill_email: str = "") -> None:
-    """Handles authentication."""
-    console.print("\n[bold]🔐 Log in to your account[/bold]")
-    email = questionary.text(
-        message="Email address:",
-        default=prefill_email,
-        validate=lambda text: True if len(text.strip()) > 0 else "Email cannot be empty.",
-    ).ask()
-    if not email:
-        return
+def _run_login(
+    *,
+    prefill_email: str = "",
+    email: str | None = None,
+    password: str | None = None,
+    postgres_url: str | None = None,
+    project_name: str | None = None,
+) -> None:
+    """Handles authentication.
 
-    password = questionary.password(
-        message="Password:",
-        validate=lambda text: True if len(text.strip()) > 0 else "Password cannot be empty.",
-    ).ask()
-    if not password:
-        return
+    When *email* and *password* are provided, skips interactive prompts.
+    """
+    if email and password:
+        login_email = email.strip()
+        login_password = password
+    else:
+        console.print("\n[bold]🔐 Log in to your account[/bold]")
+        login_email = questionary.text(
+            message="Email address:",
+            default=prefill_email,
+            validate=lambda text: True if len(text.strip()) > 0 else "Email cannot be empty.",
+        ).ask()
+        if not login_email:
+            return
+
+        login_password = questionary.password(
+            message="Password:",
+            validate=lambda text: True if len(text.strip()) > 0 else "Password cannot be empty.",
+        ).ask()
+        if not login_password:
+            return
 
     try:
         console.print("\nLogging in...")
-        result = asyncio.run(service.login(User(email=email, password=password)))
+        result = asyncio.run(service.login(User(email=login_email, password=login_password)))
     except ProvablyUnauthorizedError:
         console.print("\n[red]❌ Invalid email/password, or your account isn't verified yet.[/red]")
         console.print("Please check your verification link or try again.")
@@ -119,8 +148,8 @@ def _run_login(*, prefill_email: str = "") -> None:
         console.print("[red]❌ Login failed: Token missing from API response.[/red]")
         return
 
-    save_app_dir_config(token=token, email=email)
-    if _execute_post_auth_phases(token, email=email):
+    save_app_dir_config(token=token, email=login_email)
+    if _execute_post_auth_phases(token, email=login_email, postgres_url=postgres_url, project_name=project_name):
         console.print("\n👋 Setup closed. Happy coding!")
         raise typer.Exit()
 
@@ -186,7 +215,13 @@ def run_full_bootstrap(project_name: str) -> bool:
 # --- Post auth phases: organization, database, project name, bootstrap, save all
 
 
-def _execute_post_auth_phases(token: str, *, email: str) -> bool:
+def _execute_post_auth_phases(
+    token: str,
+    *,
+    email: str,
+    postgres_url: str | None = None,
+    project_name: str | None = None,
+) -> bool:
     """Executes organisation, database, project, bootstrap, and saving steps."""
 
     # --- organization ---
@@ -264,14 +299,14 @@ def _execute_post_auth_phases(token: str, *, email: str) -> bool:
     console.print(" • The database MUST be hosted and publicly accessible over the web.")
     console.print(" • Local databases (localhost / 127.0.0.1) will NOT work.")
 
-    postgres_url = prompt_postgres_url_with_retry()
+    postgres_url = prompt_postgres_url_with_retry(postgres_url)
     if not postgres_url:
         console.print("[yellow]⚠️ Database setup cancelled.[/yellow]")
         return False
 
     # --- project name ---
     console.print("\n[bold]📦 Name your project[/bold]")
-    project_name = prompt_project_name()
+    project_name = prompt_project_name(project_name=project_name)
     if not project_name:
         console.print("[yellow]⚠️ Setup aborted.[/yellow]")
         return False
@@ -301,8 +336,33 @@ def _execute_post_auth_phases(token: str, *, email: str) -> bool:
     return True
 
 
-def config_provably() -> None:
+def config_provably(
+    *,
+    register: bool = False,
+    email: str | None = None,
+    password: str | None = None,
+    postgres_url: str | None = None,
+    project_name: str | None = None,
+) -> None:
     console.print(logo.print_logo(), "\n\n")
+
+    # Non-interactive registration
+    if register:
+        if not email or not password:
+            console.print("[red]❌ --register requires --email and --password[/red]")
+            raise typer.Exit(code=1)
+        if postgres_url or project_name:
+            console.print(
+                "[red]❌ --postgres-url and --project-name cannot be used with --register (verify email first)[/red]"
+            )
+            raise typer.Exit(code=1)
+        _run_register(email=email, password=password)
+        return
+
+    # Non-interactive login when credentials are provided
+    if email and password:
+        _run_login(email=email, password=password, postgres_url=postgres_url, project_name=project_name)
+        return
 
     saved_email = ""
 
@@ -332,7 +392,12 @@ def config_provably() -> None:
 
             # continue — try stored token
             try:
-                if _execute_post_auth_phases(stored_token, email=stored_email_addr):
+                if _execute_post_auth_phases(
+                    stored_token,
+                    email=stored_email_addr,
+                    postgres_url=postgres_url,
+                    project_name=project_name,
+                ):
                     console.print("\n👋 Setup closed. Happy coding!")
                     raise typer.Exit()
             except ProvablyUnauthorizedError:

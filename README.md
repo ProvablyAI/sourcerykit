@@ -3,7 +3,7 @@
 
   <br />
 
-  [![status: v1.0.0b2](https://img.shields.io/badge/status-v1.0.0b2-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
+  [![status: v1.0.0b3](https://img.shields.io/badge/status-v1.0.0b3-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
   [![python: 3.12+](https://img.shields.io/badge/python-3.12+-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/pyproject.toml)
   [![license: Proprietary](https://img.shields.io/badge/license-Proprietary-red)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
 </div>

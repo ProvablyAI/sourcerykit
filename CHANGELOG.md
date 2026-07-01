@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0b3
+
+### Non-interactive flags
+- Added non-interactive mode to init, feedback, endpoints remove, and config set via new CLI flags (--email, --password, --postgres-url, --project-name, --register, --yes, --description, --attach-file, --api-key)
+
+### Bug fixes
+- Fixed missing await on is_endpoint_trusted() when removing endpoints
+- Replaced bare raise with SourceryKitTrustError in remove_trusted_endpoint
+
 ## 1.0.0b2
 
 ### Documentation & Assets

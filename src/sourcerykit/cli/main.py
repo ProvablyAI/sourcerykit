@@ -18,8 +18,20 @@ app.add_typer(trace, name="trace")
 
 
 @app.command(help="interactive setup wizard (account, database, project)")
-def init() -> None:
-    config_provably()
+def init(
+    register: bool = typer.Option(False, "--register", help="create a new account (requires --email and --password)"),
+    email: str | None = typer.Option(None, "--email", help="account email"),
+    password: str | None = typer.Option(None, "--password", help="account password"),
+    postgres_url: str | None = typer.Option(None, "--postgres-url", help="full postgres:// URL"),
+    project_name: str | None = typer.Option(None, "--project-name", help="project name"),
+) -> None:
+    config_provably(
+        register=register,
+        email=email,
+        password=password,
+        postgres_url=postgres_url,
+        project_name=project_name,
+    )
 
 
 @app.command(help="validate configuration and connectivity")
@@ -30,8 +42,11 @@ def doctor(
 
 
 @app.command(help="send feedback")
-def feedback() -> None:
-    send_feedback()
+def feedback(
+    description: str | None = typer.Option(None, "--description", help="feedback description"),
+    attach_file: str | None = typer.Option(None, "--attach-file", help="path to file to attach"),
+) -> None:
+    send_feedback(description=description, attach_file=attach_file)
 
 
 @app.command(help="clear stored session (token)")

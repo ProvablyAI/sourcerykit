@@ -95,6 +95,6 @@ class TestEndpointsRemove:
         ):
             mock_q.confirm.return_value.ask.return_value = False
             mock_svc.remove_trusted_endpoint = AsyncMock()
-            remove("https://bad.com")
+            remove("https://bad.com", yes=False)
 
         mock_svc.remove_trusted_endpoint.assert_not_called()
