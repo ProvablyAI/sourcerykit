@@ -5,10 +5,10 @@ build-backend = "hatchling.build"
 [project]
 name = "sourcerykit"
 version = "1.0.0b3"
-description = "SourceryKit"
-readme = "README.md"
+description = "Counterspell for hallucinating agents. Python SDK that breaks the illusion on every tool call, API response, and MCP handoff before bad outputs propagate."
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.12"
-license = { text = "Proprietary" }
+license = { text = "Business Source License 1.1" }
 authors = [{ name = "Provably Technologies Ltd" }]
 keywords = [
     "sourcerykit",
@@ -34,7 +34,6 @@ dependencies = [
     "psycopg[binary]>=3.1",
     "pydantic>=2.6",
     "python-dotenv>=1.2",
-    "requests>=2.31",
     "sqlalchemy>=2.0",
     "structlog>=24.1",
     "msgspec>=0.18.0",
@@ -62,8 +61,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ProvablyAI/sourcerykit"
-Issues = "https://github.com/ProvablyAI/sourcerykit/issues"
+Homepage = "https://provably.ai"
+Documentation = "https://provably.ai/docs"
+Repository = "https://github.com/ProvablyAI/sourcerykit"
+"Bug Tracker" = "https://github.com/ProvablyAI/sourcerykit/issues"
+Changelog = "https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sourcerykit"]
@@ -79,7 +81,7 @@ include = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py312"
 exclude = [".cache", ".venv", "venv", "dist", "build", ".git"]
 
 [tool.ruff.lint]
