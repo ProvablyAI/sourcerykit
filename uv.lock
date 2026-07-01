@@ -2158,7 +2158,6 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "python-dotenv", specifier = ">=1.2" },
     { name = "questionary", specifier = ">=2.1" },
-    { name = "requests", specifier = ">=2.31" },
     { name = "requests", specifier = ">=2.34" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3" },
     { name = "sphinx", marker = "extra == 'dev'", specifier = ">=9.1" },
