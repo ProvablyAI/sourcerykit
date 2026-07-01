@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0b4
+## Unreleased
 
 ### Tooling
 - Integrated `bump-my-version` for automated version management

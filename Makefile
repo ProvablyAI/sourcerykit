@@ -110,8 +110,9 @@ bump-pr: ## Bump version, create branch, commit, push, open PR (usage: make bump
 	make bump-$(TYPE)
 	make lock
 	$(eval NEW_VER := $(shell sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml))
+	perl -i -pe 's/## Unreleased/## Unreleased\n\n## $(NEW_VER)/' CHANGELOG.md
 	git checkout -b release/v$(NEW_VER)
-	git add pyproject.toml README.md uv.lock
+	git add pyproject.toml README.md uv.lock CHANGELOG.md
 	git commit -m "bump: $(OLD_VER) -> $(NEW_VER)"
 	git push -u origin release/v$(NEW_VER)
 	gh pr create --base main --title "bump: $(OLD_VER) -> $(NEW_VER)" --body "Bump version from $(OLD_VER) to $(NEW_VER)"
