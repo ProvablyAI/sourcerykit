@@ -82,6 +82,44 @@ test-e2e: ## Run only the loopback-server e2e suite
 build: ## Build wheel + sdist into ./dist via uv build
 	$(UV) build
 
+# --- versioning -------------------------------------------------------------
+
+.PHONY: bump-release bump-patch bump-minor bump-major bump-beta bump-rc bump-pr tag
+
+bump-release: ## Promote to stable release (e.g. 1.0.0b3 -> 1.0.0)
+	$(UV) run bump-my-version bump --new-version $(shell sed -n 's/^current_version = "\([0-9.]*\).*/\1/p' pyproject.toml)
+
+bump-patch: ## Bump patch version (e.g. 1.0.0 -> 1.0.1)
+	$(UV) run bump-my-version bump patch
+
+bump-minor: ## Bump minor version (e.g. 1.0.0 -> 1.1.0)
+	$(UV) run bump-my-version bump minor
+
+bump-major: ## Bump major version (e.g. 1.0.0 -> 2.0.0)
+	$(UV) run bump-my-version bump major
+
+bump-beta: ## Bump beta version (e.g. 1.0.0b3 -> 1.0.0b4)
+	$(UV) run bump-my-version bump pre_num
+
+bump-rc: ## Promote to release candidate (e.g. 1.0.0b3 -> 1.0.0rc1)
+	$(UV) run bump-my-version bump pre
+
+bump-pr: ## Bump version, create branch, commit, push, open PR (usage: make bump-pr TYPE=beta)
+	git fetch origin main
+	$(eval OLD_VER := $(shell sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml))
+	make bump-$(TYPE)
+	make lock
+	$(eval NEW_VER := $(shell sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml))
+	perl -i -pe 's/## Unreleased/## Unreleased\n\n## $(NEW_VER)/' CHANGELOG.md
+	git checkout -b release/v$(NEW_VER)
+	git add pyproject.toml README.md uv.lock CHANGELOG.md
+	git commit -m "bump: $(OLD_VER) -> $(NEW_VER)"
+	git push -u origin release/v$(NEW_VER)
+	gh pr create --base main --title "bump: $(OLD_VER) -> $(NEW_VER)" --body "Bump version from $(OLD_VER) to $(NEW_VER)"
+
+tag: ## Create and push a version tag from current HEAD
+	git tag v$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && git push --follow-tags
+
 # --- docs -------------------------------------------------------------------
 
 .PHONY: docs

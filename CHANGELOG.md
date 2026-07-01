@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Tooling
+- Integrated `bump-my-version` for automated version management
+
+### Maintenance
+- Updated `requests` dependency version in lockfile
+- Cleaned up project metadata in `pyproject.toml`
+- Updated README badges for PyPI, license, and CI status
+
 ## 1.0.0b3
 
 ### Non-interactive flags
