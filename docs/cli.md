@@ -98,7 +98,7 @@ sourcerykit init --register --email user@example.com --password secret
 # →   sourcerykit init --email user@example.com --password secret"
 ```
 
-**Non-interactive login + setup (CI/CD):**
+**Non-interactive login + setup:**
 ```bash
 sourcerykit init \
   --email user@example.com \
