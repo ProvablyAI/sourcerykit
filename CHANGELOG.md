@@ -1,6 +1,14 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0b2
+
+### Documentation & Assets
+- **Fixed PyPI asset rendering** — Switched logo and architecture diagram links to absolute raw URLs so they render properly on PyPI.
+- **Fixed alert block formatting** — Replaced GitHub-specific `> [!IMPORTANT]` tags with standard markdown emojis to prevent broken rendering on PyPI.
+- **Updated documentation links** — Added explicit links to `provably.ai/docs`, hands-on cookbooks, and the end-to-end walkthrough guide.
+
+
+## 1.0.0b1
 
 Major release following a full repository refactor. The package is now published as **`sourcerykit`**.
 
