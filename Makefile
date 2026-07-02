@@ -104,20 +104,21 @@ bump-beta: ## Bump beta version (e.g. 1.0.0b3 -> 1.0.0b4)
 bump-rc: ## Promote to release candidate (e.g. 1.0.0b3 -> 1.0.0rc1)
 	$(UV) run bump-my-version bump pre
 
-bump-pr: ## Bump version, create branch, commit, push, open PR (usage: make bump-pr TYPE=beta)
+bump-pr: ## Bump version, commit, push branch (usage: make bump-pr TYPE=beta)
 	git fetch origin main
-	OLD_VER=$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && \
-	make bump-$(TYPE) && \
-	make lock && \
-	NEW_VER=$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && \
-	perl -i -pe "s/## Unreleased/## Unreleased\n\n## $$NEW_VER/" CHANGELOG.md && \
-	git checkout -b release/v$$NEW_VER && \
-	git add pyproject.toml README.md uv.lock CHANGELOG.md && \
-	git commit -m "bump: $$OLD_VER -> $$NEW_VER" && \
-	git push -u origin release/v$$NEW_VER
+	git checkout -b release/v$$($(UV) run bump-my-version show current_version)
+	make bump-$(TYPE)
+	make lock
+	git add pyproject.toml README.md uv.lock CHANGELOG.md
+	NEW_VER=$$($(UV) run bump-my-version show current_version) && \
+	git commit -m "bump: $$NEW_VER" && \
+	git push -u origin HEAD
 
 tag: ## Create and push a version tag from current HEAD
-	git tag v$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && git push --follow-tags
+	VERSION=$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && \
+	CHANGELOG=$$(awk "/^## $$VERSION/{found=1;next} /^## /{if(found)exit} found{print}" CHANGELOG.md | sed '/./,$!d') && \
+	git tag -a v$$VERSION -m "$$CHANGELOG" && \
+	git push origin v$$VERSION
 
 # --- docs -------------------------------------------------------------------
 
