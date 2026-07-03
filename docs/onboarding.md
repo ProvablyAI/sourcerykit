@@ -1,14 +1,14 @@
 # Onboarding & Setup
 
 Everything SourceryKit needs before you write code: an account, credentials, and a database.
-This is the **first** step — nothing else works until `.env` holds the three variables below.
+This is the **first** step — nothing else works until the credentials below exist.
 
 ## ⚠️ A human must complete this once
 
 Onboarding creates a Provably account, and the backend sends an **email verification link
 that only a human can click**. An automated agent cannot finish this step alone. If you are
-an agent and these credentials are not yet present, STOP and ask a human to run the setup
-below, then continue once `.env` exists.
+an agent, check with `sourcerykit doctor`; if credentials are missing, STOP and ask a human
+to run the setup below, then continue once `doctor` passes.
 
 ## Run the wizard
 
@@ -35,25 +35,23 @@ Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.
 
 ## The credentials
 
-| Variable | What it is |
-|---|---|
-| `SOURCERYKIT_API_KEY` | Provably API key. Issued at login — never hand-write it. |
-| `SOURCERYKIT_ORG_ID` | Organisation UUID. Paired with the key; issued together. |
-| `SOURCERYKIT_POSTGRES_URL` | DSN for the database SourceryKit records intercepts in. |
+`init` stores credentials at two levels (see [cli.md](cli.md) for the full table):
+
+- **Global config** (OS application directory, shared across projects): the Provably
+  **API key** and **organisation id** — issued together at login; never hand-write them.
+- **Project `.env`**: `SOURCERYKIT_POSTGRES_URL` (the database SourceryKit records
+  intercepts in), `SOURCERYKIT_PROJECT_NAME`, and the bootstrap resource ids.
 
 > [!NOTE]
 > The Postgres database must be **hosted and publicly reachable** — the Provably backend
 > connects to it directly to generate proofs. `localhost` / `127.0.0.1` will not work.
 
-Do not fabricate the API key or org id, and do not pair a key with an org it was not issued
-with — the two are minted together at login.
-
 ## Manual configuration (alternative)
 
-If you already have credentials, you can export them instead of running the wizard:
+Already have credentials? Environment variables override the stored config:
 
 ```bash
-export SOURCERYKIT_API_KEY="..."
+export PROVABLY_API_KEY="..."
 export SOURCERYKIT_ORG_ID="..."
 export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
 ```

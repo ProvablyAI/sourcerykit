@@ -168,5 +168,8 @@ The agent will populate `claimed_values` with a fabricated temperature. When the
 
 ---
 
-**Next:** what each piece does → [architecture](architecture.md) ·
-claims + verdicts in depth → [handoff](handoff.md) · first-time setup → [onboarding](onboarding.md)
+**Next steps:**
+
+- [Architecture](architecture.md) — what each piece does and how they fit together
+- [Handoff](handoff.md) — claims and verdicts in depth
+- [Onboarding](onboarding.md) — first-time account, credentials, and database setup

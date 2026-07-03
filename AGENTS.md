@@ -14,8 +14,9 @@ You **cannot** finish setup alone. Onboarding creates a Provably account, and th
 sends an **email verification link that only a human can click**. Until that is done, login
 fails and nothing downstream works.
 
-If `.env` does not yet contain `SOURCERYKIT_API_KEY`, `SOURCERYKIT_ORG_ID`, and
-`SOURCERYKIT_POSTGRES_URL`, STOP and ask a human to complete setup.
+Run `sourcerykit doctor` to check. If credentials are missing (API key, org, Postgres URL),
+STOP and ask a human to run `sourcerykit init` — it stores the API key and org in the global
+config and writes the project's `.env`.
 
 → **[docs/onboarding.md](docs/onboarding.md)** — the one-time setup (wizard, email verify, DB)
 
@@ -54,9 +55,13 @@ build_handoff_payload(...)      # compile claims; intercept_agent_id must match 
 evaluate_handoff(payload)       # -> {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...]}
 ```
 
-Outcomes: `PASS` = every claim matched the recorded data · `CAUGHT` = a claim did not match
-(or its endpoint was untrusted) · `ERROR` = nothing was verified (e.g. zero claims resolved —
-an empty `per_claim` is always `ERROR`, never a pass).
+Outcomes:
 
-Async throughout — `await` every SDK call. Only `httpx` and `aiohttp` traffic is recorded.
-`action_name` is the join key between the intercepted call and the claim — it must match.
+- `PASS` — every claim matched the recorded data.
+- `CAUGHT` — a claim did not match the recorded data, or its endpoint was not trusted.
+- `ERROR` — nothing was verified (for example, zero claims could be resolved). Verifying
+  zero claims is always `ERROR`, never a pass.
+
+Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp`, and
+`requests`. `action_name` is the join key between the intercepted call and the claim — it
+must match.

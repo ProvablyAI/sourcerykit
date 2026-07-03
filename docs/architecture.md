@@ -28,5 +28,10 @@ SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint polic
 
 ---
 
-**Next:** set up and run → [onboarding](onboarding.md) · [example](example.md) ·
-go deeper → [intercept](intercept.md) · [handoff](handoff.md) · [trusted-endpoints](trusted-endpoints.md)
+**Next steps:**
+
+- [Onboarding](onboarding.md) — one-time account, credentials, and database setup
+- [End-to-End Walkthrough](example.md) — run the whole flow in code
+- [Intercept](intercept.md) — how outbound HTTP calls are captured and recorded
+- [Handoff](handoff.md) — building claims and reading the verdict
+- [Trusted Endpoints](trusted-endpoints.md) — the outbound allow-list
