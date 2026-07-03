@@ -47,6 +47,7 @@ cli
 :maxdepth: 1
 :caption: Getting Started
 
+onboarding
 example
 ```
 

@@ -1,0 +1,28 @@
+# SourceryKit
+
+> Python SDK for Provably: verifiable guardrails for AI agents — records outbound HTTP
+> calls, enforces endpoint policies, and checks an agent's claims against what those calls
+> actually returned. Claims come from the agent's structured output; mismatches are CAUGHT.
+
+Agent entry point: [AGENTS.md](AGENTS.md) — the machine landing page. Start there.
+
+## Docs
+
+- [Onboarding & setup (one-time, needs a human)](docs/onboarding.md)
+- [End-to-end walkthrough](docs/example.md)
+- [Public API reference](docs/src/api.md)
+- [CLI reference](docs/cli.md)
+- [Architecture](docs/architecture.md)
+- [Intercepting HTTP calls](docs/intercept.md)
+- [Handoff payload & verdicts](docs/handoff.md)
+- [Trusted endpoints](docs/trusted-endpoints.md)
+
+## Examples
+
+- [OpenAI Agents SDK integration](cookbooks/openai_agents/agent_run.py)
+- [Claude Agent SDK integration](cookbooks/claude_agent/agent_run.py)
+- [LangChain integration](cookbooks/langchain_agent/agent_run.py)
+
+## Install
+
+`pip install sourcerykit` (Python 3.12+, PyPI: sourcerykit)
