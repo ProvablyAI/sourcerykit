@@ -8,6 +8,12 @@ agent's claims against what those calls actually returned, so a hallucinated val
 This is the landing page for AI agents. Read the gate below, then follow the breadcrumb to
 the one page you need. Each doc is focused — load only what the task requires.
 
+## Install
+
+```bash
+pip install sourcerykit    # Python 3.12+
+```
+
 ## ⚠️ Gate: one human step during setup
 
 Setup is agent-drivable except one step: account registration triggers an **email
@@ -22,12 +28,6 @@ nothing downstream works.
    the global config and writes the project's `.env`. Re-check with `sourcerykit doctor`.
 
 → **[docs/onboarding.md](docs/onboarding.md)** — the one-time setup (wizard, email verify, DB)
-
-## Install
-
-```bash
-pip install sourcerykit    # Python 3.12+
-```
 
 ## Pick your path
 

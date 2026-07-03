@@ -7,8 +7,8 @@ This is the **first** step — nothing else works until the credentials below ex
 
 Registration triggers an **email verification link that only a human can click** — that is
 the single step an automated agent cannot do. Everything else (register, login, database
-link, project setup) runs non-interactively. If you are an agent: check with
-`sourcerykit doctor`, drive the setup below yourself, and ask a human only for the
+link, project setup) runs non-interactively. If you are an agent: run the setup below
+yourself (it ends with a `sourcerykit doctor` check) and ask a human only for the
 verification click.
 
 ## Setup
