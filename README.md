@@ -67,6 +67,16 @@ The wizard will guide you through:
 
 > ⚠️ **IMPORTANT:** The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
 
+### Manual configuration (fallback)
+
+Already have credentials, or need to bypass the wizard (CI, containers, debugging)? Environment
+variables override the stored config:
+
+```bash
+export PROVABLY_API_KEY="..."
+export SOURCERYKIT_ORG_ID="..."
+export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
+```
 
 For a full list of CLI commands, check out the [CLI Documentation](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/cli.md) file, or simply run:
 ```bash

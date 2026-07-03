@@ -25,3 +25,13 @@ SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint polic
 - **Evaluator**: Compares agent claims against authoritative records from the Provably backend, returning a deterministic verdict (`PASS`, `CAUGHT`, or `ERROR`). See [handoff](handoff.md).
 
 - **Provably Backend**: The external service acting as the single source of truth for verifying agent claims by generating proofs from the Intercepts table.
+
+---
+
+**Next steps:**
+
+- [Onboarding](onboarding.md) — one-time account, credentials, and database setup
+- [End-to-End Walkthrough](example.md) — run the whole flow in code
+- [Intercept](intercept.md) — how outbound HTTP calls are captured and recorded
+- [Handoff](handoff.md) — building claims and reading the verdict
+- [Trusted Endpoints](trusted-endpoints.md) — the outbound allow-list

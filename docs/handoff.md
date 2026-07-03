@@ -57,6 +57,13 @@ print(f"Evaluation Verdict: {result.get('outcome')}")
 # Returns: {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...], "errors": [...]}
 ```
 
+`outcome` is the overall verdict:
+
+- `PASS` — every claim was verified against the recorded data and matched.
+- `CAUGHT` — at least one claim did not match the recorded data, or used an untrusted endpoint.
+- `ERROR` — nothing could be verified (for example, no claim matched an intercept record).
+  Verifying zero claims always resolves to `ERROR`, never `PASS`.
+
 ## Anatomy of the payload_data
 The `build_handoff_payload` function accepts a structured `payload_data` dictionary. Other runtime fields—such as network intercepts, organization IDs, and API keys—are resolved automatically by the SDK during compilation.
 

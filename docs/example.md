@@ -32,7 +32,7 @@ from sourcerykit import (
 )
 
 # Fire up the local runtime environment and database connections
-await bootstrap_system()
+await bootstrap_system()  # call before any other SDK call
 
 # Add the target API pattern to your real-time allow-list policy registry
 await insert_trusted_endpoint(url="https://api.open-meteo.com/v1/forecast")
@@ -165,3 +165,11 @@ The agent will populate `claimed_values` with a fabricated temperature. When the
   "errors": []
 }
 ```
+
+---
+
+**Next steps:**
+
+- [Architecture](architecture.md) — what each piece does and how they fit together
+- [Handoff](handoff.md) — claims and verdicts in depth
+- [Onboarding](onboarding.md) — first-time account, credentials, and database setup
