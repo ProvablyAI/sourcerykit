@@ -3,33 +3,39 @@
 Everything SourceryKit needs before you write code: an account, credentials, and a database.
 This is the **first** step — nothing else works until the credentials below exist.
 
-## ⚠️ A human must complete this once
+## ⚠️ One human step
 
-Onboarding creates a Provably account, and the backend sends an **email verification link
-that only a human can click**. An automated agent cannot finish this step alone. If you are
-an agent, check with `sourcerykit doctor`; if credentials are missing, STOP and ask a human
-to run the setup below, then continue once `doctor` passes.
+Registration triggers an **email verification link that only a human can click** — that is
+the single step an automated agent cannot do. Everything else (register, login, database
+link, project setup) runs non-interactively. If you are an agent: check with
+`sourcerykit doctor`, drive the setup below yourself, and ask a human only for the
+verification click.
 
-## Run the wizard
+## Setup
 
 ```bash
 pip install sourcerykit
-sourcerykit init          # interactive onboarding wizard
 ```
 
-The wizard will:
-
-1. **Sign up** (or **log in** to an existing account) with an email address.
-2. Prompt the human to **verify that email** — click the link the backend sends. Login does
-   not succeed until this is done.
-3. Ask for a **hosted, publicly reachable** Postgres URL (see below).
-4. Issue your credentials and write them to `.env`.
-
-Already have a verified account? `init` also runs non-interactively:
+Non-interactive (agents and scripts):
 
 ```bash
-sourcerykit init --email you@example.com --password ... --postgres-url postgresql://... --project-name my-app
+# 1. register (skip if the account exists) — triggers the verification email
+sourcerykit init --register --email you@example.com --password ...
+
+# 2. a HUMAN clicks the verification link in the email
+
+# 3. log in + link the database + name the project
+sourcerykit init --email you@example.com --password ... \
+  --postgres-url postgresql://user:pass@host:5432/db --project-name my-app
+
+# 4. verify everything works
+sourcerykit doctor
 ```
+
+Interactive: run `sourcerykit init` with no flags and follow the wizard — same steps,
+prompted (sign up or log in → verify email → link a **hosted, publicly reachable**
+Postgres → name the project → credentials stored).
 
 Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.md](cli.md).
 

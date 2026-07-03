@@ -8,15 +8,18 @@ agent's claims against what those calls actually returned, so a hallucinated val
 This is the landing page for AI agents. Read the gate below, then follow the breadcrumb to
 the one page you need. Each doc is focused — load only what the task requires.
 
-## ⚠️ Gate: setup needs a human, once
+## ⚠️ Gate: one human step during setup
 
-You **cannot** finish setup alone. Onboarding creates a Provably account, and the backend
-sends an **email verification link that only a human can click**. Until that is done, login
-fails and nothing downstream works.
+Setup is agent-drivable except one step: account registration triggers an **email
+verification link that only a human can click**. Until it is clicked, login fails and
+nothing downstream works.
 
-Run `sourcerykit doctor` to check. If credentials are missing (API key, org, Postgres URL),
-STOP and ask a human to run `sourcerykit init` — it stores the API key and org in the global
-config and writes the project's `.env`.
+1. `sourcerykit doctor` — if all checks pass, skip this section.
+2. No account yet? `sourcerykit init --register --email <email> --password <password>` —
+   then STOP and ask a human to click the verification link.
+3. Once verified: `sourcerykit init --email <email> --password <password>
+   --postgres-url <postgresql://…> --project-name <name>` — stores the API key and org in
+   the global config and writes the project's `.env`. Re-check with `sourcerykit doctor`.
 
 → **[docs/onboarding.md](docs/onboarding.md)** — the one-time setup (wizard, email verify, DB)
 
