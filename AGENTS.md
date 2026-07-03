@@ -8,14 +8,9 @@ agent's claims against what those calls actually returned, so a hallucinated val
 This is the landing page for AI agents. Read the gate below, then follow the breadcrumb to
 the one page you need. Each doc is focused — load only what the task requires.
 
-## ⚠️ Gate: one human step during setup
-
-Setup is agent-drivable except one step: account registration triggers an **email
-verification link that only a human can click**. Until it is clicked, login fails and
-nothing downstream works.
-
-→ **[docs/onboarding.md](docs/onboarding.md)** — the full one-time setup (non-interactive
-commands, the verification step, database requirements).
+> [!WARNING]
+> One-time setup has a single human-only step (an email verification click) — everything
+> else is agent-drivable. Details: [docs/onboarding.md](docs/onboarding.md).
 
 ## Pick your path
 
