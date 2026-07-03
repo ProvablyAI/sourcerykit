@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 1.0.0b5
+
+### Tooling
+- Improved `make bump-pr` for automated version management
+
+### Documentation
+- Added `AGENTS.md`, a landing page for AI agents
+- Added `llms.txt`, a web convention entry point that mirrors the `AGENTS.md` pointers
+- Added `docs/onboarding.md`, a one-time setup guide
+
 ## 1.0.0b4
 
 ### Tooling
