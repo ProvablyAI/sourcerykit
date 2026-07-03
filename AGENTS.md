@@ -20,14 +20,8 @@ Setup is agent-drivable except one step: account registration triggers an **emai
 verification link that only a human can click**. Until it is clicked, login fails and
 nothing downstream works.
 
-1. `sourcerykit doctor` — if all checks pass, skip this section.
-2. No account yet? `sourcerykit init --register --email <email> --password <password>` —
-   then STOP and ask a human to click the verification link.
-3. Once verified: `sourcerykit init --email <email> --password <password>
-   --postgres-url <postgresql://…> --project-name <name>` — stores the API key and org in
-   the global config and writes the project's `.env`. Re-check with `sourcerykit doctor`.
-
-→ **[docs/onboarding.md](docs/onboarding.md)** — the one-time setup (wizard, email verify, DB)
+→ **[docs/onboarding.md](docs/onboarding.md)** — the full one-time setup (non-interactive
+commands, the verification step, database requirements).
 
 ## Pick your path
 
