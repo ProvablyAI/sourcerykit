@@ -5,8 +5,8 @@ for AI agents — it records outbound HTTP calls, enforces endpoint policies, an
 agent's claims against what those calls actually returned, so a hallucinated value is
 **caught** instead of shipped.
 
-This is the landing page for AI agents. Read the gate below, then follow the breadcrumb to
-the one page you need. Each doc is focused — load only what the task requires.
+This is the landing page for AI agents. Follow the breadcrumb to the one page you need.
+Each doc is focused — load only what the task requires.
 
 > [!WARNING]
 > One-time setup has a single human-only step (an email verification click) — everything
