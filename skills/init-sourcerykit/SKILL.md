@@ -86,7 +86,6 @@ from sourcerykit import (
     bootstrap_system,           # Initialize the SDK (call once at startup)
     insert_trusted_endpoint,    # Register an allowed outbound URL
     async_intercept_context,    # Context manager wrapping an HTTP call
-    take_last_intercept_row_id, # Retrieve the DB row id of the last intercept
     build_handoff_payload,      # Package agent claims into a verifiable payload
     evaluate_handoff,           # Send the payload to the evaluator and get a verdict
     SourceryKitAgentResponse,   # Pydantic model for structured agent output
