@@ -1,27 +1,30 @@
 # SourceryKit
 
-> Python SDK for Provably: verifiable guardrails for AI agents — records outbound HTTP
-> calls, enforces endpoint policies, and checks an agent's claims against what those calls
-> actually returned. Claims come from the agent's structured output; mismatches are CAUGHT.
+> Python SDK for Provably: verifiable guardrails for AI agents. Intercepts an
+> agent's outbound HTTP calls, enforces endpoint allow-lists, and checks the
+> agent's claimed output against the raw data actually fetched. Hallucinated or
+> tampered values are CAUGHT, not shipped. Async; supports httpx, aiohttp, requests.
 
-Agent entry point: [AGENTS.md](AGENTS.md) — the machine landing page. Start there.
+## Start
+
+- [AGENTS.md](AGENTS.md) — agent entry point: the flow, rules, and links
 
 ## Docs
 
 - [Onboarding & setup (one-time, needs a human)](docs/onboarding.md)
 - [End-to-end walkthrough](docs/example.md)
-- [Public API reference](docs/src/api.md)
+- [API reference](docs/src/api.md)
 - [CLI reference](docs/cli.md)
 - [Architecture](docs/architecture.md)
 - [Intercepting HTTP calls](docs/intercept.md)
 - [Handoff payload & verdicts](docs/handoff.md)
 - [Trusted endpoints](docs/trusted-endpoints.md)
 
-## Examples
+## Cookbooks (runnable)
 
-- [OpenAI Agents SDK integration](cookbooks/openai_agents/agent_run.py)
-- [Claude Agent SDK integration](cookbooks/claude_agent/agent_run.py)
-- [LangChain integration](cookbooks/langchain_agent/agent_run.py)
+- [OpenAI Agents SDK](cookbooks/openai_agents/) — structured output via `output_type`
+- [Claude Agent SDK](cookbooks/claude_agent/) — structured output via `output_format` json_schema
+- [LangChain](cookbooks/langchain_agent/) — structured output via `response_format`
 
 ## Install
 

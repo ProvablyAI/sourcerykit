@@ -27,9 +27,6 @@ Each doc is focused — load only what the task requires.
 | Understand how the pieces fit | [docs/architecture.md](docs/architecture.md) |
 | Migrate from the old `provably` SDK | [docs/migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) |
 
-The **cookbooks are the ground truth** for a correct integration: a real agent produces the
-claim as structured output (`SourceryKitAgentResponse`); the claim is never computed by hand.
-
 ## The flow at a glance
 
 ```
@@ -51,3 +48,19 @@ Outcomes:
 Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp`, and
 `requests`. `action_name` is the join key between the intercepted call and the claim — it
 must match.
+
+## Cookbooks (runnable examples — copy these)
+
+The cookbooks are the **ground truth** for a correct integration: a real agent produces the
+claim as structured output (`SourceryKitAgentResponse`); the claim is never computed by hand.
+
+Same weather-verify flow in three frameworks. Each fetches the London temperature from
+open-meteo, returns its claims as `SourceryKitAgentResponse`, and runs the full
+intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run `python agent_run.py`
+for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
+
+| Cookbook | Framework | What you'll find |
+|---|---|---|
+| [openai_agents](cookbooks/openai_agents) | OpenAI Agents SDK | Structured output via `output_type=SourceryKitAgentResponse` |
+| [claude_agent](cookbooks/claude_agent) | Claude Agent SDK | Structured output via `output_format` json_schema |
+| [langchain_agent](cookbooks/langchain_agent) | LangChain `create_agent` | Structured output via `response_format=`, claims read from `result["structured_response"]` |
