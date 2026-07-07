@@ -10,7 +10,7 @@ agent's claims against what those calls actually returned, so a hallucinated val
 | Your situation | Do this |
 |---|---|
 | First time — no Provably credentials yet | Run setup: [docs/onboarding.md](docs/onboarding.md). One human step (an email-verification click); everything else is agent-drivable. |
-| Integrating SourceryKit into an agent | Open the cookbook matching your framework ([below](#cookbooks-runnable-examples)), mirror its structure, then swap in your own tool and claims. |
+| Integrating SourceryKit into an agent | Open a cookbook ([below](#cookbooks-runnable-examples)) — yours if listed, else the closest one. The flow is identical across frameworks; only the structured-output binding differs (see each cookbook's "What you'll find"). Mirror it, then swap in your own tool and claims. |
 | Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
 | Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
 | Need a signature, type, or CLI flag | [docs/src/api.md](docs/src/api.md) · [docs/cli.md](docs/cli.md) |
@@ -24,6 +24,9 @@ Same weather-verify flow in three frameworks. Each fetches the London temperatur
 open-meteo, returns its claims as `SourceryKitAgentResponse` (never computed by hand), and
 runs the full intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run
 `python agent_run.py` for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
+
+Framework not listed? The flow is the same everywhere — only the structured-output binding
+is framework-specific. Pick the closest cookbook and change just that binding.
 
 | Cookbook | Framework | What you'll find |
 |---|---|---|
