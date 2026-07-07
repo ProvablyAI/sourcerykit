@@ -5,21 +5,18 @@ from unittest.mock import patch
 
 import pytest
 
-import sourcerykit.intercept.interceptor as interceptor_mod
 from sourcerykit.intercept.interceptor import (
     _ctx_action_name,
     _ctx_agent_id,
+    _ctx_call_ref,
     async_intercept_context,
-    get_intercept_row_id,
-    take_last_intercept_row_id,
 )
 
 
 @pytest.fixture(autouse=True)
 def _reset_globals() -> None:
     """Reset global state in the interceptor module between tests."""
-    interceptor_mod._last_intercept_row_id = None
-    interceptor_mod._action_row_ids.clear()
+    pass
 
 
 class TestAsyncInterceptContext:
@@ -38,7 +35,6 @@ class TestAsyncInterceptContext:
         async with async_intercept_context(agent_id="outer", action_name="outer-action"):
             async with async_intercept_context(agent_id="inner", action_name="inner-action"):
                 assert _ctx_agent_id.get() == "inner"
-            # Restored to outer after inner exits
             assert _ctx_agent_id.get() == "outer"
 
     async def test_resets_even_if_exception_raised(self) -> None:
@@ -66,7 +62,7 @@ class TestAsyncInterceptContext:
 
         async def task_a() -> None:
             async with async_intercept_context(agent_id="agent-a", action_name="act-a"):
-                await asyncio.sleep(0)  # yield to allow task_b to run
+                await asyncio.sleep(0)
                 results["a"] = _ctx_agent_id.get()
 
         async def task_b() -> None:
@@ -80,47 +76,50 @@ class TestAsyncInterceptContext:
 
 
 # ---------------------------------------------------------------------------
-# take_last_intercept_row_id
+# call_ref (UUID string yielded by async_intercept_context)
 # ---------------------------------------------------------------------------
 
 
-class TestTakeLastInterceptRowId:
-    def test_returns_none_when_no_row_recorded(self) -> None:
-        assert take_last_intercept_row_id() is None
+class TestCallRef:
+    async def test_yields_uuid_string(self) -> None:
+        async with async_intercept_context(agent_id="a", action_name="b") as ref:
+            assert isinstance(ref, str)
+            uuid.UUID(ref)  # must be valid UUID
 
-    def test_returns_row_id_and_clears_it(self) -> None:
-        rid = uuid.uuid4()
-        interceptor_mod._last_intercept_row_id = rid
-        result = take_last_intercept_row_id()
-        assert result == rid
-        # Must be cleared after take
-        assert interceptor_mod._last_intercept_row_id is None
+    async def test_call_ref_unique_per_invocation(self) -> None:
+        refs: list[str] = []
+        async with async_intercept_context(agent_id="a", action_name="b") as ref1:
+            refs.append(ref1)
+        async with async_intercept_context(agent_id="a", action_name="b") as ref2:
+            refs.append(ref2)
+        assert refs[0] != refs[1]
 
-    def test_second_call_returns_none(self) -> None:
-        interceptor_mod._last_intercept_row_id = uuid.uuid4()
-        take_last_intercept_row_id()
-        assert take_last_intercept_row_id() is None
+    async def test_call_ref_contextvar_set_inside_block(self) -> None:
+        async with async_intercept_context(agent_id="a", action_name="b") as ref:
+            assert str(_ctx_call_ref.get()) == ref
 
+    async def test_call_ref_contextvar_resets_after_exit(self) -> None:
+        async with async_intercept_context(agent_id="a", action_name="b"):
+            pass
+        assert _ctx_call_ref.get() is None
 
-# ---------------------------------------------------------------------------
-# get_intercept_row_id
-# ---------------------------------------------------------------------------
+    async def test_call_ref_isolation_across_concurrent_tasks(self) -> None:
+        import asyncio
 
+        refs: dict[str, str] = {}
 
-class TestGetInterceptRowId:
-    def test_returns_none_for_unknown_pair(self) -> None:
-        assert get_intercept_row_id("agent", "action") is None
+        async def task_a() -> None:
+            async with async_intercept_context(agent_id="a", action_name="act") as ref:
+                await asyncio.sleep(0)
+                refs["a"] = ref
 
-    def test_returns_stored_row_id(self) -> None:
-        rid = uuid.uuid4()
-        interceptor_mod._action_row_ids[("agent-1", "act-1")] = rid
-        assert get_intercept_row_id("agent-1", "act-1") == rid
+        async def task_b() -> None:
+            async with async_intercept_context(agent_id="b", action_name="act") as ref:
+                await asyncio.sleep(0)
+                refs["b"] = ref
 
-    def test_does_not_clear_entry(self) -> None:
-        rid = uuid.uuid4()
-        interceptor_mod._action_row_ids[("agent-1", "act-1")] = rid
-        get_intercept_row_id("agent-1", "act-1")
-        assert get_intercept_row_id("agent-1", "act-1") == rid
+        await asyncio.gather(task_a(), task_b())
+        assert refs["a"] != refs["b"]
 
 
 # ---------------------------------------------------------------------------
