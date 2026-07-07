@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Breaking changes
+- **`take_last_intercept_row_id` removed** — `call_ref` is now the sole intercept resolution mechanism.
+- **`call_ref` required** — claims without a `call_ref` (or `sourcerykit_ref` in `claimed_value`) now raise.
+
+### Features
+- **Multi-tool-call support** — `call_ref` column on `intercepts` + `sourcerykit_ref` on `ClaimedValue` enable correct mapping when the same tool is called multiple times.
+- **Auto-grouping** — `build_handoff_payload` splits `claimed_value` entries by `sourcerykit_ref` automatically. No manual grouping or `call_ref` mapping needed.
+
 ## 1.0.0b5
 
 ### Tooling
