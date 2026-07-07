@@ -5,14 +5,20 @@ for AI agents — it records outbound HTTP calls, enforces endpoint policies, an
 agent's claims against what those calls actually returned, so a hallucinated value is
 **caught** instead of shipped.
 
-**Start with a cookbook below and copy it** — the cookbooks are the ground truth for a
-correct integration. Everything after is reference; load only what a task needs.
+## Where to go next
 
-> [!WARNING]
-> One-time setup has a single human-only step (an email verification click) — everything
-> else is agent-drivable. Details: [docs/onboarding.md](docs/onboarding.md).
+| Your situation | Do this |
+|---|---|
+| First time — no Provably credentials yet | Run setup: [docs/onboarding.md](docs/onboarding.md). One human step (an email-verification click); everything else is agent-drivable. |
+| Integrating SourceryKit into an agent | Open the cookbook matching your framework ([below](#cookbooks-runnable-examples)), mirror its structure, then swap in your own tool and claims. |
+| Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
+| Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
+| Need a signature, type, or CLI flag | [docs/src/api.md](docs/src/api.md) · [docs/cli.md](docs/cli.md) |
 
-## Cookbooks (runnable examples — copy these)
+**Cookbooks are the ground truth — mirror one, never hand-roll the claim.** Everything else
+is supporting docs; load only what a task needs.
+
+## Cookbooks (runnable examples)
 
 Same weather-verify flow in three frameworks. Each fetches the London temperature from
 open-meteo, returns its claims as `SourceryKitAgentResponse` (never computed by hand), and
@@ -47,16 +53,14 @@ Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp
 `requests`. `action_name` is the join key between the intercepted call and the claim — it
 must match.
 
-## Reference docs
+## All docs
 
-| You want to… | Go to |
-|---|---|
-| Set up credentials for the first time | [docs/onboarding.md](docs/onboarding.md) |
-| Run the whole flow end to end | [docs/example.md](docs/example.md) |
-| Look up a function, type, or error | [docs/src/api.md](docs/src/api.md) |
-| Use the CLI (`init`, `doctor`, `endpoints`, `trace`) | [docs/cli.md](docs/cli.md) |
-| Record/inspect HTTP calls (`async_intercept_context`) | [docs/intercept.md](docs/intercept.md) |
-| Build the handoff payload + claims, read the verdict | [docs/handoff.md](docs/handoff.md) |
-| Allow-list outbound endpoints | [docs/trusted-endpoints.md](docs/trusted-endpoints.md) |
-| Understand how the pieces fit | [docs/architecture.md](docs/architecture.md) |
-| Migrate from the old `provably` SDK | [docs/migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) |
+- [onboarding.md](docs/onboarding.md) — first-time credential setup
+- [example.md](docs/example.md) — end-to-end walkthrough
+- [src/api.md](docs/src/api.md) — functions, types, errors
+- [cli.md](docs/cli.md) — CLI (`init`, `doctor`, `endpoints`, `trace`)
+- [intercept.md](docs/intercept.md) — recording HTTP calls (`async_intercept_context`)
+- [handoff.md](docs/handoff.md) — handoff payload, claims, and verdicts
+- [trusted-endpoints.md](docs/trusted-endpoints.md) — allow-listing outbound endpoints
+- [architecture.md](docs/architecture.md) — how the pieces fit
+- [migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) — migrate from the old `provably` SDK
