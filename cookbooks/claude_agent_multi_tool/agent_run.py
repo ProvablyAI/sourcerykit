@@ -50,11 +50,7 @@ async def get_weather_london(args: str) -> dict[str, Any]:
                 timeout=30,
             )
             data = response.json()
-    return {
-        "content": [
-            {"type": "text", "text": json.dumps({**data, "sourcerykit_ref": ref})}
-        ]
-    }
+    return {"content": [{"type": "text", "text": json.dumps({**data, "sourcerykit_ref": ref})}]}
 
 
 @tool("get_weather_paris", "Fetch the current temperature for Paris", {})
@@ -67,11 +63,7 @@ async def get_weather_paris(args: str) -> dict[str, Any]:
                 timeout=30,
             )
             data = response.json()
-    return {
-        "content": [
-            {"type": "text", "text": json.dumps({**data, "sourcerykit_ref": ref})}
-        ]
-    }
+    return {"content": [{"type": "text", "text": json.dumps({**data, "sourcerykit_ref": ref})}]}
 
 
 async def main(tamper: bool = False) -> None:
@@ -133,12 +125,14 @@ async def main(tamper: bool = False) -> None:
         seen_refs.setdefault(ref, []).append(cv)
 
     for ref, cvs in seen_refs.items():
-        claims.append({
-            "action_name": "get_weather",
-            "call_ref": ref,
-            "claimed_value": cvs,
-            "verification_mode": "field_extraction",
-        })
+        claims.append(
+            {
+                "action_name": "get_weather",
+                "call_ref": ref,
+                "claimed_value": cvs,
+                "verification_mode": "field_extraction",
+            }
+        )
 
     payload = await build_handoff_payload(
         {
