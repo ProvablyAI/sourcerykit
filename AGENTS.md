@@ -25,8 +25,12 @@ open-meteo, returns its claims as `SourceryKitAgentResponse`, and runs the full
 intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run `python agent_run.py`
 for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
 
-Framework not listed? The flow is the same everywhere — only the structured-output binding
-is framework-specific. Pick the closest cookbook and change just that binding.
+**Framework not listed?** The SDK calls (`bootstrap_system`, `insert_trusted_endpoint`,
+`async_intercept_context`, `build_handoff_payload`, `evaluate_handoff`) are identical for
+every framework — only how you bind `SourceryKitAgentResponse` as the agent's structured
+output changes. Copy any cookbook and replace just that binding with your framework's
+equivalent. No structured-output support? Prompt the model with
+`SourceryKitAgentResponse.model_json_schema()` and validate the reply into the model by hand.
 
 | Cookbook | Framework | What you'll find |
 |---|---|---|
