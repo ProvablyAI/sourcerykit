@@ -52,10 +52,12 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
             is_valid = True
 
             for entry in claimed_value:
-                raw_true_value = _get_by_json_path(row_response, entry.path)
+                path = entry["path"] if isinstance(entry, dict) else entry.path
+                value = entry["value"] if isinstance(entry, dict) else entry.value
+                raw_true_value = _get_by_json_path(row_response, path)
                 true_value = str(raw_true_value) if raw_true_value is not None else None
 
-                if true_value is None or entry.value.strip() != true_value.strip():
+                if true_value is None or value.strip() != true_value.strip():
                     is_valid = False
                     break
 

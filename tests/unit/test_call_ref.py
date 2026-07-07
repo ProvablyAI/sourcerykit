@@ -134,7 +134,7 @@ class TestResolveClaimCallRef:
             "claimed_value": [{"path": "$.temperature_2m", "value": "15.0"}],
             "verification_mode": "field_extraction",
         }
-        with pytest.raises(SourceryKitStorageError, match="missing required call_ref"):
+        with pytest.raises(SourceryKitStorageError, match="missing required"):
             await _resolve_claim(uuid.uuid4(), raw, "demo")
 
 

@@ -86,26 +86,34 @@ async def build_handoff_payload(
     )
 
 
+def _extract_ref(cv: Any) -> str:
+    if isinstance(cv, dict):
+        return str(cv.get("sourcerykit_ref") or "").strip()
+    return str(getattr(cv, "sourcerykit_ref", "") or "").strip()
+
+
 def _group_by_sourcerykit_ref(raw: dict[str, Any]) -> list[dict[str, Any]]:
     """Split a raw claim dict into one dict per unique sourcerykit_ref found in claimed_value.
 
     If all entries share the same ref (or have no ref), returns a single-element list.
+    Always propagates sourcerykit_ref → call_ref so claim resolution can find the intercept.
     """
     claimed_value = raw.get("claimed_value")
     if not isinstance(claimed_value, list) or len(claimed_value) <= 1:
+        if isinstance(claimed_value, list) and claimed_value:
+            ref = _extract_ref(claimed_value[0])
+            if ref:
+                return [{**raw, "call_ref": ref}]
         return [raw]
 
     groups: dict[str, list[Any]] = {}
     for cv in claimed_value:
-        if isinstance(cv, dict):
-            ref = str(cv.get("sourcerykit_ref") or "").strip()
-        elif hasattr(cv, "sourcerykit_ref"):
-            ref = str(cv.sourcerykit_ref or "").strip()
-        else:
-            ref = ""
-        groups.setdefault(ref, []).append(cv)
+        groups.setdefault(_extract_ref(cv), []).append(cv)
 
     if len(groups) <= 1:
+        ref = next(iter(groups))
+        if ref:
+            return [{**raw, "call_ref": ref}]
         return [raw]
 
     return [{**raw, "claimed_value": cvs, "call_ref": ref} for ref, cvs in groups.items()]
@@ -167,7 +175,7 @@ async def _resolve_claim(
     call_ref_str = str(raw.get("call_ref") or "").strip()
 
     if not call_ref_str:
-        raise SourceryKitStorageError("claim missing required call_ref")
+        raise SourceryKitStorageError("claim missing required sourcerykit_ref")
 
     call_ref = uuid.UUID(call_ref_str)
     (request_payload, response_payload, row_id), (qid, qurl) = await asyncio.gather(
