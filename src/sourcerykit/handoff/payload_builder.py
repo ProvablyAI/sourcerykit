@@ -86,6 +86,31 @@ async def build_handoff_payload(
     )
 
 
+def _group_by_sourcerykit_ref(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    """Split a raw claim dict into one dict per unique sourcerykit_ref found in claimed_value.
+
+    If all entries share the same ref (or have no ref), returns a single-element list.
+    """
+    claimed_value = raw.get("claimed_value")
+    if not isinstance(claimed_value, list) or len(claimed_value) <= 1:
+        return [raw]
+
+    groups: dict[str, list[Any]] = {}
+    for cv in claimed_value:
+        if isinstance(cv, dict):
+            ref = str(cv.get("sourcerykit_ref") or "").strip()
+        elif hasattr(cv, "sourcerykit_ref"):
+            ref = str(cv.sourcerykit_ref or "").strip()
+        else:
+            ref = ""
+        groups.setdefault(ref, []).append(cv)
+
+    if len(groups) <= 1:
+        return [raw]
+
+    return [{**raw, "claimed_value": cvs, "call_ref": ref} for ref, cvs in groups.items()]
+
+
 async def _build_claims(
     trace_id: uuid.UUID,
     fetch_and_claim_json: Any,
@@ -103,15 +128,21 @@ async def _build_claims(
     # Filter to valid claim dicts up-front
     valid_raws = [raw for raw in raw_claims if isinstance(raw, dict) and str(raw.get("action_name") or "").strip()]
 
+    # Expand: split claims whose claimed_values span multiple sourcerykit_refs
+    expanded: list[dict[str, Any]] = []
+    for raw in valid_raws:
+        groups = _group_by_sourcerykit_ref(raw)
+        expanded.extend(groups)
+
     results = await asyncio.gather(
-        *[_resolve_claim(trace_id, raw, intercept_agent_id) for raw in valid_raws],
+        *[_resolve_claim(trace_id, raw, intercept_agent_id) for raw in expanded],
         return_exceptions=True,
     )
 
     claims = []
     urls = []
     ids = []
-    for raw, r in zip(valid_raws, results):
+    for raw, r in zip(expanded, results):
         if isinstance(r, BaseException):
             _log.warning(
                 "claim_resolution_failed",
