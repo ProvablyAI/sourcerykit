@@ -106,11 +106,12 @@ bump-rc: ## Promote to release candidate (e.g. 1.0.0b3 -> 1.0.0rc1)
 
 bump-pr: ## Bump version, commit, push branch (usage: make bump-pr TYPE=beta)
 	git fetch origin main
-	git checkout -b release/v$$($(UV) run bump-my-version show current_version)
 	make bump-$(TYPE)
 	make lock
-	git add pyproject.toml README.md uv.lock CHANGELOG.md
 	NEW_VER=$$($(UV) run bump-my-version show current_version) && \
+	sed -i '' "s/^## Unreleased/## $$NEW_VER/" CHANGELOG.md && \
+	git checkout -b release/v$$NEW_VER && \
+	git add pyproject.toml README.md uv.lock CHANGELOG.md && \
 	git commit -m "bump: $$NEW_VER" && \
 	git push -u origin HEAD
 
