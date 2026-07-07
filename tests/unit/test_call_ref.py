@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from sourcerykit.errors import SourceryKitStorageError
-from sourcerykit.handoff.payload_builder import _resolve_claim
+from sourcerykit.handoff.payload_builder import _group_by_sourcerykit_ref, _resolve_claim
 from sourcerykit.schemas import HandoffClaim
 
 _call_ref_1 = str(uuid.uuid4())
@@ -136,3 +136,56 @@ class TestResolveClaimCallRef:
         }
         with pytest.raises(SourceryKitStorageError, match="missing required call_ref"):
             await _resolve_claim(uuid.uuid4(), raw, "demo")
+
+
+class TestGroupBySourcerykitRef:
+    def test_single_ref_returns_single_group(self) -> None:
+        raw = {
+            "action_name": "get_weather",
+            "claimed_value": [
+                {"path": "$.temp", "value": "15", "sourcerykit_ref": _call_ref_1},
+                {"path": "$.wind", "value": "5", "sourcerykit_ref": _call_ref_1},
+            ],
+            "verification_mode": "field_extraction",
+        }
+        result = _group_by_sourcerykit_ref(raw)
+        assert len(result) == 1
+        assert len(result[0]["claimed_value"]) == 2
+
+    def test_two_refs_splits_into_two_groups(self) -> None:
+        raw = {
+            "action_name": "get_weather_location",
+            "claimed_value": [
+                {"path": "$.temp", "value": "15", "sourcerykit_ref": _call_ref_1},
+                {"path": "$.temp", "value": "22", "sourcerykit_ref": _call_ref_2},
+            ],
+            "verification_mode": "field_extraction",
+        }
+        result = _group_by_sourcerykit_ref(raw)
+        assert len(result) == 2
+        assert result[0]["claimed_value"][0]["sourcerykit_ref"] == _call_ref_1
+        assert result[1]["claimed_value"][0]["sourcerykit_ref"] == _call_ref_2
+        assert result[0]["action_name"] == "get_weather_location"
+
+    def test_no_ref_returns_single_group(self) -> None:
+        raw = {
+            "action_name": "get_weather",
+            "claimed_value": [
+                {"path": "$.temp", "value": "15"},
+                {"path": "$.wind", "value": "5"},
+            ],
+            "verification_mode": "field_extraction",
+        }
+        result = _group_by_sourcerykit_ref(raw)
+        assert len(result) == 1
+
+    def test_single_claimed_value_returns_single_group(self) -> None:
+        raw = {
+            "action_name": "get_weather",
+            "claimed_value": [
+                {"path": "$.temp", "value": "15", "sourcerykit_ref": _call_ref_1},
+            ],
+            "verification_mode": "field_extraction",
+        }
+        result = _group_by_sourcerykit_ref(raw)
+        assert len(result) == 1
