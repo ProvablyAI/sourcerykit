@@ -9,7 +9,7 @@ agent's claims against what those calls actually returned, so a hallucinated val
 
 | Your situation | Do this |
 |---|---|
-| First time — no Provably credentials yet | Run setup: [docs/onboarding.md](docs/onboarding.md). One human step (an email-verification click); everything else is agent-drivable. |
+| First time — no Provably credentials yet | [Set up below](#setup-onboarding): two non-interactive `sourcerykit init` commands + one email-verification click. Full walkthrough: [docs/onboarding.md](docs/onboarding.md). |
 | Integrating SourceryKit into an agent | Open the closest cookbook ([below](#cookbooks-runnable-examples)), mirror it, then swap in your own tool and claims. |
 | Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
 | Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
@@ -17,6 +17,48 @@ agent's claims against what those calls actually returned, so a hallucinated val
 
 **Cookbooks are the ground truth — mirror one, never hand-roll the claim.** Everything else
 is supporting docs; load only what a task needs.
+
+## Setup (onboarding)
+
+Onboarding is fully scriptable — prefer the CLI over setting config by hand. An agent can do
+it end to end with two non-interactive commands, with one human step (the email-verification
+click) in between. Full walkthrough: [docs/onboarding.md](docs/onboarding.md).
+
+**1. Register** — creates the account, sends the verification email, then exits:
+
+```bash
+sourcerykit init --register --email you@example.com --password '<password>'
+```
+
+**2. Verify the email** — click the link sent to that address. This is the one step an agent
+cannot do itself.
+
+**3. Complete setup** — logs in, creates or selects the org, fetches the API key, validates
+the database, runs the bootstrap handshake, and writes all config:
+
+```bash
+sourcerykit init --email you@example.com --password '<password>' \
+  --postgres-url 'postgresql://user:pass@host:5432/dbname' \
+  --project-name my-project
+```
+
+Step 3 writes the API key + org id to the global config, and the project name, Postgres URL,
+and bootstrap IDs (`SOURCERYKIT_MIDDLEWARE_ID`, `…_DATABASE_ID`, `…_SCHEMA_ID`, `…_TABLE_ID`,
+`…_COLLECTION_ID`, `…_INTEGRATION_KEY`) to the local `.env`. Check it any time with
+`sourcerykit doctor` (add `--fix` to repair), or inspect it with `sourcerykit config list`.
+
+> A brand-new account has no organization, so step 3 auto-creates one and stays fully
+> non-interactive. If the account already belongs to **multiple** orgs, `init` prompts to
+> choose — use a single-org account to keep it scriptable.
+
+**Manual / CI fallback.** Already have credentials, or scripting without the CLI? Set the
+config via environment variables instead — these override the stored config:
+
+```bash
+export PROVABLY_API_KEY='...'
+export SOURCERYKIT_ORG_ID='...'
+export SOURCERYKIT_POSTGRES_URL='postgresql://user:pass@host:5432/dbname'
+```
 
 ## Cookbooks (runnable examples)
 
