@@ -10,8 +10,7 @@ from sourcerykit.db._traces import insert_trace, insert_trace_intercept
 from sourcerykit.errors import SourceryKitStorageError
 from sourcerykit.handoff._guide import default_instructions, field_descriptions
 from sourcerykit.handoff._query_records import create_query_record_for_intercept
-from sourcerykit.intercept._loader import load_latest_intercept_payload
-from sourcerykit.intercept.interceptor import get_intercept_row_id
+from sourcerykit.intercept._loader import load_intercept_payload_by_call_ref
 from sourcerykit.logger import get_logger
 from sourcerykit.schemas.handoff import HandoffClaim, HandoffPayload
 from sourcerykit.schemas.verification_mode import VerificationMode
@@ -134,16 +133,15 @@ async def _resolve_claim(
 ) -> tuple[HandoffClaim, str, uuid.UUID]:
     """Resolves a single raw claim dict into a HandoffClaim plus its tracking handles."""
     action_name = str(raw.get("action_name") or "").strip()
+    call_ref_str = str(raw.get("call_ref") or "").strip()
 
-    # Fetch underlying response blobs and intercept row concurrently with proof query
-    row_id = get_intercept_row_id(intercept_agent_id, action_name)
+    if not call_ref_str:
+        raise SourceryKitStorageError("claim missing required call_ref")
 
-    if row_id is None:
-        raise
-
-    (request_payload, response_payload), (qid, qurl) = await asyncio.gather(
-        load_latest_intercept_payload(intercept_agent_id, action_name),
-        create_query_record_for_intercept(action_name, agent_id=intercept_agent_id, row_id=row_id),
+    call_ref = uuid.UUID(call_ref_str)
+    (request_payload, response_payload, row_id), (qid, qurl) = await asyncio.gather(
+        load_intercept_payload_by_call_ref(call_ref),
+        create_query_record_for_intercept(action_name, agent_id=intercept_agent_id, call_ref=call_ref),
     )
 
     # Coerce verification mode dynamically using Enum
@@ -172,6 +170,7 @@ async def _resolve_claim(
     claim = HandoffClaim(
         trace_intercept_id=trace_intercept_id,
         action_name=action_name,
+        call_ref=call_ref_str,
         claimed_value=claimed_value,
         request_payload=request_payload,
         response_payload=response_payload,

@@ -19,6 +19,10 @@ class HandoffClaim(BaseModel):
     trace_intercept_id: uuid.UUID = Field(default=UUID_NIL, description="Trace_intercept table id.")
 
     action_name: str = Field(default="", description="Name of the action that produced this claim.")
+    call_ref: str = Field(
+        default="",
+        description="Row UUID of the intercept this claim maps to. Empty = fall back to action_name lookup.",
+    )
     claimed_value: Any = Field(default=None, description="Value the agent claims it observed.")
     request_payload: dict[str, Any] = Field(
         default_factory=dict,
