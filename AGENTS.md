@@ -10,7 +10,7 @@ agent's claims against what those calls actually returned, so a hallucinated val
 | Your situation | Do this |
 |---|---|
 | First time — no Provably credentials yet | Run setup: [docs/onboarding.md](docs/onboarding.md). One human step (an email-verification click); everything else is agent-drivable. |
-| Integrating SourceryKit into an agent | Open a cookbook ([below](#cookbooks-runnable-examples)) — yours if listed, else the closest one. The flow is identical across frameworks; only the structured-output binding differs (see each cookbook's "What you'll find"). Mirror it, then swap in your own tool and claims. |
+| Integrating SourceryKit into an agent | Open the closest cookbook ([below](#cookbooks-runnable-examples)), mirror it, then swap in your own tool and claims. |
 | Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
 | Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
 | Need a signature, type, or CLI flag | [docs/src/api.md](docs/src/api.md) · [docs/cli.md](docs/cli.md) |
@@ -21,9 +21,9 @@ is supporting docs; load only what a task needs.
 ## Cookbooks (runnable examples)
 
 Same weather-verify flow in three frameworks. Each fetches the London temperature from
-open-meteo, returns its claims as `SourceryKitAgentResponse` (never computed by hand), and
-runs the full intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run
-`python agent_run.py` for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
+open-meteo, returns its claims as `SourceryKitAgentResponse`, and runs the full
+intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run `python agent_run.py`
+for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
 
 Framework not listed? The flow is the same everywhere — only the structured-output binding
 is framework-specific. Pick the closest cookbook and change just that binding.
@@ -56,14 +56,9 @@ Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp
 `requests`. `action_name` is the join key between the intercepted call and the claim — it
 must match.
 
-## All docs
+## More docs
 
-- [onboarding.md](docs/onboarding.md) — first-time credential setup
-- [example.md](docs/example.md) — end-to-end walkthrough
-- [src/api.md](docs/src/api.md) — functions, types, errors
-- [cli.md](docs/cli.md) — CLI (`init`, `doctor`, `endpoints`, `trace`)
-- [intercept.md](docs/intercept.md) — recording HTTP calls (`async_intercept_context`)
-- [handoff.md](docs/handoff.md) — handoff payload, claims, and verdicts
-- [trusted-endpoints.md](docs/trusted-endpoints.md) — allow-listing outbound endpoints
-- [architecture.md](docs/architecture.md) — how the pieces fit
-- [migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) — migrate from the old `provably` SDK
+Not linked above: [intercept.md](docs/intercept.md) (recording HTTP calls) ·
+[trusted-endpoints.md](docs/trusted-endpoints.md) (allow-listing) ·
+[architecture.md](docs/architecture.md) (how it fits) ·
+[migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) (from the old `provably` SDK)
