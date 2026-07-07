@@ -117,27 +117,16 @@ async def main(tamper: bool = False) -> None:
     if len(claimed_values) < 2:
         print("WARNING: Expected at least 2 claimed_values (London + Paris), got", len(claimed_values))
 
-    # Group claimed_values by sourcerykit_ref so each claim maps to one intercept
-    claims = []
-    seen_refs: dict[str, list] = {}
-    for cv in claimed_values:
-        ref = cv.sourcerykit_ref
-        seen_refs.setdefault(ref, []).append(cv)
-
-    for ref, cvs in seen_refs.items():
-        claims.append(
-            {
-                "action_name": "get_weather",
-                "call_ref": ref,
-                "claimed_value": cvs,
-                "verification_mode": "field_extraction",
-            }
-        )
-
     payload = await build_handoff_payload(
         {
             "reasoning": final_output.reasoning,
-            "claims": claims,
+            "claims": [
+                {
+                    "action_name": "get_weather_location",
+                    "claimed_value": claimed_values,
+                    "verification_mode": "field_extraction",
+                }
+            ],
         },
         run_id=uuid.uuid4(),
         prompt=prompt,

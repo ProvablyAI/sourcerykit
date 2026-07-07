@@ -112,7 +112,6 @@ async def main(tamper: bool = False) -> None:
             "claims": [
                 {
                     "action_name": "get_weather",
-                    "call_ref": claimed_values[0].sourcerykit_ref if claimed_values else "",
                     "claimed_value": claimed_values,
                     "verification_mode": "field_extraction",
                 }
