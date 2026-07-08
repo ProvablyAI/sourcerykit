@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.0
+
 ### Breaking changes
 - **`take_last_intercept_row_id` removed** — `call_ref` is now the sole intercept resolution mechanism.
 - **`call_ref` required** — claims without a `call_ref` (or `sourcerykit_ref` in `claimed_value`) now raise.
