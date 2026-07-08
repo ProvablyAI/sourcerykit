@@ -45,9 +45,10 @@ sourcerykit init
 
 | Variable | Required | Description |
 |---|---|---|
-| `MODEL_URL` | **yes** | Base URL routing endpoint for the LLM processing interface (e.g., `https://openrouter.ai/api/v1`). |
-| `MODEL_API_KEY` | **yes** | API authentication token for the targeting model processing engine. |
 | `MODEL_NAME` | **yes** | Targeted model engine name (e.g., `openai/gpt-4o-mini`). |
+
+> [!Note]
+> Ensure your underlying model provider's environment variables—such as `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`—are also set as required by your CrewAI provider setup.
 
 ---
 
@@ -64,9 +65,8 @@ sourcerykit init
    ```
 2. Export your LLM-provider keys:
    ```bash
-   export MODEL_URL="https://openrouter.ai/api/v1"
-   export MODEL_API_KEY="sk-or-..."
    export MODEL_NAME="openai/gpt-4o-mini"
+   export OPENAI_API_KEY="sk-..."
    ```
 3. Run:
    ```bash

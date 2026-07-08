@@ -18,14 +18,17 @@ import httpx
 # Initialize runtime, database schema, and interceptors
 await sourcerykit.bootstrap_system()
 
-# Intercept and tag outbound network activity
-async with sourcerykit.async_intercept_context(agent_id="demo", action_name="get_data"):
+# Intercept and tag outbound network activity — returns a unique ref
+async with sourcerykit.async_intercept_context(agent_id="demo", action_name="get_data") as ref:
     async with httpx.AsyncClient() as client:
         response = await client.get(
             "https://api.example.com/data",
             params={"query": "example_parameter"}
         )
         data = response.json()
+
+# Return ref alongside data so the agent can map claims to this intercept
+return {**data, "sourcerykit_ref": ref}
 ```
 
 ## Key Features
