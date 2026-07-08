@@ -15,6 +15,16 @@ class ClaimedValue(BaseModel):
         )
     )
 
+    sourcerykit_ref: str = Field(
+        default="",
+        description=(
+            "Unique reference to the specific tool call this claim is about. "
+            "Must be copied exactly from the tool's sourcerykit_ref return value. "
+            "Each tool call returns a unique sourcerykit_ref — you must use the one "
+            "that corresponds to the tool call you are claiming about."
+        ),
+    )
+
 
 class SourceryKitAgentResponse(BaseModel):
     reasoning: str = Field(description="Human-readable conversational explanation of the result.")
@@ -22,7 +32,9 @@ class SourceryKitAgentResponse(BaseModel):
     claimed_values: list[ClaimedValue] = Field(
         description=(
             "A flat list of extracted values from tool outputs. "
-            "Each item contains a JSONPath ('path') pointing to the source field "
-            "and the corresponding extracted value as a string ('value'). "
+            "Each item contains a JSONPath ('path') pointing to the source field, "
+            "the corresponding extracted value as a string ('value'), "
+            "and a 'sourcerykit_ref' copied exactly from the tool output. "
+            "The sourcerykit_ref is MANDATORY — do not leave it empty."
         )
     )

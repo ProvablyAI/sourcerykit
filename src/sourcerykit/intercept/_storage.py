@@ -25,6 +25,7 @@ async def add_intercept_row(
     raw: dict[str, Any],
     agent_id: str,
     action_name: str,
+    call_ref: UUID | None = None,
 ) -> UUID | None:
     # Validate identifiers that map to VARCHAR DB columns
     validate_length("agent_id", agent_id, max_len=255)
@@ -45,6 +46,7 @@ async def add_intercept_row(
         request_payload,
         raw,
         hash_payload(raw),
+        call_ref=call_ref,
     )
 
     async with engine.begin() as conn:

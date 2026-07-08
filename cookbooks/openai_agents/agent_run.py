@@ -28,12 +28,12 @@ from sourcerykit import (
     build_handoff_payload,
     evaluate_handoff,
     insert_trusted_endpoint,
-    take_last_intercept_row_id,
 )
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai.agents").setLevel(logging.ERROR)
 
 
 _OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
@@ -45,7 +45,7 @@ _DEFAULT_MODEL = os.getenv("MODEL_NAME", "Qwen3.5-0.8B-MLX-4bit")
 @function_tool
 async def get_current_temperature_london() -> dict:
     """Fetch the current temperature in London from Open-Meteo."""
-    async with async_intercept_context(agent_id="demo", action_name="get_weather"):
+    async with async_intercept_context(agent_id="demo", action_name="get_weather") as ref:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 _OPEN_METEO_BASE_URL,
@@ -57,7 +57,7 @@ async def get_current_temperature_london() -> dict:
                 timeout=30,
             )
             response.raise_for_status()
-            return response.json()
+            return {**response.json(), "sourcerykit_ref": ref}
 
 
 async def main(tamper: bool = False) -> None:
@@ -100,8 +100,8 @@ async def main(tamper: bool = False) -> None:
     final_output = result.final_output
     print(f"\nAgent Response Text: {final_output}\n")
 
-    if take_last_intercept_row_id() is None:
-        print("WARNING: No intercept row captured. Check SOURCERYKIT_POSTGRES_URL configuration.")
+    if not final_output.claimed_values:
+        print("WARNING: No claimed_values captured. Check SOURCERYKIT_POSTGRES_URL configuration.")
 
     # 5. claimed_values come from what the LLM declared in claimed_values
     claimed_values = final_output.claimed_values

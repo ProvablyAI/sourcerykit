@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sourcerykit.intercept._aiohttp_hook import init_aiohttp_hooks
 from sourcerykit.intercept._httpx_hook import init_httpx_hooks
@@ -17,40 +17,33 @@ _log = get_logger(__name__)
 
 _ctx_agent_id: ContextVar[str] = ContextVar("provably_agent_id", default="")
 _ctx_action_name: ContextVar[str] = ContextVar("provably_action_name", default="")
-
-_last_intercept_row_id: UUID | None = None
-_action_row_ids: dict[tuple[str, str], UUID] = {}
+_ctx_call_ref: ContextVar[UUID | None] = ContextVar("provably_call_ref", default=None)
 
 
 @asynccontextmanager
-async def async_intercept_context(*, agent_id: str, action_name: str) -> AsyncGenerator[None, None]:
-    """Scoped tagging context manager for tracking HTTP traffic (async)."""
-    # Validate user-provided identifiers before setting context
+async def async_intercept_context(*, agent_id: str, action_name: str) -> AsyncGenerator[str, None]:
+    """Scoped tagging context manager for tracking HTTP traffic (async).
+
+    Yields a unique ``call_ref`` (UUID) that identifies this specific
+    intercept invocation.  The caller should include it in the claim so that
+    ``build_handoff_payload`` can map the claim to the correct intercept row.
+    """
     validate_length("agent_id", agent_id, max_len=255)
     validate_length("action_name", action_name, max_len=255)
 
-    _log.debug("intercept_context_entered", agent_id=agent_id, action_name=action_name)
+    call_ref = uuid4()
+
+    _log.debug("intercept_context_entered", agent_id=agent_id, action_name=action_name, call_ref=str(call_ref))
     t_agent = _ctx_agent_id.set(agent_id)
     t_action = _ctx_action_name.set(action_name)
+    t_ref = _ctx_call_ref.set(call_ref)
     try:
-        yield
+        yield str(call_ref)
     finally:
+        _ctx_call_ref.reset(t_ref)
         _ctx_action_name.reset(t_action)
         _ctx_agent_id.reset(t_agent)
-        _log.debug("intercept_context_exited", agent_id=agent_id, action_name=action_name)
-
-
-def take_last_intercept_row_id() -> UUID | None:
-    """Pop the row UUID from the most recent intercept INSERT."""
-    global _last_intercept_row_id
-    rid = _last_intercept_row_id
-    _last_intercept_row_id = None
-    return rid
-
-
-def get_intercept_row_id(agent_id: str, action_name: str) -> UUID | None:
-    """Return the tracking database UUID for the last completed tuple."""
-    return _action_row_ids.get((agent_id, action_name))
+        _log.debug("intercept_context_exited", agent_id=agent_id, action_name=action_name, call_ref=str(call_ref))
 
 
 async def _record(url: str, method: str, request_payload: dict[str, Any], raw: dict[str, Any]) -> None:
@@ -60,19 +53,18 @@ async def _record(url: str, method: str, request_payload: dict[str, Any], raw: d
     if not agent_id or not action_name:
         return
 
+    call_ref = _ctx_call_ref.get()
+
     try:
-        row_id = await add_intercept_row(
+        await add_intercept_row(
             url=url,
             method=method,
             request_payload=request_payload,
             raw=raw,
             agent_id=agent_id,
             action_name=action_name,
+            call_ref=call_ref,
         )
-        if row_id is not None:
-            _action_row_ids[(agent_id, action_name)] = row_id
-            global _last_intercept_row_id
-            _last_intercept_row_id = row_id
     except Exception:
         _log.exception("intercept_record_failed", agent_id=agent_id, action_name=action_name)
 

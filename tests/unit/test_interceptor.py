@@ -1,22 +1,12 @@
 """Tests for sourcerykit.intercept.interceptor — _record and hook integration."""
 
 import uuid
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
-import sourcerykit.intercept.interceptor as interceptor_mod
 from sourcerykit.intercept.interceptor import (
     _record,
     async_intercept_context,
 )
-
-
-@pytest.fixture(autouse=True)
-def _reset_globals() -> None:
-    interceptor_mod._last_intercept_row_id = None
-    interceptor_mod._action_row_ids.clear()
 
 
 class TestRecord:
@@ -26,14 +16,34 @@ class TestRecord:
             await _record("https://example.com", "POST", {}, {})
             mock_add.assert_not_called()
 
-    async def test_stores_row_id_when_context_active(self) -> None:
+    async def test_calls_add_intercept_row_when_context_active(self) -> None:
         expected_id = uuid.uuid4()
         with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=expected_id)):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
                 await _record("https://example.com", "GET", {"q": 1}, {"data": "resp"})
+            # No assertion on globals — call_ref is the lookup key now
 
-        assert interceptor_mod._last_intercept_row_id == expected_id
-        assert interceptor_mod._action_row_ids.get(("agent-1", "act-1")) == expected_id
+    async def test_passes_call_ref_to_add_intercept_row(self) -> None:
+        """_record reads _ctx_call_ref and passes it to add_intercept_row."""
+        expected_id = uuid.uuid4()
+        mock_add = AsyncMock(return_value=expected_id)
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", mock_add):
+            async with async_intercept_context(agent_id="agent-1", action_name="act-1") as ref:
+                await _record("https://example.com", "GET", {}, {})
+                mock_add.assert_called_once()
+                _, kwargs = mock_add.call_args
+                assert kwargs["call_ref"] == uuid.UUID(ref)
+
+    async def test_call_ref_is_unique_per_invocation(self) -> None:
+        refs: list[str] = []
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=uuid.uuid4())):
+            async with async_intercept_context(agent_id="a", action_name="b") as ref1:
+                refs.append(ref1)
+            async with async_intercept_context(agent_id="a", action_name="b") as ref2:
+                refs.append(ref2)
+        assert refs[0] != refs[1]
+        assert isinstance(refs[0], str)
+        assert isinstance(refs[1], str)
 
     async def test_does_not_raise_when_add_intercept_row_fails(self) -> None:
         """Storage errors must be swallowed — never propagated to caller."""
@@ -45,28 +55,9 @@ class TestRecord:
                 await _record("https://example.com", "GET", {}, {})
             # If we get here, the error was swallowed correctly
 
-    async def test_row_id_is_none_when_add_returns_none(self) -> None:
-        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=None)):
+    async def test_discards_row_id_from_add_intercept_row(self) -> None:
+        """Row id is no longer cached — call_ref is the lookup key."""
+        with patch("sourcerykit.intercept.interceptor.add_intercept_row", AsyncMock(return_value=uuid.uuid4())):
             async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
                 await _record("https://example.com", "GET", {}, {})
-        # last_intercept_row_id should still be None if row_id was None
-        assert interceptor_mod._last_intercept_row_id is None
-
-    async def test_multiple_records_update_action_row_ids(self) -> None:
-        ids = [uuid.uuid4(), uuid.uuid4()]
-        call_count = 0
-
-        async def fake_add(**kwargs: Any) -> uuid.UUID:
-            nonlocal call_count
-            result = ids[call_count]
-            call_count += 1
-            return result
-
-        with patch("sourcerykit.intercept.interceptor.add_intercept_row", fake_add):
-            async with async_intercept_context(agent_id="agent-1", action_name="act-1"):
-                await _record("https://a.com", "GET", {}, {})
-                await _record("https://b.com", "GET", {}, {})
-
-        # Last ID wins for the (agent_id, action_name) pair
-        assert interceptor_mod._action_row_ids.get(("agent-1", "act-1")) == ids[1]
-        assert interceptor_mod._last_intercept_row_id == ids[1]
+        # No globals to assert — this is intentional

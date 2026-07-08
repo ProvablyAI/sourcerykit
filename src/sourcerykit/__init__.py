@@ -8,8 +8,9 @@ from sourcerykit.errors import (
 )
 from sourcerykit.evaluator import evaluate_handoff
 from sourcerykit.handoff import build_handoff_payload
-from sourcerykit.intercept import async_intercept_context, take_last_intercept_row_id
+from sourcerykit.intercept import async_intercept_context
 from sourcerykit.schemas import SourceryKitAgentResponse, VerificationMode
+from sourcerykit.testing import start_mock_server
 from sourcerykit.trusted_endpoints import insert_trusted_endpoint
 
 __all__ = [
@@ -17,8 +18,8 @@ __all__ = [
     "evaluate_handoff",
     "build_handoff_payload",
     "async_intercept_context",
-    "take_last_intercept_row_id",
     "insert_trusted_endpoint",
+    "start_mock_server",
     # Types
     "VerificationMode",
     "SourceryKitAgentResponse",

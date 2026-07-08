@@ -57,32 +57,32 @@ class TestCreateQueryRecordForIntercept:
             await create_query_record_for_intercept("action_a", agent_id="agent-1")
         svc.wait_for_proof_computation.assert_called_once_with(_QID)
 
-    async def test_uses_row_id_filter_when_provided(self) -> None:
+    async def test_uses_call_ref_filter_when_provided(self) -> None:
         svc = _mock_service()
-        row_id = uuid.uuid4()
+        call_ref = uuid.uuid4()
         with (
             patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff._query_records.service", svc),
-            patch("sourcerykit.handoff._query_records.select_intercept_by_id") as mock_by_id,
+            patch("sourcerykit.handoff._query_records.select_intercept_by_call_ref") as mock_by_ref,
             patch("sourcerykit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
         ):
-            mock_by_id.return_value = "SELECT * WHERE id = 0"
-            await create_query_record_for_intercept("action_a", agent_id="agent-1", row_id=row_id)
-        mock_by_id.assert_called_once_with(row_id)
+            mock_by_ref.return_value = "SELECT * WHERE call_ref = 'x'"
+            await create_query_record_for_intercept("action_a", agent_id="agent-1", call_ref=call_ref)
+        mock_by_ref.assert_called_once_with(call_ref)
         mock_by_action.assert_not_called()
 
-    async def test_uses_action_name_filter_without_row_id(self) -> None:
+    async def test_uses_action_name_filter_without_call_ref(self) -> None:
         svc = _mock_service()
         with (
             patch("sourcerykit.handoff._query_records.get_bootstrap", return_value=_mock_bootstrap()),
             patch("sourcerykit.handoff._query_records.service", svc),
-            patch("sourcerykit.handoff._query_records.select_intercept_by_id") as mock_by_id,
+            patch("sourcerykit.handoff._query_records.select_intercept_by_call_ref") as mock_by_ref,
             patch("sourcerykit.handoff._query_records.select_intercepts_by_action") as mock_by_action,
         ):
             mock_by_action.return_value = "SELECT * WHERE action_name = 'action_a'"
             await create_query_record_for_intercept("action_a", agent_id="agent-1")
         mock_by_action.assert_called_once_with("action_a")
-        mock_by_id.assert_not_called()
+        mock_by_ref.assert_not_called()
 
     async def test_raises_bootstrap_error_when_middleware_id_missing(self) -> None:
         svc = _mock_service()

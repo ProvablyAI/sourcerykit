@@ -60,16 +60,6 @@ class TestInsertIntercept:
         assert "RETURNING" in compiled.upper() or "returning" in compiled.lower()
 
 
-class TestSelectInterceptById:
-    def test_returns_string_with_id(self) -> None:
-        from sourcerykit.db._intercepts import select_intercept_by_id
-
-        row_id = uuid.uuid4()
-        sql = select_intercept_by_id(row_id)
-        assert isinstance(sql, str)
-        assert str(row_id) in sql
-
-
 class TestSelectInterceptsByAction:
     def test_returns_string_with_action_name(self) -> None:
         from sourcerykit.db._intercepts import select_intercepts_by_action
@@ -79,14 +69,14 @@ class TestSelectInterceptsByAction:
         assert "my_action" in sql
 
 
-class TestSelectInterceptsByAgentIdAndAction:
-    def test_returns_select_object(self) -> None:
-        from sqlalchemy.sql.selectable import Select
+class TestSelectInterceptByCallRef:
+    def test_returns_string_with_call_ref(self) -> None:
+        from sourcerykit.db._intercepts import select_intercept_by_call_ref
 
-        from sourcerykit.db._intercepts import select_intercepts_by_agent_id_and_action
-
-        stmt = select_intercepts_by_agent_id_and_action("agent-1", "action-a")
-        assert isinstance(stmt, Select)
+        ref = uuid.uuid4()
+        sql = select_intercept_by_call_ref(ref)
+        assert isinstance(sql, str)
+        assert str(ref) in sql
 
 
 # ---------------------------------------------------------------------------

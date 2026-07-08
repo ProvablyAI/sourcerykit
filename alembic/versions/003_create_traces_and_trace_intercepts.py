@@ -37,7 +37,7 @@ def upgrade() -> None:
             claimed_value    TEXT,
             outcome          VARCHAR(20),
             details          TEXT,
-            created_at       TIMESTAMP NOT NULL DEFAULT NOW()
+            created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
             updated_at       TIMESTAMP DEFAULT NOW()
         )
     """)

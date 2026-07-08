@@ -40,6 +40,7 @@ intercepts = Table(
     Column("request_payload", Text, nullable=False, server_default=text("'{}'")),
     Column("raw_response", Text, nullable=False),
     Column("response_hash", VARCHAR(64), nullable=False),
+    Column("call_ref", UUID(as_uuid=True)),
     Column(
         "created_at",
         TIMESTAMP(timezone=False),

@@ -4,7 +4,7 @@ import json
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Dialect, Insert, and_, column, create_engine, insert, select, text
+from sqlalchemy import Dialect, Insert, column, create_engine, insert, select, text
 from sqlalchemy.sql.selectable import Select
 
 from sourcerykit.db._schema import intercepts
@@ -22,13 +22,14 @@ def insert_intercept(
     request_payload: dict[str, object],
     raw_response: dict[str, object],
     response_hash: str,
+    call_ref: UUID | None = None,
 ) -> Insert:
     """Return a SQLAlchemy Core INSERT statement for a new intercept row.
 
     Equivalent raw SQL::
 
         INSERT INTO intercepts
-          (agent_id, action_name, source_url, request_payload, raw_response, response_hash)
+          (agent_id, action_name, source_url, request_payload, raw_response, response_hash, call_ref)
         VALUES (...)
         RETURNING id
     """
@@ -41,18 +42,10 @@ def insert_intercept(
             request_payload=json.dumps(request_payload),
             raw_response=json.dumps(raw_response),
             response_hash=response_hash,
+            call_ref=call_ref,
         )
         .returning(intercepts.c.id)
     )
-
-
-def select_intercept_by_id(row_id: UUID) -> str:
-    """Return a SQL string that fetches a single row by primary key.
-
-    SELECT * FROM intercepts WHERE id = :row_id
-    """
-    stmt = select(text("*")).select_from(_t).where(column(_t.c.id.name) == row_id)
-    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
 
 def select_intercepts_by_action(action_name: str) -> str:
@@ -64,12 +57,12 @@ def select_intercepts_by_action(action_name: str) -> str:
     return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
 
-def select_intercepts_by_agent_id_and_action(agent_id: str, action_name: str) -> Select[tuple[Any, ...]]:
-    """Return a Select construct that fetches all rows matching ``row_id`` and ``action_name``.
+def select_intercept_by_call_ref(call_ref: UUID) -> str:
+    """Return a compiled SQL string that fetches the row matching the given call_ref."""
+    stmt = select(text("*")).select_from(_t).where(column(_t.c.call_ref.name) == call_ref)
+    return stmt.compile(dialect=_PG, compile_kwargs={"literal_binds": True}).string.replace("\n", "")
 
-    Equivalent raw SQL::
 
-        SELECT * FROM intercepts
-        WHERE action_name = :action_name AND agent_id = :agent_id
-    """
-    return select(intercepts).where(and_(intercepts.c.action_name == action_name, intercepts.c.agent_id == agent_id))
+def select_intercept_by_call_ref_stmt(call_ref: UUID) -> Select[Any]:
+    """Return a Select construct that fetches the row matching the given call_ref."""
+    return select(text("*")).select_from(_t).where(column(_t.c.call_ref.name) == call_ref)

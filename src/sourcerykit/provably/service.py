@@ -449,6 +449,21 @@ class ProvablyService:
 
         raise TimeoutError(f"Preprocessing for table {table_id} timed out after {timeout}s")
 
+    async def get_preprocess_status_only(self, middleware_id: uuid.UUID, table_id: uuid.UUID) -> str:
+        """Get the current preprocessing status without waiting.
+
+        Args:
+            middleware_id: The ID of the middleware.
+            table_id: The ID of the table.
+
+        Returns:
+            str: The current status ('pending', 'processing', 'completed', 'error', or 'unknown').
+        """
+        async with provably_error_handler("get_preprocess_status"):
+            preprocess = await get_api().get_preprocess_status(middleware_id, table_id)
+            status: str = preprocess.get("status", "unknown")
+            return status
+
     # ------------------------------------------------------------------
     # Queries / Proofs
     # ------------------------------------------------------------------
