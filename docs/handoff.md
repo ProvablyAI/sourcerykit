@@ -81,10 +81,31 @@ The `build_handoff_payload` function accepts a structured `payload_data` diction
 | Field | Type | Description |
 |---|---|---|
 | `action_name` | `str` | Logical identifier for the agent action producing the claim. |
-| `claimed_value` | `Any` | The specific data value or object subset the agent claims to be true. |
+| `claimed_value` | `list[ClaimedValue]` | The agent's `claimed_values` — a **flat list** of `{path, value, sourcerykit_ref}` objects (see below). Not an arbitrary dict of your own field names. |
 | `verification_mode` | `str` | The verification strategy applied to this specific claim (e.g., `field_extraction`). |
 | `range_min` | `float | int | None` | Optional inclusive lower bound boundary used for `range_threshold` mode. |
 | `range_max` | `float | int | None` | Optional inclusive upper bound boundary used for `range_threshold` mode. |
+
+### Claim value shape (`claimed_value`)
+
+`claimed_value` is the agent's `claimed_values`: a **flat list of `ClaimedValue` objects**, each
+with three string fields — nothing else.
+
+| Field | Type | Description |
+|---|---|---|
+| `path` | `str` | JSONPath into the tool output, e.g. `$.base_experience`. |
+| `value` | `str` | The extracted value, as a string. |
+| `sourcerykit_ref` | `str` | Copied verbatim from the tool call's `sourcerykit_ref` return, so the claim maps to the recorded call. Mandatory. |
+
+> [!IMPORTANT]
+> Do not build `claimed_values` by hand. Bind `SourceryKitAgentResponse` as your agent's
+> structured output (`output_type=` / `response_format=` — see the [cookbooks](../cookbooks)),
+> and let the **agent** produce the list as part of its answer. Pass
+> `final_output.claimed_values` straight into `claimed_value`, exactly as shown in the example
+> above. Assembling claims yourself from the fetched data (a dict of your own keys like
+> `{"hint_weight": 90, ...}`) both defeats the point — the *agent* must make the claim — and
+> resolves **zero** claims: `evaluate_handoff` returns `outcome: "ERROR"` with an empty
+> `per_claim`. The shape above is for understanding what the agent returns, not a hand-build recipe.
 
 
 ## Verification Modes
