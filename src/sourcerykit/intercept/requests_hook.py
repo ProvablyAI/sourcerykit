@@ -79,7 +79,7 @@ def _requests_request_to_payload(req: PreparedRequest) -> tuple[str, str, dict[s
         else:
             kwargs["data"] = text
 
-    payload = {k: kwargs[k] for k in ("json", "data") if k in kwargs}
+    payload: dict[str, Any] = {k: kwargs[k] for k in ("json", "data") if k in kwargs}
     return str(req.url), str(req.method), payload
 
 

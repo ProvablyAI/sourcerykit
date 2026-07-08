@@ -82,5 +82,5 @@ def _httpx_request_to_payload(req: httpx.Request) -> tuple[str, str, dict[str, A
         else:
             kwargs["data"] = text
 
-    payload = {k: kwargs[k] for k in ("params", "json", "data") if k in kwargs}
+    payload: dict[str, Any] = {k: kwargs[k] for k in ("params", "json", "data") if k in kwargs}
     return str(req.url), req.method, payload
