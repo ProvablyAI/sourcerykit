@@ -46,7 +46,7 @@ When the agent executes an HTTP request, we wrap it inside `async_intercept_cont
 @function_tool
 async def get_current_temperature_london() -> dict:
     """Fetch the current temperature in London from Open-Meteo."""
-    async with async_intercept_context(agent_id="demo-agent", action_name="get_weather"):
+    async with async_intercept_context(agent_id="demo-agent", action_name="get_weather") as ref:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://api.open-meteo.com/v1/forecast",
@@ -54,8 +54,17 @@ async def get_current_temperature_london() -> dict:
                 timeout=30,
             )
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+    return {**data, "sourcerykit_ref": ref}
 ```
+
+> [!TIP]
+> When the same tool is called multiple times (e.g., weather for London and Paris), each
+> `async_intercept_context` invocation produces a unique `ref`. Return it alongside the
+> data so the agent can map each `claimed_value` to the correct intercept via
+> `sourcerykit_ref`. See the
+> [claude_agent_multi_tool](../cookbooks/claude_agent_multi_tool) cookbook for a runnable
+> example.
 
 ### Step 3: LLM Interaction & Claim Extraction
 When the agent runs, it calls the tool, receives the raw JSON response, and passes it to the LLM for reasoning. Configure your agent with `SourceryKitAgentResponse` as the structured output type — the keyword argument depends on your framework (e.g., `output_type` for the OpenAI Agents SDK, `response_format` for LangChain). The LLM returns a typed `SourceryKitAgentResponse` with a `claimed_values` list — a flat collection of `ClaimedValue` objects, each with a JSONPath-style `path` and the extracted value as a string.
