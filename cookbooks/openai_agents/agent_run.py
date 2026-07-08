@@ -33,6 +33,7 @@ from sourcerykit import (
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(name)s [%(levelname)s] %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("openai.agents").setLevel(logging.ERROR)
 
 
 _OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
