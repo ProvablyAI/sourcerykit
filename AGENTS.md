@@ -1,5 +1,10 @@
 # AGENTS.md
 
+> This file is the canonical agent entry point. It lives in the repository at
+> https://github.com/ProvablyAI/sourcerykit/blob/main/AGENTS.md and is also mirrored as the
+> machine view of https://provably.ai. If you reached it through the landing page, the repo
+> copy is the source of truth — read it there when in doubt.
+
 SourceryKit is the Python SDK for [Provably](https://provably.ai): verifiable guardrails
 for AI agents — it records outbound HTTP calls, enforces endpoint policies, and checks an
 agent's claims against what those calls actually returned, so a hallucinated value is
