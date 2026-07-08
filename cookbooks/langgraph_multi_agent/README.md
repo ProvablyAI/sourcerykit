@@ -1,4 +1,4 @@
-# LangGraph Multi-Agent
+# LangGraph Multi-Agent — Travel Agency Flight Status
 
 This example demonstrates a multi-agent pipeline using [LangGraph](https://github.com/langchain-ai/langgraph) with SourceryKit verification and conditional routing.
 
@@ -12,11 +12,11 @@ START → Fetcher Agent → Build Handoff → Evaluator
                       CAUGHT → Healer Agent  PASS → Success
 ```
 
-1. **Fetcher Agent** — calls Open-Meteo for London weather, returns `SourceryKitAgentResponse` with claims.
+1. **Fetcher Agent** — calls a mock flight API for flight BA2490 (London Heathrow → Paris CDG), returns `SourceryKitAgentResponse` with claims.
 2. **Build Handoff** — deterministic node compiles claims into a `HandoffPayload` (no LLM involved).
 3. **Evaluator** — runs `evaluate_handoff` to verify claims against recorded HTTP intercepts.
 4. **Conditional routing**:
-   - **PASS** → Success node prints the verified temperature.
+   - **PASS** → Success node prints the verified flight status.
    - **CAUGHT** → Healer Agent analyzes the failure and produces a corrected response.
 
 ## How It Works
@@ -24,6 +24,12 @@ START → Fetcher Agent → Build Handoff → Evaluator
 2. **Handoff Payload**: `build_handoff_payload` compiles the fetcher's claims into a verifiable payload.
 3. **Evaluation**: `evaluate_handoff` checks cryptographic proofs and compares claims against recorded intercepts.
 4. **Healing**: On CAUGHT, the healer agent receives the original claims and failure details, then produces corrected claims.
+
+## Mock Data
+
+| Flight | Route | Status | Departure | Gate |
+|---|---|---|---|---|
+| BA2490 | LHR→CDG | ON_TIME | 2026-07-09T14:30:00Z | B42 |
 
 ---
 
@@ -52,15 +58,16 @@ You will also need to set these LLM-provider variables manually:
 
 1. Install dependencies:
    ```bash
-   pip install sourcerykit langgraph langchain-openai langchain-core python-dotenv httpx pydantic
+   pip install sourcerykit langchain langgraph python-dotenv httpx pydantic
    ```
 2. Export your LLM-provider keys:
    ```bash
    export MODEL_NAME="openrouter:openai/gpt-4o-mini"
+   export OPENROUTER_API_KEY="sk-or-..."
    ```
 3. Run:
    ```bash
-   # Standard validation (PASS → Success)
+   # Standard validation (PASS)
    python agent_run.py
 
    # Hallucination simulation (CAUGHT → Healer)
