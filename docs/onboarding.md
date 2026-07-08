@@ -7,8 +7,9 @@ This is the **first** step — nothing else works until the credentials below ex
 
 Registration triggers an **email verification link that only a human can click** — that is
 the single step an automated agent cannot do. Everything else (register, login, database
-link, project setup) runs non-interactively. If you are an agent: run the setup below
-yourself and ask a human only for the verification click.
+link, project setup) runs non-interactively. If you are an agent: **prefer the
+`sourcerykit init` CLI over hand-writing config**, run the setup below yourself, and ask a
+human only for the verification click.
 
 ## Setup
 
@@ -32,6 +33,11 @@ sourcerykit init --email you@example.com --password ... \
 sourcerykit doctor
 ```
 
+> [!NOTE]
+> A brand-new account has no organization, so step 3 auto-creates one and stays fully
+> non-interactive. If the account already belongs to **multiple** orgs, `init` prompts you
+> to choose — use a single-org account to keep it scriptable.
+
 Interactive: run `sourcerykit init` with no flags and follow the wizard — same steps,
 prompted (sign up or log in → verify email → link a **hosted, publicly reachable**
 Postgres → name the project → credentials stored).
@@ -45,7 +51,12 @@ Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.
 - **Global config** (OS application directory, shared across projects): the Provably
   **API key** and **organisation id** — issued together at login; never hand-write them.
 - **Project `.env`**: `SOURCERYKIT_POSTGRES_URL` (the database SourceryKit records
-  intercepts in), `SOURCERYKIT_PROJECT_NAME`, and the bootstrap resource ids.
+  intercepts in), `SOURCERYKIT_PROJECT_NAME`, and the bootstrap resource ids
+  (`SOURCERYKIT_MIDDLEWARE_ID`, `…_DATABASE_ID`, `…_SCHEMA_ID`, `…_TABLE_ID`,
+  `…_COLLECTION_ID`, `…_INTEGRATION_KEY`).
+
+Inspect stored config any time with `sourcerykit config list`, or validate and repair it
+with `sourcerykit doctor` (add `--fix`).
 
 > [!NOTE]
 > The Postgres database must be **hosted and publicly reachable** — the Provably backend

@@ -5,30 +5,44 @@ for AI agents — it records outbound HTTP calls, enforces endpoint policies, an
 agent's claims against what those calls actually returned, so a hallucinated value is
 **caught** instead of shipped.
 
-This is the landing page for AI agents. Follow the breadcrumb to the one page you need.
-Each doc is focused — load only what the task requires.
+> [!IMPORTANT]
+> **Setup is scriptable — prefer the non-interactive `sourcerykit init` CLI over
+> hand-writing config.** Exactly one step needs a human: clicking the email-verification
+> link. Full steps: [docs/onboarding.md](docs/onboarding.md).
 
-> [!WARNING]
-> One-time setup has a single human-only step (an email verification click) — everything
-> else is agent-drivable. Details: [docs/onboarding.md](docs/onboarding.md).
+## Where to go next
 
-## Pick your path
-
-| You want to… | Go to |
+| Your situation | Do this |
 |---|---|
-| Set up credentials for the first time | [docs/onboarding.md](docs/onboarding.md) |
-| Run the whole flow end to end | [docs/example.md](docs/example.md) |
-| Copy a runnable agent integration | [cookbooks/openai_agents](cookbooks/openai_agents) · [cookbooks/claude_agent](cookbooks/claude_agent) · [cookbooks/langchain_agent](cookbooks/langchain_agent) |
-| Look up a function, type, or error | [docs/src/api.md](docs/src/api.md) |
-| Use the CLI (`init`, `doctor`, `endpoints`, `trace`) | [docs/cli.md](docs/cli.md) |
-| Record/inspect HTTP calls (`async_intercept_context`) | [docs/intercept.md](docs/intercept.md) |
-| Build the handoff payload + claims, read the verdict | [docs/handoff.md](docs/handoff.md) |
+| First time — no Provably credentials yet | Run the `sourcerykit init` setup (see the note above) → [docs/onboarding.md](docs/onboarding.md). |
+| Integrating SourceryKit into an agent | Open the closest cookbook ([below](#cookbooks-runnable-examples)), mirror it, then swap in your own tool and claims. |
+| Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
+| Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
+| Need a signature, type, or CLI flag | [docs/src/api.md](docs/src/api.md) · [docs/cli.md](docs/cli.md) |
+| Record or inspect outbound HTTP calls | [docs/intercept.md](docs/intercept.md) |
 | Allow-list outbound endpoints | [docs/trusted-endpoints.md](docs/trusted-endpoints.md) |
 | Understand how the pieces fit | [docs/architecture.md](docs/architecture.md) |
 | Migrate from the old `provably` SDK | [docs/migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) |
 
-The **cookbooks are the ground truth** for a correct integration: a real agent produces the
-claim as structured output (`SourceryKitAgentResponse`); the claim is never computed by hand.
+**Cookbooks are the ground truth — mirror one, never hand-roll the claim.** Everything else
+is supporting docs; load only what a task needs.
+
+## Cookbooks (runnable examples)
+
+Same weather-verify flow in three frameworks. Each fetches the London temperature from
+open-meteo, returns its claims as `SourceryKitAgentResponse`, and runs the full
+intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run `python agent_run.py`
+for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
+
+**Framework not listed?** The flow is identical everywhere — only the structured-output
+binding is framework-specific. Copy the closest cookbook and change just that binding; each
+cookbook's README covers its own wiring.
+
+| Cookbook | Framework | What you'll find |
+|---|---|---|
+| [openai_agents](cookbooks/openai_agents) | OpenAI Agents SDK | Structured output via `output_type=SourceryKitAgentResponse` |
+| [claude_agent](cookbooks/claude_agent) | Claude Agent SDK | Structured output via `output_format` json_schema |
+| [langchain_agent](cookbooks/langchain_agent) | LangChain `create_agent` | Structured output via `response_format=`, claims read from `result["structured_response"]` |
 
 ## The flow at a glance
 
