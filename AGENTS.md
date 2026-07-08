@@ -29,20 +29,31 @@ is supporting docs; load only what a task needs.
 
 ## Cookbooks (runnable examples)
 
-Same weather-verify flow in three frameworks. Each fetches the London temperature from
-open-meteo, returns its claims as `SourceryKitAgentResponse`, and runs the full
-intercept → `build_handoff_payload` → `evaluate_handoff` loop. Run `python agent_run.py`
-for a `PASS`; add `--tamper` to fake a value and watch it get `CAUGHT`.
+Each is a full runnable agent: `python agent_run.py` for a `PASS`; add `--tamper` to corrupt
+a claim and watch `evaluate_handoff` return `CAUGHT`. Every claimed value carries a
+`sourcerykit_ref` (copied from the tool's output) that maps it to the exact recorded call —
+so the same tool can be called many times, and separate agents can each own a stage.
 
 **Framework not listed?** The flow is identical everywhere — only the structured-output
 binding is framework-specific. Copy the closest cookbook and change just that binding; each
 cookbook's README covers its own wiring.
+
+**Single-agent** — one agent fetches, claims, and verifies (weather):
 
 | Cookbook | Framework | What you'll find |
 |---|---|---|
 | [openai_agents](cookbooks/openai_agents) | OpenAI Agents SDK | Structured output via `output_type=SourceryKitAgentResponse` |
 | [claude_agent](cookbooks/claude_agent) | Claude Agent SDK | Structured output via `output_format` json_schema |
 | [langchain_agent](cookbooks/langchain_agent) | LangChain `create_agent` | Structured output via `response_format=`, claims read from `result["structured_response"]` |
+
+**Multi-agent / multi-tool** — producer agents build claims; a separate verifier evaluates them:
+
+| Cookbook | Framework | Pattern |
+|---|---|---|
+| [openai_agents_multi_agent](cookbooks/openai_agents_multi_agent) | OpenAI Agents SDK | Orchestrator → specialists → verify (customer support) |
+| [crewai_multi_agent](cookbooks/crewai_multi_agent) | CrewAI | Specialist crew → build → evaluate → remediate (invoice audit) |
+| [langgraph_multi_agent](cookbooks/langgraph_multi_agent) | LangGraph | Fetcher → evaluator → healer on `CAUGHT` (flights) |
+| [claude_agent_multi_tool](cookbooks/claude_agent_multi_tool) | Claude Agent SDK | Same tool called twice; `sourcerykit_ref` maps each claim (weather) |
 
 ## The flow at a glance
 
@@ -63,5 +74,5 @@ Outcomes:
   zero claims is always `ERROR`, never a pass.
 
 Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp`, and
-`requests`. `action_name` is the join key between the intercepted call and the claim — it
-must match.
+`requests`. Each claim maps to its recorded call by the `sourcerykit_ref` the tool returns
+(copied into the claimed value), so the same tool or `action_name` can be called repeatedly.
