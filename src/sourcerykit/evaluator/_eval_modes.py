@@ -1,5 +1,6 @@
 """Per-claim evaluation for each HandoffClaim verification_mode."""
 
+import json as json_lib
 import math
 from typing import Any
 
@@ -55,7 +56,20 @@ def evaluate_claim(claim: HandoffClaim, row_response: Any) -> dict[str, Any]:
                 path = entry["path"] if isinstance(entry, dict) else entry.path
                 value = entry["value"] if isinstance(entry, dict) else entry.value
                 raw_true_value = _get_by_json_path(row_response, path)
-                true_value = str(raw_true_value) if raw_true_value is not None else None
+
+                # Use canonical JSON for arrays/dicts, str() for scalars
+                true_value: str | None
+                if isinstance(raw_true_value, (list, dict)):
+                    true_value = canonical_json(raw_true_value) if raw_true_value is not None else None
+                    # Try to parse claimed value as JSON for array/dict comparison
+                    try:
+                        parsed_claimed = json_lib.loads(value.strip())
+                        if isinstance(parsed_claimed, (list, dict)):
+                            value = canonical_json(parsed_claimed)
+                    except (json_lib.JSONDecodeError, ValueError):
+                        pass  # Keep original value for comparison
+                else:
+                    true_value = str(raw_true_value) if raw_true_value is not None else None
 
                 if true_value is None or value.strip() != true_value.strip():
                     is_valid = False
