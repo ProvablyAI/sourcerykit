@@ -9,6 +9,17 @@
 ### Features
 - **Multi-tool-call support** — `call_ref` column on `intercepts` + `sourcerykit_ref` on `ClaimedValue` enable correct mapping when the same tool is called multiple times.
 - **Auto-grouping** — `build_handoff_payload` splits `claimed_value` entries by `sourcerykit_ref` automatically. No manual grouping or `call_ref` mapping needed.
+- **Mock HTTP server** — lightweight test utility for local endpoint testing.
+
+### Bug fixes
+- Improved `evaluate_claim` value comparison with JSON parsing for arrays and dicts.
+
+### Refactoring
+- Implemented locking mechanism for concurrent preprocessing.
+- Updated claim evaluation and error handling for `sourcerykit_ref`.
+
+### Documentation
+- Added multi-agent cookbook examples (LangGraph, CrewAI).
 
 ## 1.0.0b5
 
