@@ -19,6 +19,10 @@ agent's claims against what those calls actually returned, so a hallucinated val
 | Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
 | Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
 | Need a signature, type, or CLI flag | [docs/src/api.md](docs/src/api.md) · [docs/cli.md](docs/cli.md) |
+| Record or inspect outbound HTTP calls | [docs/intercept.md](docs/intercept.md) |
+| Allow-list outbound endpoints | [docs/trusted-endpoints.md](docs/trusted-endpoints.md) |
+| Understand how the pieces fit | [docs/architecture.md](docs/architecture.md) |
+| Migrate from the old `provably` SDK | [docs/migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) |
 
 **Cookbooks are the ground truth — mirror one, never hand-roll the claim.** Everything else
 is supporting docs; load only what a task needs.
@@ -61,10 +65,3 @@ Outcomes:
 Async throughout — `await` every SDK call. Recorded traffic: `httpx`, `aiohttp`, and
 `requests`. `action_name` is the join key between the intercepted call and the claim — it
 must match.
-
-## More docs
-
-Not linked above: [intercept.md](docs/intercept.md) (recording HTTP calls) ·
-[trusted-endpoints.md](docs/trusted-endpoints.md) (allow-listing) ·
-[architecture.md](docs/architecture.md) (how it fits) ·
-[migrations/v1_0/v1_0.md](docs/migrations/v1_0/v1_0.md) (from the old `provably` SDK)
