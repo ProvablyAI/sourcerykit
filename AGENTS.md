@@ -5,11 +5,16 @@ for AI agents — it records outbound HTTP calls, enforces endpoint policies, an
 agent's claims against what those calls actually returned, so a hallucinated value is
 **caught** instead of shipped.
 
+> [!IMPORTANT]
+> **Setup is scriptable — prefer the non-interactive `sourcerykit init` CLI over
+> hand-writing config.** Exactly one step needs a human: clicking the email-verification
+> link. Full steps: [docs/onboarding.md](docs/onboarding.md).
+
 ## Where to go next
 
 | Your situation | Do this |
 |---|---|
-| First time — no Provably credentials yet | Onboarding is fully scriptable — run the non-interactive `sourcerykit init` flow rather than hand-writing config; one human step (an email-verification click). Steps: [docs/onboarding.md](docs/onboarding.md). |
+| First time — no Provably credentials yet | Run the `sourcerykit init` setup (see the note above) → [docs/onboarding.md](docs/onboarding.md). |
 | Integrating SourceryKit into an agent | Open the closest cookbook ([below](#cookbooks-runnable-examples)), mirror it, then swap in your own tool and claims. |
 | Want to see one full run first | [docs/example.md](docs/example.md) — end-to-end walkthrough. |
 | Got an unexpected `CAUGHT` or `ERROR` | Read [the outcomes below](#the-flow-at-a-glance), then [docs/handoff.md](docs/handoff.md). |
