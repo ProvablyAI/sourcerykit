@@ -73,6 +73,15 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
 
     outcome = _resolve_outcome(per_claim, errors)
 
+    if outcome == Outcome.ERROR and not per_claim and not errors:
+        # Zero claims reached the verifier. Say so — an ERROR with an empty errors list gives
+        # the caller nothing to act on.
+        errors = [
+            f"no claims were verified: the handoff payload contained {len(payload.claims)} "
+            "claim(s), and none resolved to a recorded intercept. Check that each claimed "
+            "value carries a sourcerykit_ref matching a recorded tool call."
+        ]
+
     return {"outcome": outcome, "per_claim": per_claim, "errors": errors}
 
 
