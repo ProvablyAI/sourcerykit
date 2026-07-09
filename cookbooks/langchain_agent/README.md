@@ -16,16 +16,11 @@ sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like `MODEL_NAME` or `OPENROUTER_API_KEY`). Those must still be set up separately in your environment.
-
-You will also need to set these LLM-provider variables manually:
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys. You must set your model provider's environment variables (e.g. `OPENROUTER_API_KEY`) separately.
 
 | Variable | Required | Description |
 |---|---|---|
 | `MODEL_NAME` | **yes** | Targeted model architecture identifier string passed to create_agent (e.g., `openrouter:openai/gpt-4o-mini`). |
-
-> [!Note]
-> Ensure your underlying model provider's environment variables—such as `OPENROUTER_API_KEY`—are also set as required by your LangChain backend provider setup.
 
 ---
 
