@@ -1,9 +1,7 @@
 # CrewAI Multi-Agent — Invoice Auditing with Specialist Agents
-
 This example demonstrates multi-agent orchestration using [CrewAI](https://github.com/crewAIInc/crewAI) with SourceryKit verification. Three specialist agents each query a different ERP table, with centralized evaluation by the orchestrator.
 
 ## Flow
-
 ```
 Flow[AuditState]:
 
@@ -35,13 +33,14 @@ Flow[AuditState]:
 ---
 
 ## Environment Configuration
+Before running the system, run the interactive setup wizard to configure your SourceryKit project variables automatically:
 
 ```bash
 sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard only configures **SOURCERYKIT_*** variables. LLM provider keys must be set separately.
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). Those must still be set up separately in your environment.
 
 | Variable | Required | Description |
 |---|---|---|
@@ -53,7 +52,6 @@ sourcerykit init
 ---
 
 ## Execution
-
 1. Install dependencies:
    ```bash
    pip install sourcerykit crewai-tools python-dotenv httpx pydantic
@@ -63,16 +61,18 @@ sourcerykit init
    pip install "crewai[anthropic]"    # Anthropic
    pip install "crewai[litellm]"      # OpenRouter / multi-provider via LiteLLM
    ```
-2. Export your LLM-provider keys:
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
    ```bash
    export MODEL_NAME="openai/gpt-4o-mini"
    export OPENAI_API_KEY="sk-..."
    ```
-3. Run:
-   ```bash
-   # Standard validation (PASS)
-   python agent_run.py
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-   # Hallucination simulation (CAUGHT → Remediation)
-   python agent_run.py --tamper
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```

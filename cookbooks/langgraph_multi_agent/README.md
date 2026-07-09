@@ -1,9 +1,7 @@
 # LangGraph Multi-Agent — Travel Agency Flight Status
-
 This example demonstrates a multi-agent pipeline using [LangGraph](https://github.com/langchain-ai/langgraph) with SourceryKit verification and conditional routing.
 
 ## Flow
-
 ```
 START → Fetcher Agent → Build Handoff → Evaluator
                                             │
@@ -55,21 +53,21 @@ You will also need to set these LLM-provider variables manually:
 ---
 
 ## Execution
-
 1. Install dependencies:
    ```bash
    pip install sourcerykit langchain langgraph python-dotenv httpx pydantic
    ```
-2. Export your LLM-provider keys:
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
    ```bash
    export MODEL_NAME="openrouter:openai/gpt-4o-mini"
-   export OPENROUTER_API_KEY="sk-or-..."
    ```
-3. Run:
-   ```bash
-   # Standard validation (PASS)
-   python agent_run.py
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-   # Hallucination simulation (CAUGHT → Healer)
-   python agent_run.py --tamper
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```

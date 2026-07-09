@@ -37,13 +37,14 @@ User: "Customer CUST-001 is asking about order ORD-123..."
 ---
 
 ## Environment Configuration
+Before running the system, run the interactive setup wizard to configure your SourceryKit project variables automatically:
 
 ```bash
 sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard only configures **SOURCERYKIT_*** variables. LLM provider keys must be set separately.
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like `MODEL_URL` or `MODEL_API_KEY`). Those must still be set up separately in your environment.
 
 | Variable | Required | Description |
 |---|---|---|
@@ -55,21 +56,23 @@ sourcerykit init
 
 ## Execution
 
-1. Install dependencies:
+1. Install the SDK package:
    ```bash
    pip install sourcerykit openai-agents python-dotenv httpx pydantic
    ```
-2. Export your LLM-provider keys:
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
    ```bash
    export MODEL_URL="https://openrouter.ai/api/v1"
    export MODEL_API_KEY="sk-or-..."
    export MODEL_NAME="openai/gpt-4o-mini"
    ```
-3. Run:
-   ```bash
-   # Standard validation (PASS)
-   python agent_run.py
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-   # Hallucination simulation (CAUGHT)
-   python agent_run.py --tamper
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```
