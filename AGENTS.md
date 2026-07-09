@@ -43,6 +43,14 @@ so the same tool can be called many times, and separate agents can each own a st
 binding is framework-specific. Copy the closest cookbook and change just that binding; each
 cookbook's README covers its own wiring.
 
+**The claim must come from the agent, not your code.** Run a real agent with
+`output_type=SourceryKitAgentResponse` (or your framework's equivalent) and pass its
+`final_output.claimed_values` straight into the handoff. Do NOT hand-roll raw chat-completion
+calls or assemble claims yourself from the fetched data — that skips the agent the whole
+system exists to verify. Using any OpenAI-compatible endpoint (e.g. OpenRouter)? Point the
+SDK's client at your `MODEL_URL` with `MODEL_API_KEY` or `OPENROUTER_API_KEY`, exactly as
+[cookbooks/openai_agents](cookbooks/openai_agents) does — don't drop to bare HTTP.
+
 **Single-agent** — one agent fetches, claims, and verifies (weather):
 
 | Cookbook | Framework | What you'll find |

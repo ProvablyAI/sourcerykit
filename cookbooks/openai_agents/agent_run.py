@@ -38,7 +38,9 @@ logging.getLogger("openai.agents").setLevel(logging.ERROR)
 
 _OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 _DEFAULT_MODEL_URL = os.getenv("MODEL_URL", "http://127.0.0.1:1234/v1")
-_DEFAULT_MODEL_API_KEY = os.getenv("MODEL_API_KEY", "")
+# Accept either key name: MODEL_API_KEY, or OPENROUTER_API_KEY if you point MODEL_URL at
+# OpenRouter (a common OpenAI-compatible gateway).
+_DEFAULT_MODEL_API_KEY = os.getenv("MODEL_API_KEY") or os.getenv("OPENROUTER_API_KEY", "")
 _DEFAULT_MODEL = os.getenv("MODEL_NAME", "Qwen3.5-0.8B-MLX-4bit")
 
 
