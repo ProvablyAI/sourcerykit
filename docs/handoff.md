@@ -28,12 +28,17 @@ Each `ClaimedValue` in that list has three string fields — nothing else:
 `final_output.claimed_values` feeds directly into the handoff payload — you pass the list straight through, as shown in the [Example](#example) and payload tables below.
 
 > [!IMPORTANT]
-> Do not build `claimed_values` by hand. Bind `SourceryKitAgentResponse` as your agent's
-> structured output (see the [cookbooks](../cookbooks)) and let the **agent** produce the list
-> as part of its answer. Assembling claims yourself from the fetched data (a dict of your own
-> keys like `{"hint_weight": 90, ...}`) both defeats the point — the *agent* must make the claim
-> — and resolves **zero** claims: `evaluate_handoff` returns `outcome: "ERROR"` with an empty
-> `per_claim`.
+> `claimed_values` must be the agent's own structured output. Bind `SourceryKitAgentResponse`
+> (see the [cookbooks](../cookbooks)) and pass `final_output.claimed_values` straight through —
+> do not assemble the list yourself from the fetched data.
+>
+> A *wrong-shaped* hand-built claim (a dict of your own keys like `{"hint_weight": 90, ...}`)
+> resolves **zero** claims — `evaluate_handoff` returns `ERROR` with an empty `per_claim`. But a
+> *correctly-shaped* hand-built claim is the more dangerous case: it can return `PASS` and still
+> prove nothing, because you have only compared the fetched data to itself. SourceryKit exists to
+> catch a value **the agent got wrong**; if you build the claim from the data by hand there is no
+> independent agent claim to check. The verification is only meaningful when the values are what
+> the agent actually declared.
 
 
 ## Example
