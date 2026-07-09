@@ -1,13 +1,39 @@
 # Handoff
 The handoff mechanism structures agent claims—such as the result of an API call—and submits them to an evaluation service. These claims are evaluated deterministically against authoritative records to provide verifiable runtime guardrails.
 
-Agent frameworks (OpenAI Agents SDK, LangChain) should use `SourceryKitAgentResponse` as the structured output type. This enforces a typed contract where the LLM returns a `reasoning` string and a `claimed_values` list—a flat collection of `ClaimedValue` objects, each with a JSONPath-style `path` and an extracted string `value`. These `claimed_values` feed directly into the handoff payload.
-
-
 ## Core Flow
 - **Collect Claims**: The agent records statements about its actions alongside supporting request/response payloads.
 - **Build Payload**: The claims, trusted endpoint snapshots, and execution metadata are compiled into a structured `HandoffPayload`.
 - **Evaluate**: The payload is sent to the evaluation service via the SDK, which matches claims against the backend source of truth and returns a verdict.
+
+
+## The agent's structured output: `SourceryKitAgentResponse`
+Claims originate from the agent itself, not from your code. Agent frameworks (OpenAI Agents SDK, LangChain) bind `SourceryKitAgentResponse` as the structured output type — `output_type=` for the OpenAI Agents SDK, `response_format=` for LangChain — so the LLM is forced to return this typed contract instead of free-form text.
+
+`SourceryKitAgentResponse` has two fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `reasoning` | `str` | The agent's explanation of its actions for this execution slice. |
+| `claimed_values` | `list[ClaimedValue]` | A **flat list** of the values the agent claims it produced (see below). |
+
+Each `ClaimedValue` in that list has three string fields — nothing else:
+
+| Field | Type | Description |
+|---|---|---|
+| `path` | `str` | JSONPath into the tool output, e.g. `$.base_experience`. |
+| `value` | `str` | The extracted value, as a string. |
+| `sourcerykit_ref` | `str` | Copied verbatim from the tool call's `sourcerykit_ref` return, so the claim maps to the recorded call. Mandatory. |
+
+`final_output.claimed_values` feeds directly into the handoff payload — you pass the list straight through, as shown in the [Example](#example) and payload tables below.
+
+> [!IMPORTANT]
+> Do not build `claimed_values` by hand. Bind `SourceryKitAgentResponse` as your agent's
+> structured output (see the [cookbooks](../cookbooks)) and let the **agent** produce the list
+> as part of its answer. Assembling claims yourself from the fetched data (a dict of your own
+> keys like `{"hint_weight": 90, ...}`) both defeats the point — the *agent* must make the claim
+> — and resolves **zero** claims: `evaluate_handoff` returns `outcome: "ERROR"` with an empty
+> `per_claim`.
 
 
 ## Example
@@ -81,31 +107,10 @@ The `build_handoff_payload` function accepts a structured `payload_data` diction
 | Field | Type | Description |
 |---|---|---|
 | `action_name` | `str` | Logical identifier for the agent action producing the claim. |
-| `claimed_value` | `list[ClaimedValue]` | The agent's `claimed_values` — a **flat list** of `{path, value, sourcerykit_ref}` objects (see below). Not an arbitrary dict of your own field names. |
+| `claimed_value` | `list[ClaimedValue]` | The agent's `claimed_values` — pass `final_output.claimed_values` straight through. See [`SourceryKitAgentResponse`](#the-agents-structured-output-sourcerykitagentresponse) for the shape. Not an arbitrary dict of your own field names. |
 | `verification_mode` | `str` | The verification strategy applied to this specific claim (e.g., `field_extraction`). |
 | `range_min` | `float | int | None` | Optional inclusive lower bound boundary used for `range_threshold` mode. |
 | `range_max` | `float | int | None` | Optional inclusive upper bound boundary used for `range_threshold` mode. |
-
-### Claim value shape (`claimed_value`)
-
-`claimed_value` is the agent's `claimed_values`: a **flat list of `ClaimedValue` objects**, each
-with three string fields — nothing else.
-
-| Field | Type | Description |
-|---|---|---|
-| `path` | `str` | JSONPath into the tool output, e.g. `$.base_experience`. |
-| `value` | `str` | The extracted value, as a string. |
-| `sourcerykit_ref` | `str` | Copied verbatim from the tool call's `sourcerykit_ref` return, so the claim maps to the recorded call. Mandatory. |
-
-> [!IMPORTANT]
-> Do not build `claimed_values` by hand. Bind `SourceryKitAgentResponse` as your agent's
-> structured output (`output_type=` / `response_format=` — see the [cookbooks](../cookbooks)),
-> and let the **agent** produce the list as part of its answer. Pass
-> `final_output.claimed_values` straight into `claimed_value`, exactly as shown in the example
-> above. Assembling claims yourself from the fetched data (a dict of your own keys like
-> `{"hint_weight": 90, ...}`) both defeats the point — the *agent* must make the claim — and
-> resolves **zero** claims: `evaluate_handoff` returns `outcome: "ERROR"` with an empty
-> `per_claim`. The shape above is for understanding what the agent returns, not a hand-build recipe.
 
 
 ## Verification Modes
