@@ -12,10 +12,7 @@ Welcome to the developer documentation for the Provably Python SDK (**SourceryKi
 * Review [Trusted Endpoints](trusted-endpoints.md) to administer strict target destination routing policies.
 
 ## Cookbooks
-Explore how to integrate SourceryKit seamlessly into your favorite production development stack:
-* **OpenAI Agents SDK:** Review the [OpenAI Agents SDK example](cookbooks/openai_agents/README.md).
-* **LangChain SDK:** See the [LangChain example](cookbooks/langchain_agent/README.md).
-* **Claude Agent SDK:** Review the [Claude Agent SDK example](cookbooks/claude_agent/README.md).
+Explore how to integrate SourceryKit seamlessly into your favorite production development stack — see the [Cookbooks Overview](src/cookbooks/index.md) for a full comparison table and guidance on choosing an example.
 
 ## API Reference & Development
 * Consult the [CLI Reference](cli.md) for all available commands, options, and usage examples.
@@ -55,9 +52,14 @@ example
 :maxdepth: 1
 :caption: Cookbooks
 
+src/cookbooks/index
 src/cookbooks/openai_agents
 src/cookbooks/langchain_agent
 src/cookbooks/claude_agent
+src/cookbooks/openai_agents_multi_agent
+src/cookbooks/crewai_multi_agent
+src/cookbooks/langgraph_multi_agent
+src/cookbooks/claude_agent_multi_tool
 ```
 
 
