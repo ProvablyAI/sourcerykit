@@ -10,6 +10,7 @@ from sourcerykit.provably._errors import (
     ProvablyConnectionError,
     ProvablyDataError,
     ProvablyError,
+    ProvablyNotFoundError,
     ProvablyResourceAlreadyExistsError,
     ProvablyUnauthorizedError,
     provably_auth_error_handler,
@@ -43,6 +44,13 @@ class TestErrorHierarchy:
         err = ProvablyAPIError("bad request")
         assert err.status_code is None
 
+    def test_not_found_is_api_error(self) -> None:
+        assert issubclass(ProvablyNotFoundError, ProvablyAPIError)
+
+    def test_not_found_stores_status_code(self) -> None:
+        err = ProvablyNotFoundError("not found", status_code=404, response_body="Not Found")
+        assert err.status_code == 404
+
 
 # ---------------------------------------------------------------------------
 # provably_error_handler
@@ -65,6 +73,17 @@ class TestProvablyErrorHandler:
 
         assert exc_info.value.status_code == 422
         assert "run query" in str(exc_info.value).lower()
+
+    async def test_http_404_raises_not_found_error(self) -> None:
+        mock_request = httpx.Request("GET", "https://api.provably.ai/test")
+        mock_response = httpx.Response(404, request=mock_request, text="Not Found")
+        http_err = httpx.HTTPStatusError("404", request=mock_request, response=mock_response)
+
+        with pytest.raises(ProvablyNotFoundError) as exc_info:
+            async with provably_error_handler("get_preprocess_status"):
+                raise http_err
+
+        assert exc_info.value.status_code == 404
 
     async def test_value_error_raises_data_error(self) -> None:
         with pytest.raises(ProvablyDataError):

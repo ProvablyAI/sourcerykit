@@ -54,6 +54,12 @@ class ProvablyUnauthorizedError(ProvablyAuthError):
     pass
 
 
+class ProvablyNotFoundError(ProvablyAPIError):
+    """Raised when the requested resource does not exist (HTTP 404)."""
+
+    pass
+
+
 @asynccontextmanager
 async def provably_auth_error_handler(service: str) -> AsyncIterator[None]:
     """
@@ -122,17 +128,25 @@ async def provably_error_handler(service: str) -> AsyncIterator[None]:
     try:
         yield
     except httpx.HTTPStatusError as e:
+        status = e.response.status_code
+        body = e.response.text
         # Log API failures
         _log.error(
             f"provably_api_rejected_{service}",
-            status_code=e.response.status_code,
+            status_code=status,
             path=str(e.request.url),
-            response=e.response.text[:500],
+            response=body[:500],
         )
+        if status == 404:
+            raise ProvablyNotFoundError(
+                message=f"Resource not found for {service_name}: {body}",
+                status_code=status,
+                response_body=body,
+            ) from e
         raise ProvablyAPIError(
-            message=f"Provably API rejected {service_name}: {e.response.text}",
-            status_code=e.response.status_code,
-            response_body=e.response.text,
+            message=f"Provably API rejected {service_name}: {body}",
+            status_code=status,
+            response_body=body,
         ) from e
 
     except (ValueError, TypeError, KeyError) as e:
