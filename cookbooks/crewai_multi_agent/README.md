@@ -30,6 +30,14 @@ Flow[AuditState]:
 4. **Evaluation**: The orchestrator evaluates each payload via `evaluate_handoff`. This is the verifier side — the orchestrator never touches raw agent output, only the verifiable payloads.
 5. **Conditional Routing**: If any payload fails verification, a remediation crew produces an incident report analyzing the discrepancy.
 
+## Mock Data Tables
+
+| Specialist | Table | Action Name | Agent ID |
+|---|---|---|---|
+| Amount Validator | invoices | `get_invoice_amount` | `amount_validator` |
+| Vendor Checker | vendors | `get_vendor` | `vendor_checker` |
+| Currency Verifier | currencies | `get_currency` | `currency_verifier` |
+
 ---
 
 ## Environment Configuration
