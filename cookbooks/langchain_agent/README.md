@@ -1,5 +1,5 @@
 # LangChain Agent
-This example demonstrates how to integrate SourceryKit with LangChain using agent compilation workflows (create_agent). It showcases automated tool intercept capture, target endpoint allow-list constraints, native structured JSON responses via Pydantic, and backend evaluation loops.
+This example demonstrates how to integrate SourceryKit with [LangChain](https://github.com/langchain-ai/langchain) using agent compilation workflows (create_agent). It showcases automated tool intercept capture, target endpoint allow-list constraints, native structured JSON responses via Pydantic, and backend evaluation loops.
 
 ## How It Works
 1. **HTTP Interception**: The `bootstrap_system()` hook dynamically monitors outbound `httpx` calls, ensuring that network operations generated within the LangChain agent tool loop (`get_current_temperature_london`) are securely logged to your database intercepts table.
