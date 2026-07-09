@@ -14,8 +14,6 @@
 
 SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides verifiable guardrails for AI agents by automatically recording outbound HTTP calls, enforcing endpoint policies, and checking your agent's claims against a source of truth—all before any request leaves your process.
 
-Source and docs live at https://github.com/ProvablyAI/sourcerykit. AI agents: start at https://github.com/ProvablyAI/sourcerykit/blob/main/AGENTS.md — the verification flow plus runnable cookbooks to mirror.
-
 > ⚠️ **IMPORTANT:** Upgrading the SDK from v0.2 to v1.0? See the [v1.0 migration guide](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/migrations/v1_0/v1_0.md).
 
 
