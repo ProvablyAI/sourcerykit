@@ -1,8 +1,11 @@
 # Changelog
 
-## 1.0.1
+## Unreleased
 
 ## 1.0.1
+
+### Bug fixes
+- Fix preprocessing edge case — handle new tables by safely catching the 404 Not Found response when no initial preprocessing status record exists yet.
 
 ## 1.0.0
 
