@@ -3,6 +3,7 @@ import asyncio
 from sourcerykit.bootstrap.bootstrap import get_bootstrap
 from sourcerykit.errors import SourceryKitBootstrapError
 from sourcerykit.logger import get_logger
+from sourcerykit.provably._errors import ProvablyNotFoundError
 from sourcerykit.provably.service import service
 
 _log = get_logger(__name__)
@@ -27,8 +28,12 @@ async def run_preprocess() -> None:
             _log.error("preprocess_failed_incomplete_bootstrap")
             raise SourceryKitBootstrapError("Provably bootstrap incomplete: middleware_id and table_id are required")
 
-        # 1. Check if preprocessing is already in progress
-        status = await service.get_preprocess_status_only(middleware_id, table_id)
+        # 1. Check if preprocessing is already in progress. A never-preprocessed table has no
+        # status record yet — treat that as "not started" and start the first run.
+        try:
+            status = await service.get_preprocess_status_only(middleware_id, table_id)
+        except ProvablyNotFoundError:
+            status = "unknown"
         _log.info("preprocess_status_check", status=status)
 
         # 2. If in progress, wait for it to complete first
