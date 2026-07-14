@@ -46,7 +46,7 @@ Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.
 
 ## The credentials
 
-`init` stores credentials at two levels (see [cli.md]([cli.md](https://provably.ai/docs/getting_started/cli)) for the full table):
+`init` stores credentials at two levels (see [cli.md](https://provably.ai/docs/getting_started/cli) for the full table):
 
 - **Global config** (OS application directory, shared across projects): the Provably
   **API key** and **organisation id** — issued together at login; never hand-write them.

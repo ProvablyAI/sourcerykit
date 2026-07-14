@@ -12,14 +12,11 @@ export interface RootConfig {
 const config: RootConfig = {
 	pages: [
 		{
-			id: "sourcerykit",
-			icon: "BookOpen",
-		},
-		{
 			id: "getting_started",
 			title: "Getting Started",
 			icon: "Rocket",
 			pages: [
+				{ id: "introduction", icon: "BookOpen" },
 				{ id: "end-to-end-walkthrough", icon: "Route" },
 				{ id: "cli", icon: "Terminal" },
 				{ id: "onboarding", icon: "UserPlus" },
