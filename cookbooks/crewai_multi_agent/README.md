@@ -1,4 +1,6 @@
-# CrewAI Multi-Agent — Invoice Auditing with Specialist Agents
+# CrewAI Multi-Agent
+
+## Invoice Auditing with Specialist Agents
 This example demonstrates multi-agent orchestration using [CrewAI](https://github.com/crewAIInc/crewAI) with SourceryKit verification. Three specialist agents each query a different ERP table, with centralized evaluation by the orchestrator.
 
 ## Flow

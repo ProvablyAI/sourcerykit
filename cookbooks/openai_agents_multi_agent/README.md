@@ -1,5 +1,6 @@
-# OpenAI Agents SDK — Multi-Agent Customer Support
+# OpenAI Multi-Agent
 
+## Customer Support
 This example demonstrates multi-agent orchestration using the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) with SourceryKit verification. Three specialist agents each query a different customer support table, with centralized evaluation by the orchestrator.
 
 ## Flow

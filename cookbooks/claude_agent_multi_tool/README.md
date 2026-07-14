@@ -1,5 +1,4 @@
-# Claude Agent SDK — Multi-Tool-Call Demo
-
+# Claude Agent Multi-Tool
 This example demonstrates SourceryKit's multi-tool-call verification with the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-python). The agent calls the **same tool** (`get_weather`) twice with different cities (London and Paris). Each call produces a unique `sourcerykit_ref` (the database row UUID). The agent's claims reference the correct ref for each city, and the SDK maps each claim to the right intercept.
 
 ## How It Works

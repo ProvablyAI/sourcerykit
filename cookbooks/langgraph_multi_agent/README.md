@@ -1,4 +1,6 @@
-# LangGraph Multi-Agent — Travel Agency Flight Status
+# LangGraph Multi-Agent
+
+## Travel Agency Flight Status
 This example demonstrates a multi-agent pipeline using [LangGraph](https://github.com/langchain-ai/langgraph) with SourceryKit verification and conditional routing.
 
 ## Flow
