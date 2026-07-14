@@ -16,7 +16,7 @@ const config: RootConfig = {
 			title: "Getting Started",
 			icon: "Rocket",
 			pages: [
-				{ id: "introduction", icon: "BookOpen" },
+				{ id: "introduction", title: "Introduction", icon: "BookOpen" },
 				{ id: "end-to-end-walkthrough", icon: "Route" },
 				{ id: "cli", icon: "Terminal" },
 				{ id: "onboarding", icon: "UserPlus" },
@@ -52,9 +52,7 @@ const config: RootConfig = {
 			id: "migrations",
 			title: "Migration",
 			icon: "ChefHat",
-			pages: [
-				{ id: "v1_0", icon: "BookMarked" }
-			],
+			pages: [{ id: "v1_0", icon: "BookMarked" }],
 		},
 		{
 			id: "project",
@@ -63,9 +61,9 @@ const config: RootConfig = {
 			pages: [
 				{ id: "CHANGELOG", icon: "History" },
 				{ id: "CONTRIBUTING", icon: "GitPullRequest" },
-				{ id: "LICENSE", icon: "Scale" }
+				{ id: "LICENSE", icon: "Scale" },
 			],
-		}
+		},
 	],
 };
 
