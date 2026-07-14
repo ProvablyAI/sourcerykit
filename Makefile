@@ -15,8 +15,6 @@ UV ?= uv
 PYTEST_ARGS ?= --cov=sourcerykit --cov-report=term-missing --cov-fail-under=60
 RUFF_ARGS ?=
 MYPY_TARGETS ?= src tests
-DOCS_DIR ?= docs
-DOCS_BUILD ?= $(DOCS_DIR)/_build
 
 .DEFAULT_GOAL := help
 
@@ -116,26 +114,20 @@ bump-pr: ## Bump version, commit, push branch (usage: make bump-pr TYPE=beta)
 	git push -u origin HEAD
 
 tag: ## Create and push a version tag from current HEAD
-	VERSION=$$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml) && \
-	CHANGELOG=$$(awk "/^## $$VERSION/{found=1;next} /^## /{if(found)exit} found{print}" CHANGELOG.md | sed '/./,$!d') && \
+	@VERSION=$$(sed -n '/^\[project\]/,/^\[/p' pyproject.toml | sed -n 's/^version = "\(.*\)"/\1/p') && \
+	CHANGELOG=$$(awk "/^## \[?$$VERSION\]?/{found=1;next} /^## /{if(found)exit} found{print}" CHANGELOG.md | sed '/./,$$!d') && \
 	git tag -a v$$VERSION -m "$$CHANGELOG" && \
 	git push origin v$$VERSION
-
-# --- docs -------------------------------------------------------------------
-
-.PHONY: docs
-docs: ## Build Sphinx HTML under docs/_build
-	$(UV) run sphinx-build -W -b html $(DOCS_DIR) $(DOCS_BUILD)
 
 # --- meta workflows ---------------------------------------------------------
 
 .PHONY: check
-check: pre-commit test docs build ## Run the full CI-equivalent gate
+check: pre-commit test build ## Run the full CI-equivalent gate
 
 .PHONY: clean
 clean: ## Remove build artifacts and cache directories
 	rm -rf build/ dist/ *.egg-info src/*.egg-info \
-	       $(DOCS_BUILD) \
+	       docs/_build \
 	       .pytest_cache .ruff_cache .mypy_cache \
 	       .coverage .coverage.* htmlcov coverage.xml
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
