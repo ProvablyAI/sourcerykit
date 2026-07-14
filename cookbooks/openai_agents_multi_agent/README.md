@@ -4,7 +4,7 @@ This example demonstrates multi-agent orchestration using the [OpenAI Agents SDK
 
 ## Flow
 
-```
+```bash
 User: "Customer CUST-001 is asking about order ORD-123..."
   → Orchestrator Agent
     → analyzes query, routes to relevant specialists

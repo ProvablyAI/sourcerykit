@@ -42,11 +42,11 @@ Interactive: run `sourcerykit init` with no flags and follow the wizard — same
 prompted (sign up or log in → verify email → link a **hosted, publicly reachable**
 Postgres → name the project → credentials stored).
 
-Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.md](cli.md).
+Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.md](https://provably.ai/docs/getting_started/cli).
 
 ## The credentials
 
-`init` stores credentials at two levels (see [cli.md](cli.md) for the full table):
+`init` stores credentials at two levels (see [cli.md]([cli.md](https://provably.ai/docs/getting_started/cli)) for the full table):
 
 - **Global config** (OS application directory, shared across projects): the Provably
   **API key** and **organisation id** — issued together at login; never hand-write them.
@@ -74,5 +74,5 @@ export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
 
 ---
 
-**Next:** run the full flow → [End-to-End Walkthrough](example.md) ·
-look up a function → [Public API](src/api.md)
+**Next steps:**
+- [End-to-End Walkthrough](https://provably.ai/docs/getting_started/end-to-end-walkthrough)

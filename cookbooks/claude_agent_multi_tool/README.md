@@ -8,7 +8,7 @@ This example demonstrates SourceryKit's multi-tool-call verification with the [C
 2. **All-Method Trust Gate**: SourceryKit enforces structural target validation checks against your external network endpoints. The external weather lookup endpoint (`api.open-meteo.com`) is explicitly registered via policy seeds (`insert_trusted_endpoint`) before execution.
 3. **Automated Handoff & Evaluation**: The agent groups `claimed_values` by `sourcerykit_ref` and builds one claim per intercept. Each claim's `call_ref` is set to the corresponding `sourcerykit_ref`, so `build_handoff_payload` resolves each claim to the correct intercept row — even when the same `action_name` appears multiple times.
 
-```
+```bash
 Tool: get_weather(London)            Tool: get_weather(Paris)
   intercept_context → ref_1            intercept_context → ref_2
   return {..., sourcerykit_ref: ref_1}  return {..., sourcerykit_ref: ref_2}

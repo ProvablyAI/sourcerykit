@@ -2,7 +2,7 @@
 This example demonstrates a multi-agent pipeline using [LangGraph](https://github.com/langchain-ai/langgraph) with SourceryKit verification and conditional routing.
 
 ## Flow
-```
+```bash
 START → Fetcher Agent → Build Handoff → Evaluator
                                             │
                          ┌──────────────────┤

@@ -2,7 +2,7 @@
 This example demonstrates multi-agent orchestration using [CrewAI](https://github.com/crewAIInc/crewAI) with SourceryKit verification. Three specialist agents each query a different ERP table, with centralized evaluation by the orchestrator.
 
 ## Flow
-```
+```bash
 Flow[AuditState]:
 
   @start() run_specialists()
