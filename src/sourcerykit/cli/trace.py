@@ -6,7 +6,9 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import typer
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from sourcerykit.cli.utils import console, require_settings
 from sourcerykit.db._engine import get_engine
@@ -18,6 +20,7 @@ from sourcerykit.db._traces import (
 )
 from sourcerykit.provably._answer_model import QueryAnswer
 from sourcerykit.provably.service import service
+from sourcerykit.utils import extract_actual
 
 trace = typer.Typer(no_args_is_help=True)
 
@@ -65,7 +68,7 @@ def show(
     save_proof: Annotated[
         bool, typer.Option("--save-proof", help="download and save proofs to .provably files")
     ] = False,
-    ui: Annotated[bool, typer.Option("--ui", help="open interactive dashboard in browser")] = False,
+    ui: Annotated[bool, typer.Option("--ui/--no-ui", help="open interactive dashboard in browser")] = True,
 ) -> None:
     """Show details of a single trace and its intercepts."""
     if ui:
@@ -82,43 +85,67 @@ def show(
         console.print(f"[red]Trace {id} not found.[/red]")
         raise typer.Exit(code=1)
 
-    console.print(f"[bold]Trace[/bold] {trace_row['id']}")
-    console.print(f"  Task:    {trace_row['task']}")
-    console.print(f"  Created: {trace_row['created_at']}")
+    # --- Header ---
+    console.print(f"\n[bold]{trace_row['task'] or 'Untitled trace'}[/bold]")
+    console.print(f"  Created: {trace_row['created_at']}    ID: {trace_row['id']}")
+    if trace_row.get("reasoning"):
+        console.print(f"  Reasoning: {trace_row['reasoning']}")
+    console.print()
 
     if not intercept_rows:
-        console.print("\n[yellow]No intercepts.[/yellow]")
+        console.print("[yellow]No intercepts.[/yellow]")
         return
 
+    # --- Summary badges ---
+    counts: dict[str, int] = {"PASS": 0, "CAUGHT": 0, "ERROR": 0}
+    for r in intercept_rows:
+        o = r["outcome"]
+        if o in counts:
+            counts[o] += 1
+    console.print(
+        f"  [{green}]{counts['PASS']} PASS[/{green}]"
+        f"  [{red}]{counts['CAUGHT']} CAUGHT[/{red}]"
+        f"  [{yellow}]{counts['ERROR']} ERROR[/{yellow}]\n"
+    )
+
+    # --- Fetch query data for secondary info ---
     query_ids = [r["query_id"] for r in intercept_rows]
     queries = asyncio.run(_fetch_queries(query_ids))
 
-    table = Table(title="Intercepts")
-    table.add_column("#", style="dim", justify="right")
-    table.add_column("Action", style="cyan")
-    table.add_column("Source", style="white")
-    table.add_column("Mode", style="white")
-    table.add_column("Claimed", style="white")
-    table.add_column("Outcome")
-
+    # --- Per-claim cards ---
     for i, row in enumerate(intercept_rows, 1):
         outcome = row["outcome"] or ""
-        outcome_style = {"PASS": "green", "CAUGHT": "red", "ERROR": "yellow"}.get(outcome, "white")
-        table.add_row(
-            str(i),
-            row["action_name"],
-            row["source_url"],
-            row["verification_mode"],
-            row["claimed_value"] or "",
-            f"[{outcome_style}]{outcome}[/{outcome_style}]",
-        )
-
-    console.print(table)
-
-    for i, (row, qid) in enumerate(zip(intercept_rows, query_ids), 1):
+        style = _outcome_style(outcome)
+        qid = row["query_id"]
         qdata = queries.get(qid)
-        _print_intercept_detail(i, row, qdata)
 
+        # --- Card header ---
+        header = Text()
+        header.append(f"#{i} ", style="dim")
+        header.append(row["action_name"] or "", style="bold")
+        header.append(f"  {outcome}", style=style)
+
+        # --- Card body ---
+        body = Text()
+        body.append(f"  Source: {row['source_url'] or 'N/A'}\n", style="white")
+        body.append(f"  Mode:   {row['verification_mode'] or 'N/A'}\n", style="white")
+        if qid:
+            try:
+                query_url = service.query_record_url(qid)
+                body.append(f"  Query:  {query_url}\n", style="blue underline")
+            except Exception:
+                pass
+        body.append("\n")
+
+        # --- Comparison section ---
+        _append_comparison(body, row, outcome)
+
+        # --- Secondary info (SQL, Proof, Result) ---
+        _append_secondary(body, qdata)
+
+        console.print(Panel(body, title=header, border_style=style, expand=False))
+
+        # --- Save proof ---
         if save_proof and qdata:
             proof = qdata.get("proof")
             if isinstance(proof, dict):
@@ -134,14 +161,19 @@ def show(
                         proof_bytes=proof_bytes,
                     )
                     Path(filename).write_text(json.dumps(envelope, indent=2, default=str))
-                    console.print(f"             [green]Saved to {filename}[/green]")
-        elif qdata:
-            proof = qdata.get("proof")
-            if isinstance(proof, dict):
-                console.print("             [dim]Run with --save-proof to download the full proof.[/dim]")
+                    console.print(f"  [green]Saved to {filename}[/green]")
+
+    console.print()
 
 
 # --- Helpers ---
+green, red, yellow = "green", "red", "yellow"
+
+
+def _outcome_style(outcome: str) -> str:
+    return {"PASS": green, "CAUGHT": red, "ERROR": yellow}.get(outcome, "white")
+
+
 def _resolve_trace_id(raw: str) -> UUID:
     """Resolve a full UUID or an unambiguous prefix to a UUID."""
     try:
@@ -168,28 +200,57 @@ async def _query_trace_prefix(prefix: str) -> list[dict[str, Any]]:
         return [dict(row._mapping) for row in result]
 
 
-def _print_intercept_detail(i: int, row: dict[str, Any], qdata: dict[str, Any] | None) -> None:
-    """Print intercept detail block."""
-    outcome = row["outcome"] or ""
-    outcome_style = {"PASS": "green", "CAUGHT": "red", "ERROR": "yellow"}.get(outcome, "white")
-    console.print(f"\n  [dim]{i}.[/dim] {row['action_name']} → [{outcome_style}]{outcome}[/{outcome_style}]")
+def _append_comparison(body: Text, row: dict[str, Any], outcome: str) -> None:
+    """Append the claimed/actual comparison section to body text."""
+    claimed_raw = row.get("claimed_value")
+    pairs: list[dict[str, Any]] = []
+    if claimed_raw:
+        try:
+            pairs = json.loads(claimed_raw) if isinstance(claimed_raw, str) else claimed_raw
+        except (json.JSONDecodeError, TypeError):
+            pairs = []
 
-    if not qdata:
-        console.print("     SQL:    [dim]N/A[/dim]")
-        console.print("     Proof:  [dim]N/A[/dim]")
-        console.print("     Result: [dim]N/A[/dim]")
+    if not pairs or not isinstance(pairs, list):
         return
 
-    sql = qdata.get("sql_query") or ""
-    console.print(f"     SQL:    {sql}")
+    if outcome == "PASS":
+        body.append("  ✓ Verified Values\n", style=green)
+        for p in pairs:
+            body.append(f"    {p.get('path', '?')}: {p.get('value', '?')}\n", style=green)
+
+    elif outcome == "CAUGHT":
+        actual = extract_actual(row.get("raw_response"), claimed_raw)
+        body.append("  ✗ Claimed\n", style=red)
+        for p in pairs:
+            body.append(f"    {p.get('path', '?')}: {p.get('value', '?')}\n", style=red)
+        body.append("  ✓ Actual\n", style=green)
+        for p in pairs:
+            path = p.get("path", "?")
+            val = actual.get(path, "N/A")
+            body.append(f"    {path}: {val}\n", style=green)
+
+    details = row.get("details")
+    if details and outcome in ("CAUGHT", "ERROR"):
+        sym = "✗" if outcome == "CAUGHT" else "⚠"
+        body.append(f"\n  {sym} {details}\n", style=_outcome_style(outcome))
+
+
+def _append_secondary(body: Text, qdata: dict[str, Any] | None) -> None:
+    """Append dimmed SQL / Proof / Result below a claim card body."""
+    if not qdata:
+        return
+    body.append("\n  ── Query Details ──\n", style="dim")
+
+    sql = qdata.get("sql_query") or "N/A"
+    body.append(f"  SQL:    {sql}\n", style="dim")
 
     proof = qdata.get("proof")
     if isinstance(proof, dict):
-        console.print(f"     Proof:  {_proof_summary(proof)}")
+        body.append(f"  Proof:  {_proof_summary(proof)}\n", style="dim")
     elif proof is not None:
-        console.print(f"     Proof:  {proof}")
+        body.append(f"  Proof:  {proof}\n", style="dim")
     else:
-        console.print("     Proof:  [dim]N/A[/dim]")
+        body.append("  Proof:  N/A\n", style="dim")
 
     result_raw = qdata.get("result")
     if result_raw is not None:
@@ -197,9 +258,9 @@ def _print_intercept_detail(i: int, row: dict[str, Any], qdata: dict[str, Any] |
             result_val = QueryAnswer.model_validate(result_raw).flatten()
         except Exception:
             result_val = result_raw
-        console.print(f"     Result: {_pretty_json(result_val)}")
+        body.append(f"  Result:\n{_pretty_json(result_val)}\n", style="dim")
     else:
-        console.print("     Result: [dim]N/A[/dim]")
+        body.append("  Result: N/A\n", style="dim")
 
 
 def _wrap_proof(
