@@ -96,6 +96,7 @@ traces = Table(
         server_default=text("gen_random_uuid()"),
     ),
     Column("task", Text, nullable=False, server_default=text("''")),
+    Column("reasoning", Text, nullable=False, server_default=text("''")),
     Column(
         "created_at",
         TIMESTAMP(timezone=False),
