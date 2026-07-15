@@ -6,6 +6,7 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import typer
+from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -85,28 +86,34 @@ def show(
         console.print(f"[red]Trace {id} not found.[/red]")
         raise typer.Exit(code=1)
 
-    # --- Header ---
-    console.print(f"\n[bold]{trace_row['task'] or 'Untitled trace'}[/bold]")
-    console.print(f"  Created: {trace_row['created_at']}    ID: {trace_row['id']}")
-    if trace_row.get("reasoning"):
-        console.print(f"  Reasoning: {trace_row['reasoning']}")
-    console.print()
-
-    if not intercept_rows:
-        console.print("[yellow]No intercepts.[/yellow]")
-        return
-
     # --- Summary badges ---
     counts: dict[str, int] = {"PASS": 0, "CAUGHT": 0, "ERROR": 0}
     for r in intercept_rows:
         o = r["outcome"]
         if o in counts:
             counts[o] += 1
-    console.print(
-        f"  [{green}]{counts['PASS']} PASS[/{green}]"
-        f"  [{red}]{counts['CAUGHT']} CAUGHT[/{red}]"
-        f"  [{yellow}]{counts['ERROR']} ERROR[/{yellow}]\n"
-    )
+
+    # --- Header panel ---
+    title = trace_row["task"] or "Untitled trace"
+    info = Text()
+    info.append("ID: ", style="dim")
+    info.append(str(trace_row["id"]), style="dim")
+    info.append("  Created: ", style="dim")
+    info.append(str(trace_row["created_at"]), style="dim")
+    info.append("\n")
+    info.append(f"{counts['PASS']} PASS", style=green)
+    info.append(f"  {counts['CAUGHT']} CAUGHT", style=red)
+    info.append(f"  {counts['ERROR']} ERROR", style=yellow)
+    if trace_row.get("reasoning"):
+        info.append("\n\n")
+        info.append("Reasoning\n", style="bold")
+        reasoning_text = Text(rich_escape(trace_row["reasoning"]), no_wrap=False)
+        info.append_text(reasoning_text)
+    console.print(Panel(info, title=f"[bold]{rich_escape(title)}[/bold]", border_style="dim", expand=False))
+
+    if not intercept_rows:
+        console.print("[yellow]No intercepts.[/yellow]")
+        return
 
     # --- Fetch query data for secondary info ---
     query_ids = [r["query_id"] for r in intercept_rows]
@@ -127,12 +134,18 @@ def show(
 
         # --- Card body ---
         body = Text()
-        body.append(f"  Source: {row['source_url'] or 'N/A'}\n", style="white")
-        body.append(f"  Mode:   {row['verification_mode'] or 'N/A'}\n", style="white")
+        body.append("  Source: ", style="dim")
+        body.append(rich_escape(row["source_url"] or "N/A"), style="white")
+        body.append("\n")
+        body.append("  Mode:   ", style="dim")
+        body.append(rich_escape(row["verification_mode"] or "N/A"), style="white")
+        body.append("\n")
         if qid:
             try:
                 query_url = service.query_record_url(qid)
-                body.append(f"  Query:  {query_url}\n", style="blue underline")
+                body.append("  Query:  ", style="dim")
+                body.append(query_url, style="blue underline")
+                body.append("\n")
             except Exception:
                 pass
         body.append("\n")
@@ -188,7 +201,7 @@ def _resolve_trace_id(raw: str) -> UUID:
     if len(rows) > 1:
         console.print(f'[red]Ambiguous prefix "{raw}" — matches {len(rows)} traces:[/red]')
         for r in rows:
-            console.print(f"  {r['id']}  {r['task']}")
+            console.print(f"  {r['id']}  {rich_escape(r['task'] or '')}")
         console.print("[yellow]Use a longer prefix or the full UUID.[/yellow]")
         raise typer.Exit(code=1)
     return UUID(str(rows[0]["id"]))
@@ -216,17 +229,21 @@ def _append_comparison(body: Text, row: dict[str, Any], outcome: str) -> None:
     if outcome == "PASS":
         body.append("  ✓ Verified Values\n", style=green)
         for p in pairs:
-            body.append(f"    {p.get('path', '?')}: {p.get('value', '?')}\n", style=green)
+            path = rich_escape(str(p.get("path", "?")))
+            val = rich_escape(str(p.get("value", "?")))
+            body.append(f"    {path}: {val}\n", style=green)
 
     elif outcome == "CAUGHT":
         actual = extract_actual(row.get("raw_response"), claimed_raw)
         body.append("  ✗ Claimed\n", style=red)
         for p in pairs:
-            body.append(f"    {p.get('path', '?')}: {p.get('value', '?')}\n", style=red)
+            path = rich_escape(str(p.get("path", "?")))
+            val = rich_escape(str(p.get("value", "?")))
+            body.append(f"    {path}: {val}\n", style=red)
         body.append("  ✓ Actual\n", style=green)
         for p in pairs:
-            path = p.get("path", "?")
-            val = actual.get(path, "N/A")
+            path = rich_escape(str(p.get("path", "?")))
+            val = rich_escape(str(actual.get(p.get("path", "?"), "N/A")))
             body.append(f"    {path}: {val}\n", style=green)
 
     details = row.get("details")
@@ -241,14 +258,18 @@ def _append_secondary(body: Text, qdata: dict[str, Any] | None) -> None:
         return
     body.append("\n  ── Query Details ──\n", style="dim")
 
-    sql = qdata.get("sql_query") or "N/A"
-    body.append(f"  SQL:    {sql}\n", style="dim")
+    sql = rich_escape(qdata.get("sql_query") or "N/A")
+    body.append("  SQL:    ", style="dim")
+    body.append_text(Text(sql, style="dim", no_wrap=False))
+    body.append("\n")
 
     proof = qdata.get("proof")
     if isinstance(proof, dict):
         body.append(f"  Proof:  {_proof_summary(proof)}\n", style="dim")
     elif proof is not None:
-        body.append(f"  Proof:  {proof}\n", style="dim")
+        body.append("  Proof:  ", style="dim")
+        body.append_text(Text(rich_escape(str(proof)), style="dim", no_wrap=False))
+        body.append("\n")
     else:
         body.append("  Proof:  N/A\n", style="dim")
 
@@ -258,7 +279,9 @@ def _append_secondary(body: Text, qdata: dict[str, Any] | None) -> None:
             result_val = QueryAnswer.model_validate(result_raw).flatten()
         except Exception:
             result_val = result_raw
-        body.append(f"  Result:\n{_pretty_json(result_val)}\n", style="dim")
+        body.append("  Result:\n", style="dim")
+        body.append_text(Text(_pretty_json(result_val), style="dim", no_wrap=False))
+        body.append("\n")
     else:
         body.append("  Result: N/A\n", style="dim")
 
@@ -285,9 +308,9 @@ def _wrap_proof(
 
 
 def _proof_summary(proof: dict[str, Any]) -> str:
-    status = proof.get("status", "N/A")
-    verified = proof.get("verification_status", "N/A")
-    exec_ms = proof.get("execution_time_ms", "?")
+    status = rich_escape(str(proof.get("status", "N/A")))
+    verified = rich_escape(str(proof.get("verification_status", "N/A")))
+    exec_ms = rich_escape(str(proof.get("execution_time_ms", "?")))
     return (
         f"\n             Status:     {status}"
         f"\n             Verified:   {verified}"

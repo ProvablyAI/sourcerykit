@@ -135,8 +135,8 @@ class TestShow:
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
             show(id=str(_TRACE_ID), ui=False)
-        printed = " ".join(str(c) for c in mock_console.print.call_args_list)
-        assert "because reasons" in printed
+        panel = mock_console.print.call_args_list[0].args[0]
+        assert "because reasons" in str(panel.renderable)
 
     def test_invalid_uuid(self) -> None:
         with (
