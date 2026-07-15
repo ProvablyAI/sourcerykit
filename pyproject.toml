@@ -39,6 +39,8 @@ dependencies = [
     "msgspec>=0.18.0",
     "questionary >= 2.1",
     "typer >= 0.26",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
 ]
 
 [project.optional-dependencies]
