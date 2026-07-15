@@ -1,6 +1,5 @@
 """Local FastAPI server for the SourceryKit trace dashboard."""
 
-import json
 import logging
 import threading
 import webbrowser
@@ -16,10 +15,11 @@ from fastapi.staticfiles import StaticFiles
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._traces import (
     select_trace_by_id,
+    select_trace_by_id_prefix,
     select_trace_intercepts_by_trace_id,
 )
-from sourcerykit.evaluator._eval_modes import _get_by_json_path
 from sourcerykit.provably.service import service
+from sourcerykit.utils import extract_actual
 
 _log = logging.getLogger(__name__)
 
@@ -43,22 +43,27 @@ async def index() -> FileResponse:
 
 
 @app.get("/api/traces/{trace_id}")
-async def get_trace(trace_id: UUID) -> dict[str, Any]:
+async def get_trace(trace_id: str) -> dict[str, Any]:
+    try:
+        uid = UUID(trace_id)
+    except ValueError:
+        uid = await _resolve_prefix(trace_id)
+
     async with get_engine().connect() as conn:
-        t = await conn.execute(select_trace_by_id(trace_id))
+        t = await conn.execute(select_trace_by_id(uid))
         trace_row = t.fetchone()
         if not trace_row:
             raise HTTPException(status_code=404, detail="Trace not found")
         trace = dict(trace_row._mapping)
 
-        ti = await conn.execute(select_trace_intercepts_by_trace_id(trace_id))
+        ti = await conn.execute(select_trace_intercepts_by_trace_id(uid))
         intercept_rows = [dict(row._mapping) for row in ti]
 
     intercepts = []
     for row in intercept_rows:
         qid = row.get("query_id")
         qid_str = str(qid) if qid else None
-        actual_value = _extract_actual(row.get("raw_response"), row.get("claimed_value"))
+        actual_value = extract_actual(row.get("raw_response"), row.get("claimed_value"))
         intercepts.append(
             {
                 "id": str(row["id"]),
@@ -78,38 +83,27 @@ async def get_trace(trace_id: UUID) -> dict[str, Any]:
         "trace": {
             "id": str(trace["id"]),
             "task": trace["task"],
+            "reasoning": trace["reasoning"],
             "created_at": trace["created_at"].isoformat() if trace.get("created_at") else None,
         },
         "intercepts": intercepts,
     }
 
 
-def _extract_actual(raw_response: str | None, claimed_value: str | None) -> dict[str, Any]:
-    """Extract actual values from stored raw_response for each claimed path."""
-    if not raw_response:
-        return {}
-    try:
-        data = json.loads(raw_response)
-    except (json.JSONDecodeError, TypeError):
-        return {}
+async def _resolve_prefix(prefix: str) -> UUID:
+    """Resolve a short prefix to a full UUID, or raise HTTPException."""
+    async with get_engine().connect() as conn:
+        result = await conn.execute(select_trace_by_id_prefix(prefix))
+        rows = [dict(row._mapping) for row in result]
 
-    if not claimed_value:
-        return {}
-    try:
-        pairs = json.loads(claimed_value) if isinstance(claimed_value, str) else claimed_value
-    except (json.JSONDecodeError, TypeError):
-        return {}
-    if not isinstance(pairs, list) or not pairs:
-        return {}
-
-    result: dict[str, Any] = {}
-    for entry in pairs:
-        path = entry.get("path", "$") if isinstance(entry, dict) else "$"
-        try:
-            result[path] = _get_by_json_path(data, path)
-        except (KeyError, IndexError, TypeError):
-            result[path] = None
-    return result
+    if not rows:
+        raise HTTPException(status_code=404, detail="Trace not found")
+    if len(rows) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail=f'Ambiguous prefix "{prefix}" — matches {len(rows)} traces. Use a longer prefix.',
+        )
+    return UUID(str(rows[0]["id"]))
 
 
 def launch(trace_id: str, host: str = "127.0.0.1", port: int = 8743) -> None:
