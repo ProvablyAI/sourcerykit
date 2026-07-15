@@ -71,6 +71,7 @@ def show(
     if ui:
         require_settings()
         from sourcerykit.ui.server import launch
+
         launch(trace_id=id)
         return
     require_settings()
@@ -150,15 +151,15 @@ def _resolve_trace_id(raw: str) -> UUID:
 
     rows = asyncio.run(_query_trace_prefix(raw))
     if not rows:
-        console.print(f"[red]No trace found matching prefix \"{raw}\".[/red]")
+        console.print(f'[red]No trace found matching prefix "{raw}".[/red]')
         raise typer.Exit(code=1)
     if len(rows) > 1:
-        console.print(f"[red]Ambiguous prefix \"{raw}\" — matches {len(rows)} traces:[/red]")
+        console.print(f'[red]Ambiguous prefix "{raw}" — matches {len(rows)} traces:[/red]')
         for r in rows:
             console.print(f"  {r['id']}  {r['task']}")
         console.print("[yellow]Use a longer prefix or the full UUID.[/yellow]")
         raise typer.Exit(code=1)
-    return rows[0]["id"]
+    return UUID(str(rows[0]["id"]))
 
 
 async def _query_trace_prefix(prefix: str) -> list[dict[str, Any]]:

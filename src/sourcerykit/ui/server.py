@@ -59,18 +59,20 @@ async def get_trace(trace_id: UUID) -> dict[str, Any]:
         qid = row.get("query_id")
         qid_str = str(qid) if qid else None
         actual_value = _extract_actual(row.get("raw_response"), row.get("claimed_value"))
-        intercepts.append({
-            "id": str(row["id"]),
-            "action_name": row["action_name"],
-            "source_url": row["source_url"],
-            "query_id": qid_str,
-            "query_url": service.query_record_url(qid) if qid else None,
-            "verification_mode": row["verification_mode"],
-            "claimed_value": row["claimed_value"],
-            "outcome": row["outcome"],
-            "details": row["details"],
-            "actual_value": actual_value,
-        })
+        intercepts.append(
+            {
+                "id": str(row["id"]),
+                "action_name": row["action_name"],
+                "source_url": row["source_url"],
+                "query_id": qid_str,
+                "query_url": service.query_record_url(qid) if qid else None,
+                "verification_mode": row["verification_mode"],
+                "claimed_value": row["claimed_value"],
+                "outcome": row["outcome"],
+                "details": row["details"],
+                "actual_value": actual_value,
+            }
+        )
 
     return {
         "trace": {
@@ -118,4 +120,5 @@ def launch(trace_id: str, host: str = "127.0.0.1", port: int = 8743) -> None:
     threading.Timer(0.5, webbrowser.open, args=[url]).start()
 
     import uvicorn
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
