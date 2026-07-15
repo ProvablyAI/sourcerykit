@@ -70,4 +70,4 @@ Scans a handoff payload and verifies that every external URL referenced within i
 
 
 
-For details on how the Interceptor blocks these calls, see [intercept](intercept.md). To see how database tables fit into the wider architecture, see [architecture](architecture.md).
+For details on how the Interceptor blocks these calls, see [interceptor](https://provably.ai/docs/pillars/interceptor). To see how database tables fit into the wider architecture, see [architecture](https://provably.ai/docs/pillars/architecture).

@@ -40,4 +40,4 @@ return {**data, "sourcerykit_ref": ref}
 
 - **Library Dependencies**: Only network calls made via supported, patched Python libraries are intercepted. Support for additional Python HTTP libraries is currently under development.
 
-For details on managing allowed destinations, see [trusted-endpoints](trusted-endpoints.md). To see how these logs are used to verify claims, see [architecture](architecture.md).
+For details on managing allowed destinations, see [trusted-endpoints](https://provably.ai/docs/pillars/trusted-endpoints). To see how these logs are used to verify claims, see [architecture](https://provably.ai/docs/pillars/architecture).
