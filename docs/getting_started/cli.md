@@ -420,52 +420,66 @@ sourcerykit trace list [--limit N] [--page P]
 Show details of a single trace and its intercepts.
 
 ```bash
-sourcerykit trace show <ID> [--save-proof]
+sourcerykit trace show <ID> [--save-proof] [--ui/--no-ui]
 ```
 
 **Arguments:**
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `ID` | Yes | Trace ID (UUID) |
+| `ID` | Yes | Trace ID (UUID) or unambiguous prefix |
 
 **Options:**
 | Option | Description |
 |--------|-------------|
 | `--save-proof` | Download and save proofs to `.provably` files |
+| `--ui` / `--no-ui` | Open interactive dashboard in browser (default: `--ui`). Use `--no-ui` for CLI output. |
 
-**Example:**
+**Example (CLI output):**
 ```bash
-sourcerykit trace show 123e4567-e89b-12d3-a456-426614174000
+sourcerykit trace show 123e4567 --no-ui
 ```
 
-**Example output:**
+**Example output (CLI):**
 ```bash
-Trace 123e4567-e89b-12d3-a456-426614174000
-  Task:    get_data
-  Created: 2026-06-30 10:00:00
+╭─ get_data ────────────────────────────────────────────────────╮
+│ ID: 123e4567-e89b-12d3-a456-426614174000  Created: 2026-06-30 │
+│ 2 PASS  0 CAUGHT  0 ERROR                                     │
+│                                                                │
+│ Reasoning                                                      │
+│ Fetched weather data from the API and extracted temperature.   │
+╰────────────────────────────────────────────────────────────────╯
 
-        Intercepts
-┌───┬────────────┬──────────────────────────┬─────────────────┬─────────┬────────┐
-│ # │ Action     │ Source                   │ Mode            │ Claimed │ Outcome│
-├───┼────────────┼──────────────────────────┼─────────────────┼─────────┼────────┤
-│ 1 │ get_data   │ https://api.example.com  │ field_extraction│ value1  │ PASS   │
-└───┴────────────┴──────────────────────────┴─────────────────┴─────────┴────────┘
-
-  1. get_data → PASS
-     SQL:    SELECT * FROM intercepts WHERE ...
-     Proof:
-             Status:     verified
-             Verified:   true
-             Exec time:  45ms
-     Result: {
-               "field": "value1"
-             }
-             Run with --save-proof to download the full proof.
+╭─ #1 get_data PASS ────────────────────────────────────────────╮
+│  Source: https://api.example.com/data                          │
+│  Mode:   field_extraction                                      │
+│  Query:  https://provably.ai/query/abc123                      │
+│                                                                │
+│  ✓ Verified Values                                             │
+│    temperature: 72                                             │
+│                                                                │
+│  ── Query Details ──                                           │
+│  SQL:    SELECT * FROM intercepts WHERE ...                    │
+│  Proof:                                                         │
+│              Status:     verified                               │
+│              Verified:   true                                   │
+│              Exec time:  45ms                                   │
+│  Result:                                                        │
+│  {                                                             │
+│    "field": "value1"                                           │
+│  }                                                             │
+╰────────────────────────────────────────────────────────────────╯
 ```
+
+**Example (browser dashboard):**
+```bash
+sourcerykit trace show 123e4567
+```
+
+Opens the interactive dashboard filtered to the given trace.
 
 **Error (trace not found):**
 ```bash
-Trace abc123 not found.
+No trace found matching prefix "abc123".
 ```
 
 ---
