@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 import typer
@@ -62,9 +62,17 @@ def list_traces(
 @trace.command()
 def show(
     id: str = typer.Argument(help="trace ID"),
-    save_proof: bool = typer.Option(False, "--save-proof", help="download and save proofs to .provably files"),
+    save_proof: Annotated[
+        bool, typer.Option("--save-proof", help="download and save proofs to .provably files")
+    ] = False,
+    ui: Annotated[bool, typer.Option("--ui", help="open interactive dashboard in browser")] = False,
 ) -> None:
     """Show details of a single trace and its intercepts."""
+    if ui:
+        require_settings()
+        from sourcerykit.ui.server import launch
+        launch(trace_id=id)
+        return
     require_settings()
     trace_id = _resolve_trace_id(id)
     trace_row, intercept_rows = asyncio.run(_fetch_trace_detail(trace_id))
