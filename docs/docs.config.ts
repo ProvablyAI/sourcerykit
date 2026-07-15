@@ -27,9 +27,9 @@ const config: RootConfig = {
 			title: "Architecture & Pillars",
 			icon: "BookOpen",
 			pages: [
-				{ id: "architecture", icon: "Blocks" },
+				{ id: "architecture", icon: "Building2" },
 				{ id: "intercept", icon: "Shield" },
-				{ id: "trusted-endpoints", icon: "Lock" },
+				{ id: "trusted-endpoints", icon: "ListChecks" },
 				{ id: "handoff", icon: "ArrowRightLeft" },
 			],
 		},
@@ -52,7 +52,7 @@ const config: RootConfig = {
 			id: "migrations",
 			title: "Migration",
 			icon: "ChefHat",
-			pages: [{ id: "v1_0", icon: "BookMarked" }],
+			pages: [{ id: "v1_0", icon: "GitBranch" }],
 		},
 		{
 			id: "project",
