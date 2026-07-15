@@ -1,0 +1,214 @@
+/* Claim cards */
+.claims-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.claim-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.claim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--muted);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.claim-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.claim-number {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+.claim-action {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.claim-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.outcome-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.outcome-pass { background: var(--success); color: white; }
+.outcome-caught { background: var(--destructive); color: white; }
+.outcome-error { background: var(--warning); color: white; }
+
+.claim-body {
+    padding: 20px;
+}
+
+.claim-meta {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--muted-foreground);
+    flex-wrap: wrap;
+}
+
+.claim-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.claim-meta-label {
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.query-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 13px;
+    transition: opacity 0.15s;
+}
+
+.query-link:hover { opacity: 0.7; }
+
+.query-link svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Comparison table */
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+    .comparison { grid-template-columns: 1fr; }
+}
+
+.comparison-panel {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.comparison-panel-header {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--muted-foreground);
+}
+
+.comparison-panel-body {
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.comparison-caught .comparison-panel-header.claimed-header {
+    background: var(--destructive-light);
+    color: #991b1b;
+    border-bottom-color: #fecaca;
+}
+
+.comparison-caught .comparison-panel-header.actual-header {
+    background: var(--success-light);
+    color: #166534;
+    border-bottom-color: #bbf7d0;
+}
+
+.value-mismatch {
+    background: #fef2f2;
+    border-left: 3px solid var(--destructive);
+    padding: 2px 8px;
+    margin: 2px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.value-match {
+    background: #f0fdf4;
+    border-left: 3px solid var(--success);
+    padding: 2px 8px;
+    margin: 2px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Details */
+.claim-details {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    line-height: 1.6;
+}
+
+.claim-details.caught-detail {
+    background: var(--destructive-light);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.claim-details.error-detail {
+    background: var(--warning-light);
+    border: 1px solid #fef08a;
+    color: #854d0e;
+}
+
+/* Single value view (PASS) */
+.single-value {
+    margin-top: 12px;
+}
+
+.single-value .comparison-panel-header {
+    background: var(--success-light);
+    color: #166534;
+    border-bottom-color: #bbf7d0;
+}
