@@ -10,6 +10,7 @@ import typer
 from sourcerykit.cli.trace import (
     _pretty_json,
     _proof_summary,
+    _resolve_trace_id,
     _wrap_proof,
     list_traces,
     show,
@@ -128,9 +129,10 @@ class TestShow:
     def test_invalid_uuid(self) -> None:
         with (
             patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace._resolve_trace_id", side_effect=typer.Exit(code=1)),
             patch("sourcerykit.cli.trace.console"),
         ):
-            with pytest.raises(ValueError):
+            with pytest.raises(typer.Exit):
                 show(id="not-a-uuid")
 
 
@@ -186,3 +188,47 @@ class TestPrettyJson:
         big = {f"k{i}": i for i in range(100)}
         result = _pretty_json(big, max_lines=5)
         assert "…" in result
+
+
+# ---------------------------------------------------------------------------
+# _resolve_trace_id
+# ---------------------------------------------------------------------------
+
+
+class TestResolveTraceId:
+    def test_full_uuid(self) -> None:
+        result = _resolve_trace_id(str(_TRACE_ID))
+        assert result == _TRACE_ID
+
+    def test_prefix_single_match(self) -> None:
+        prefix = str(_TRACE_ID)[:8]
+        row = {"id": _TRACE_ID, "task": "t", "created_at": "2026-01-01"}
+        with patch("sourcerykit.cli.trace.asyncio.run", return_value=[row]):
+            result = _resolve_trace_id(prefix)
+        assert result == _TRACE_ID
+
+    def test_prefix_no_match(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=[]),
+            patch("sourcerykit.cli.trace.console"),
+        ):
+            with pytest.raises(typer.Exit):
+                _resolve_trace_id("deadbeef")
+
+    def test_prefix_ambiguous(self) -> None:
+        id1 = uuid.uuid4()
+        id2 = uuid.uuid4()
+        prefix = str(id1)[:8]
+        rows = [
+            {"id": id1, "task": "a", "created_at": "2026-01-01"},
+            {"id": id2, "task": "b", "created_at": "2026-01-02"},
+        ]
+        with (
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=rows),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            with pytest.raises(typer.Exit):
+                _resolve_trace_id(prefix)
+        printed = " ".join(str(c) for c in mock_console.print.call_args_list)
+        assert str(id1) in printed
+        assert str(id2) in printed

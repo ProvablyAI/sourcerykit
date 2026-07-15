@@ -12,6 +12,7 @@ from sourcerykit.cli.utils import console, require_settings
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._traces import (
     select_trace_by_id,
+    select_trace_by_id_prefix,
     select_trace_intercepts_by_trace_id,
     select_traces_with_intercept_count,
 )
@@ -47,7 +48,7 @@ def list_traces(
 
     for r in rows:
         table.add_row(
-            str(r["id"]),
+            str(r["id"])[:8],
             r["task"],
             str(r["created_at"]),
             str(r["pass"]),
@@ -65,7 +66,7 @@ def show(
 ) -> None:
     """Show details of a single trace and its intercepts."""
     require_settings()
-    trace_id = UUID(id)
+    trace_id = _resolve_trace_id(id)
     trace_row, intercept_rows = asyncio.run(_fetch_trace_detail(trace_id))
 
     if not trace_row:
@@ -132,6 +133,32 @@ def show(
 
 
 # --- Helpers ---
+def _resolve_trace_id(raw: str) -> UUID:
+    """Resolve a full UUID or an unambiguous prefix to a UUID."""
+    try:
+        return UUID(raw)
+    except ValueError:
+        pass
+
+    rows = asyncio.run(_query_trace_prefix(raw))
+    if not rows:
+        console.print(f"[red]No trace found matching prefix \"{raw}\".[/red]")
+        raise typer.Exit(code=1)
+    if len(rows) > 1:
+        console.print(f"[red]Ambiguous prefix \"{raw}\" — matches {len(rows)} traces:[/red]")
+        for r in rows:
+            console.print(f"  {r['id']}  {r['task']}")
+        console.print("[yellow]Use a longer prefix or the full UUID.[/yellow]")
+        raise typer.Exit(code=1)
+    return rows[0]["id"]
+
+
+async def _query_trace_prefix(prefix: str) -> list[dict[str, Any]]:
+    async with get_engine().connect() as conn:
+        result = await conn.execute(select_trace_by_id_prefix(prefix))
+        return [dict(row._mapping) for row in result]
+
+
 def _print_intercept_detail(i: int, row: dict[str, Any], qdata: dict[str, Any] | None) -> None:
     """Print intercept detail block."""
     outcome = row["outcome"] or ""

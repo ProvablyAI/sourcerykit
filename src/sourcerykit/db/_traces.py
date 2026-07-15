@@ -4,7 +4,7 @@ import json
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Insert, Select, Update, case, func, insert, select, update
+from sqlalchemy import Insert, Select, String, Update, case, func, insert, select, update
 
 from sourcerykit.db._schema import intercepts, trace_intercepts, traces
 
@@ -109,6 +109,13 @@ def select_trace_by_id(trace_id: UUID) -> Select[tuple[Any, ...]]:
     return select(traces.c.id, traces.c.task, traces.c.created_at).where(traces.c.id == trace_id)
 
 
+def select_trace_by_id_prefix(prefix: str) -> Select[tuple[Any, ...]]:
+    """Return a SELECT for traces whose UUID starts with *prefix*."""
+    return select(traces.c.id, traces.c.task, traces.c.created_at).where(
+        func.cast(traces.c.id, String).like(f"{prefix}%")
+    )
+
+
 def select_trace_intercepts_by_trace_id(trace_id: UUID) -> Select[tuple[Any, ...]]:
     """Return a SELECT that lists intercepts for a trace, joined with intercept details.
 
@@ -133,6 +140,7 @@ def select_trace_intercepts_by_trace_id(trace_id: UUID) -> Select[tuple[Any, ...
             trace_intercepts.c.created_at,
             intercepts.c.action_name,
             intercepts.c.source_url,
+            intercepts.c.raw_response,
         )
         .select_from(trace_intercepts.join(intercepts, trace_intercepts.c.intercept_id == intercepts.c.id))
         .where(trace_intercepts.c.trace_id == trace_id)
