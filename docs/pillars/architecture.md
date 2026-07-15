@@ -14,11 +14,11 @@ SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint polic
 
 - **Bootstrap System**: Handles one-time initialization, including database schema setup and resource registration, before the agent starts executing. See [README](https://github.com/ProvablyAI/sourcerykit).
 
-- **HTTP Interceptor**: Intercepts outbound HTTP calls to enforce policies and record payloads. Untrusted requests are blocked before leaving the process. See [intercept](https://provably.ai/docs/pillars/intercept).
+- **HTTP Interceptor**: Intercepts outbound HTTP calls to enforce policies and record payloads. Untrusted requests are blocked before leaving the process. See [interceptor](https://provably.ai/docs/pillars/interceptor).
 
 - **Database Tables**:
   - **Trusted Endpoints**: A registry of allowed endpoints used by the Interceptor to validate outbound requests. See [trusted-endpoints](https://provably.ai/docs/pillars/trusted-endpoints).
-  - **Intercepts**: An append-only table storing detailed records of every outbound HTTP request and response. The Provably backend uses these records to generate cryptographic proofs. See [intercept](https://provably.ai/docs/pillars/intercept).
+  - **Intercepts**: An append-only table storing detailed records of every outbound HTTP request and response. The Provably backend uses these records to generate cryptographic proofs. See [interceptor](https://provably.ai/docs/pillars/interceptor).
 
 - **Handoff Payload**: A structured data format used to pass claims about external calls between agents or services. See [handoff](https://provably.ai/docs/pillars/handoff).
 
@@ -32,6 +32,6 @@ SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint polic
 
 - [Onboarding](https://provably.ai/docs/getting_started/onboarding) — one-time account, credentials, and database setup
 - [End-to-End Walkthrough](https://provably.ai/docs/getting_started/end-to-end-walkthrough) — run the whole flow in code
-- [Interceptor](https://provably.ai/docs/pillars/intercept) — how outbound HTTP calls are captured and recorded
+- [Interceptor](https://provably.ai/docs/pillars/interceptor) — how outbound HTTP calls are captured and recorded
 - [Handoff](https://provably.ai/docs/pillars/handoff) — building claims and reading the verdict
 - [Trusted Endpoints](https://provably.ai/docs/pillars/trusted-endpoints) — the outbound allow-list

@@ -109,4 +109,4 @@ When `evaluate_handoff` is invoked, the evaluator validates data integrity throu
 
 5. **Final Verdict**: The run receives a final PASS verdict only if the cryptographic proof is valid and every individual claim satisfies its verification rules.
 
-For details on how database logging works, see [architecture](https://provably.ai/docs/pillars/architecture). To learn how HTTP requests are captured in real-time, see [intercept](https://provably.ai/docs/pillars/intercept).
+For details on how database logging works, see [architecture](https://provably.ai/docs/pillars/architecture). To learn how HTTP requests are captured in real-time, see [interceptor](https://provably.ai/docs/pillars/interceptor).

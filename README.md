@@ -159,7 +159,7 @@ Want to dig into the details? Check out our documentation and specific guides:
 
 ### Technical Guides
 - [Architecture Overview](https://provably.ai/docs/pillars/architecture)
-- [HTTP Interception](https://provably.ai/docs/pillars/intercept)
+- [HTTP Interception](https://provably.ai/docs/pillars/interceptor)
 - [Managing Trusted Endpoints](https://provably.ai/docs/pillars/trusted-endpoints)
 - [Handoff Contracts & Evaluation](https://provably.ai/docs/pillars/handoff)
 

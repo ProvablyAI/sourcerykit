@@ -7,7 +7,7 @@ Welcome to the developer documentation for the Provably Python SDK (**SourceryKi
 
 ## Core Architecture & Pillars
 * Dive into the [Architecture Overview](pillars/architecture) for a deep dive into data topologies and verification design.
-* See [HTTP Interception](pillars/intercept) to learn how network calls are caught and recorded.
+* See [HTTP Interception](pillars/interceptor) to learn how network calls are caught and recorded.
 * Learn about [Handoff & Evaluation](pillars/handoff) to construct structured data claims for deterministic validation.
 * Review [Trusted Endpoints](pillars/trusted-endpoints) to administer strict target destination routing policies.
 
