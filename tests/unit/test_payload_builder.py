@@ -123,3 +123,19 @@ class TestBuildHandoffPayloadEmpty:
         ):
             hp = await build_handoff_payload({"reasoning": "because reasons"}, prompt="test")
         assert hp.reasoning == "because reasons"
+
+    async def test_reasoning_stored_in_trace(self, _env: None) -> None:
+        mock_engine = _mock_engine()
+        with (
+            patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=mock_engine),
+            patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+        ):
+            await build_handoff_payload({"reasoning": "test reasoning"}, prompt="my task")
+        conn = mock_engine.begin.return_value.__aenter__.return_value
+        stmt = conn.execute.call_args[0][0]
+        compiled = stmt.compile(compile_kwargs={"literal_binds": True})
+        sql_str = str(compiled)
+        assert "reasoning" in sql_str.lower()

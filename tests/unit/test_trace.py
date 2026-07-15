@@ -25,6 +25,7 @@ def _make_trace_row(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
         "id": _TRACE_ID,
         "task": "test-task",
+        "reasoning": "",
         "created_at": "2026-01-01T00:00:00",
         "pass": 1,
         "caught": 0,
@@ -99,7 +100,7 @@ class TestShow:
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
             with pytest.raises(typer.Exit):
-                show(id=str(_TRACE_ID))
+                show(id=str(_TRACE_ID), ui=False)
         assert "not found" in str(mock_console.print.call_args).lower()
 
     def test_no_intercepts(self) -> None:
@@ -109,7 +110,7 @@ class TestShow:
             patch("sourcerykit.cli.trace.asyncio.run", return_value=(trace_row, [])),
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
-            show(id=str(_TRACE_ID))
+            show(id=str(_TRACE_ID), ui=False)
         assert any("No intercepts" in str(c) for c in mock_console.print.call_args_list)
 
     def test_with_intercepts(self) -> None:
@@ -124,7 +125,18 @@ class TestShow:
                 (trace_row, [intercept_row]),
                 {_QUERY_ID: {"sql_query": "SELECT 1", "proof": None, "result": None}},
             ]
-            show(id=str(_TRACE_ID))
+            show(id=str(_TRACE_ID), ui=False)
+
+    def test_reasoning_printed_when_present(self) -> None:
+        trace_row = _make_trace_row(reasoning="because reasons")
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", return_value=(trace_row, [])),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            show(id=str(_TRACE_ID), ui=False)
+        printed = " ".join(str(c) for c in mock_console.print.call_args_list)
+        assert "because reasons" in printed
 
     def test_invalid_uuid(self) -> None:
         with (
@@ -133,7 +145,7 @@ class TestShow:
             patch("sourcerykit.cli.trace.console"),
         ):
             with pytest.raises(typer.Exit):
-                show(id="not-a-uuid")
+                show(id="not-a-uuid", ui=False)
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +214,7 @@ class TestResolveTraceId:
 
     def test_prefix_single_match(self) -> None:
         prefix = str(_TRACE_ID)[:8]
-        row = {"id": _TRACE_ID, "task": "t", "created_at": "2026-01-01"}
+        row = {"id": _TRACE_ID, "task": "t", "reasoning": "", "created_at": "2026-01-01"}
         with patch("sourcerykit.cli.trace.asyncio.run", return_value=[row]):
             result = _resolve_trace_id(prefix)
         assert result == _TRACE_ID
@@ -220,8 +232,8 @@ class TestResolveTraceId:
         id2 = uuid.uuid4()
         prefix = str(id1)[:8]
         rows = [
-            {"id": id1, "task": "a", "created_at": "2026-01-01"},
-            {"id": id2, "task": "b", "created_at": "2026-01-02"},
+            {"id": id1, "task": "a", "reasoning": "", "created_at": "2026-01-01"},
+            {"id": id2, "task": "b", "reasoning": "", "created_at": "2026-01-02"},
         ]
         with (
             patch("sourcerykit.cli.trace.asyncio.run", return_value=rows),
