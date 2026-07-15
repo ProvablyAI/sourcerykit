@@ -32,6 +32,6 @@ SourceryKit intercepts an agent’s outbound HTTP calls, enforces endpoint polic
 
 - [Onboarding](https://provably.ai/docs/getting_started/onboarding) — one-time account, credentials, and database setup
 - [End-to-End Walkthrough](https://provably.ai/docs/getting_started/end-to-end-walkthrough) — run the whole flow in code
-- [Intercept](https://provably.ai/docs/pillars/intercept) — how outbound HTTP calls are captured and recorded
+- [Interceptor](https://provably.ai/docs/pillars/intercept) — how outbound HTTP calls are captured and recorded
 - [Handoff](https://provably.ai/docs/pillars/handoff) — building claims and reading the verdict
 - [Trusted Endpoints](https://provably.ai/docs/pillars/trusted-endpoints) — the outbound allow-list

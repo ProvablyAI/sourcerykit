@@ -28,7 +28,7 @@ const config: RootConfig = {
 			icon: "BookOpen",
 			pages: [
 				{ id: "architecture", icon: "Building2" },
-				{ id: "intercept", icon: "Shield" },
+				{ id: "interceptor", icon: "Shield" },
 				{ id: "trusted-endpoints", icon: "ListChecks" },
 				{ id: "handoff", icon: "ArrowRightLeft" },
 			],
