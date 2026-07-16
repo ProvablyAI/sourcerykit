@@ -68,10 +68,12 @@ Changelog = "https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sourcerykit"]
+force-include = {"alembic" = "sourcerykit/_alembic"}
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/sourcerykit",
+    "alembic",
     "README.md",
     "LICENSE.md",
     "CHANGELOG.md",
