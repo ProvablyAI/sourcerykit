@@ -3,12 +3,11 @@
 
   <br />
 
-  [![PyPI Version](https://img.shields.io/pypi/v/sourcerykit.svg?color=blue)](https://pypi.org/project/sourcerykit/)
-  [![status: v1.0.1](https://img.shields.io/badge/status-v1.0.1-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md)
-  [![python: 3.12+](https://img.shields.io/badge/python-3.12+-slate)](https://github.com/ProvablyAI/sourcerykit/blob/main/pyproject.toml)
-  [![license: BSL 1.1](https://img.shields.io/badge/license-BSL%201.1-crimson)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
-  [![CI Build](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml/badge.svg)](https://github.com/ProvablyAI/sourcerykit/actions)
-  [![Coverage](https://img.shields.io/badge/coverage-60%25-success)](https://github.com/ProvablyAI/sourcerykit)
+  [![CI](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml/badge.svg)](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml)
+  [![PyPI version](https://img.shields.io/pypi/v/sourcerykit)](https://pypi.org/project/sourcerykit/)
+  [![Python versions](https://img.shields.io/pypi/pyversions/sourcerykit)](https://pypi.org/project/sourcerykit/)
+  [![License](https://img.shields.io/pypi/l/sourcerykit)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
+  [![Types: Mypy](https://img.shields.io/badge/types-mypy-blue)](https://mypy-lang.org/)
 </div>
 
 
