@@ -16,6 +16,32 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides v
 > ⚠️ **IMPORTANT:** Upgrading the SDK from v0.2 to v1.0? See the [v1.0 migration guide](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/migrations/v1_0/v1_0.md).
 
 
+## Quickstart
+
+Requires **Python 3.12+**.
+
+```bash
+pip install sourcerykit
+sourcerykit init          # one-time setup: account, database, credentials
+```
+
+Give your agent `SourceryKitAgentResponse` as its output type, then verify its claims against the recorded calls before you trust them:
+
+```python
+import sourcerykit
+from sourcerykit import SourceryKitAgentResponse  # your agent's output_type
+
+await sourcerykit.bootstrap_system()
+await sourcerykit.insert_trusted_endpoint(url="https://api.example.com/data")
+
+# ... run your agent inside an intercept context, then build the payload ...
+result = await sourcerykit.evaluate_handoff(payload=payload)
+print(result["outcome"])  # PASS | CAUGHT | ERROR
+```
+
+See the [full runnable example](#quick-example) below.
+
+
 ## How Does It Work?
 
 SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
@@ -33,22 +59,6 @@ SourceryKit handles policy enforcement and logging right inside your agent's nor
 - **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
 - **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
 - **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
-
-
-## Installation
-
-SourceryKit requires **Python 3.12+**. You can grab it directly from source:
-
-```bash
-git clone git@github.com:ProvablyAI/sourcerykit.git
-pip install -e ./sourcerykit
-```
-
-Or install it directly via pip:
-
-```bash
-pip install sourcerykit
-```
 
 
 ## Configuration
