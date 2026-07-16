@@ -70,7 +70,7 @@ SDK's client at your `MODEL_URL` with `MODEL_API_KEY` or `OPENROUTER_API_KEY`, e
 
 ## The flow at a glance
 
-```
+```bash
 bootstrap_system()              # init: schema, handshake, HTTP interceptor — call first, once
 insert_trusted_endpoint(url)    # allow-list each outbound endpoint
 async_intercept_context(...)    # wrap the tool's HTTP call — records it

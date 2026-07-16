@@ -23,9 +23,9 @@ You will also need to set these LLM-provider variables manually:
 
 | Variable | Required | Description |
 |---|---|---|
-| `MODEL_URL` | **yes** | Base URL routing endpoint for the LLM processing interface (e.g., `https://openrouter.ai/api/v1`). |
-| `MODEL_API_KEY` | **yes** | API authentication token for the targeting model processing engine. |
-| `MODEL_NAME` | **yes** | Targeted model engine name (e.g., `openai/gpt-4o-mini`). |
+| `MODEL_URL` | **yes** | Base URL for the LLM provider (e.g., `https://openrouter.ai/api/v1`). |
+| `MODEL_API_KEY` | **yes** | API authentication token for the LLM provider. |
+| `MODEL_NAME` | **yes** | Model name (e.g., `openai/gpt-4o-mini`). |
 
 ---
 

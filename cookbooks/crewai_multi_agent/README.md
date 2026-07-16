@@ -1,10 +1,10 @@
-# CrewAI Multi-Agent — Invoice Auditing with Specialist Agents
+# CrewAI Multi-Agent
 
+## Invoice Auditing with Specialist Agents
 This example demonstrates multi-agent orchestration using [CrewAI](https://github.com/crewAIInc/crewAI) with SourceryKit verification. Three specialist agents each query a different ERP table, with centralized evaluation by the orchestrator.
 
 ## Flow
-
-```
+```bash
 Flow[AuditState]:
 
   @start() run_specialists()
@@ -32,28 +32,33 @@ Flow[AuditState]:
 4. **Evaluation**: The orchestrator evaluates each payload via `evaluate_handoff`. This is the verifier side — the orchestrator never touches raw agent output, only the verifiable payloads.
 5. **Conditional Routing**: If any payload fails verification, a remediation crew produces an incident report analyzing the discrepancy.
 
+## Mock Data Tables
+
+| Specialist | Table | Action Name | Agent ID |
+|---|---|---|---|
+| Amount Validator | invoices | `get_invoice_amount` | `amount_validator` |
+| Vendor Checker | vendors | `get_vendor` | `vendor_checker` |
+| Currency Verifier | currencies | `get_currency` | `currency_verifier` |
+
 ---
 
 ## Environment Configuration
+Before running the system, run the interactive setup wizard to configure your SourceryKit project variables automatically:
 
 ```bash
 sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard only configures **SOURCERYKIT_*** variables. LLM provider keys must be set separately.
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys. You must set your model provider's environment variables (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) separately.
 
 | Variable | Required | Description |
 |---|---|---|
 | `MODEL_NAME` | **yes** | Targeted model engine name (e.g., `openai/gpt-4o-mini`). |
 
-> [!Note]
-> Ensure your underlying model provider's environment variables—such as `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`—are also set as required by your CrewAI provider setup.
-
 ---
 
 ## Execution
-
 1. Install dependencies:
    ```bash
    pip install sourcerykit crewai-tools python-dotenv httpx pydantic
@@ -63,16 +68,18 @@ sourcerykit init
    pip install "crewai[anthropic]"    # Anthropic
    pip install "crewai[litellm]"      # OpenRouter / multi-provider via LiteLLM
    ```
-2. Export your LLM-provider keys:
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
    ```bash
    export MODEL_NAME="openai/gpt-4o-mini"
    export OPENAI_API_KEY="sk-..."
    ```
-3. Run:
-   ```bash
-   # Standard validation (PASS)
-   python agent_run.py
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-   # Hallucination simulation (CAUGHT → Remediation)
-   python agent_run.py --tamper
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```

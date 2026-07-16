@@ -73,7 +73,7 @@ sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-
 
 **Input:** Interactive prompts for email, password, database URL, and project name.
 
-```
+```bash
 Welcome to the SourceryKit Wizard! How would you like to proceed?
 ❯ Log in with an existing account
   Create a new account
@@ -109,7 +109,7 @@ sourcerykit init \
 
 **Output:** Saves credentials to global config and local `.env` file.
 
-```
+```bash
 🎉 SOURCERYKIT SETUP COMPLETE
 
  Global config:
@@ -150,7 +150,7 @@ sourcerykit doctor [--fix]
 6. Integration key format
 
 **Example output (all checks pass):**
-```
+```bash
 🩺 SourceryKit Doctor
 
   ✅ API key + org: API key valid, org found (1 org(s))
@@ -164,7 +164,7 @@ All 6 checks passed!
 ```
 
 **Example output (some checks fail):**
-```
+```bash
 🩺 SourceryKit Doctor
 
   ❌ API key + org: API key is invalid or expired — run 'sourcerykit init'
@@ -223,7 +223,7 @@ sourcerykit version
 ```
 
 **Example output:**
-```
+```bash
 v1.0
 ```
 
@@ -259,7 +259,7 @@ sourcerykit endpoints add https://api.example.com/data --label "Example API"
 ```
 
 **Output:**
-```
+```bash
 ✅ Endpoint added: https://api.example.com/data (Example API)
 ```
 
@@ -274,7 +274,7 @@ sourcerykit endpoints list
 ```
 
 **Example output:**
-```
+```bash
            Trusted Endpoints
 ┌──────────────────────────────┬─────────────┬──────────┬─────────────┐
 │ URL                          │ Label       │ Policy   │ Created by  │
@@ -311,7 +311,7 @@ sourcerykit endpoints remove https://api.example.com/data -y
 ```
 
 **Output:**
-```
+```bash
 ✅ Endpoint removed: https://api.example.com/data
 ```
 
@@ -340,7 +340,7 @@ sourcerykit config list [--show-key]
 > `--show-key` prints your API key and database password in clear text. Avoid using it in shared terminals or CI logs.
 
 **Example output:**
-```
+```bash
 📋 Global Config
 
 PROVABLY_API_KEY       = ***********************************1234
@@ -404,7 +404,7 @@ sourcerykit trace list [--limit N] [--page P]
 | `--page` / `-p` | Page number, 1-based (default: 1) |
 
 **Example output:**
-```
+```bash
                               Traces
 ┌──────────────────────────────────────┬──────────────┬─────────────────────┬───────┬────────┬───────┐
 │ ID                                   │ Task         │ Created             │  Pass │ Caught │ Error │
@@ -439,7 +439,7 @@ sourcerykit trace show 123e4567-e89b-12d3-a456-426614174000
 ```
 
 **Example output:**
-```
+```bash
 Trace 123e4567-e89b-12d3-a456-426614174000
   Task:    get_data
   Created: 2026-06-30 10:00:00
@@ -464,7 +464,7 @@ Trace 123e4567-e89b-12d3-a456-426614174000
 ```
 
 **Error (trace not found):**
-```
+```bash
 Trace abc123 not found.
 ```
 

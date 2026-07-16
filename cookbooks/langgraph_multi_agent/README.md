@@ -1,10 +1,10 @@
-# LangGraph Multi-Agent — Travel Agency Flight Status
+# LangGraph Multi-Agent
 
+## Travel Agency Flight Status
 This example demonstrates a multi-agent pipeline using [LangGraph](https://github.com/langchain-ai/langgraph) with SourceryKit verification and conditional routing.
 
 ## Flow
-
-```
+```bash
 START → Fetcher Agent → Build Handoff → Evaluator
                                             │
                          ┌──────────────────┤
@@ -41,35 +41,30 @@ sourcerykit init
 ```
 
 > [!IMPORTANT]
-> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys (like `MODEL_NAME` or `OPENROUTER_API_KEY`). Those must still be set up separately in your environment.
-
-You will also need to set these LLM-provider variables manually:
+> The wizard only configures **SOURCERYKIT_*** variables. It does **not** configure your LLM provider infrastructure keys. You must set your model provider's environment variables (e.g. `OPENROUTER_API_KEY`) separately.
 
 | Variable | Required | Description |
 |---|---|---|
 | `MODEL_NAME` | **yes** | Targeted model architecture identifier string passed to create_agent (e.g., `openrouter:openai/gpt-4o-mini`). |
 
-> [!Note]
-> Ensure your underlying model provider's environment variables—such as `OPENROUTER_API_KEY`—are also set as required by your LangChain backend provider setup.
-
 ---
 
 ## Execution
-
 1. Install dependencies:
    ```bash
    pip install sourcerykit langchain langgraph python-dotenv httpx pydantic
    ```
-2. Export your LLM-provider keys:
+2. Export your LLM-provider keys into your current shell or place them in a local `.env` file:
    ```bash
    export MODEL_NAME="openrouter:openai/gpt-4o-mini"
-   export OPENROUTER_API_KEY="sk-or-..."
    ```
-3. Run:
-   ```bash
-   # Standard validation (PASS)
-   python agent_run.py
+3. Run the example:
+      ```bash
+      # Standard Validation
+      python agent_run.py
 
-   # Hallucination simulation (CAUGHT → Healer)
-   python agent_run.py --tamper
+      # or
+
+      # Hallucination Simulation
+      python agent_run.py --tamper
    ```
