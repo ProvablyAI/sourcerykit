@@ -4,12 +4,12 @@ import json
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Dialect, Insert, column, create_engine, insert, select, text
+from sqlalchemy import Dialect, Insert, column, create_mock_engine, insert, select, text
 from sqlalchemy.sql.selectable import Select
 
 from sourcerykit.db._schema import intercepts
 
-_ENGINE = create_engine("postgresql+psycopg://", strategy="mock", executor=lambda *args, **kwargs: None)
+_ENGINE = create_mock_engine("postgresql+psycopg://", executor=lambda *args, **kwargs: None)
 
 _PG: Dialect = _ENGINE.dialect
 _t = intercepts
