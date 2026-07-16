@@ -34,6 +34,7 @@ RUN pip install --upgrade pip hatch
 
 COPY pyproject.toml README.md LICENSE.md ./
 COPY src ./src
+COPY alembic ./alembic
 
 RUN hatch build -t wheel /dist
 
