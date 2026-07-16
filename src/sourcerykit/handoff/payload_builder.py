@@ -126,12 +126,7 @@ async def _build_claims(
     fetch_and_claim_json: Any,
     intercept_agent_id: str,
 ) -> tuple[list[HandoffClaim], list[str], list[uuid.UUID], list[str]]:
-    """Aggregates, resolves intercept IDs, and emits tracking metadata.
-
-    The fourth return value is the drop reasons: one message per claim that could not be
-    resolved. These travel to the caller (on the payload) instead of being only logged, so a
-    payload that ends up with zero claims can explain why.
-    """
+    """Aggregates, resolves intercept IDs, and emits tracking metadata."""
 
     if not isinstance(fetch_and_claim_json, dict):
         return [], [], [], ["fetch_and_claim is not a dict; no claims could be read"]
@@ -158,19 +153,19 @@ async def _build_claims(
     urls = []
     ids = []
     drop_errors: list[str] = []
-    for raw, r in zip(expanded, results):
-        if isinstance(r, BaseException):
-            reason = f"claim '{raw.get('action_name')}' dropped: {r}"
+    for raw, outcome in zip(expanded, results):
+        if isinstance(outcome, BaseException):
             _log.warning(
                 "claim_resolution_failed",
                 action_name=raw.get("action_name"),
-                error=str(r),
+                error=str(outcome),
             )
-            drop_errors.append(reason)
+            drop_errors.append(f"claim '{raw.get('action_name')}' dropped: {outcome}")
             continue
-        claims.append(r[0])
-        urls.append(r[1])
-        ids.append(r[2])
+        claim, url, qid = outcome
+        claims.append(claim)
+        urls.append(url)
+        ids.append(qid)
 
     return claims, urls, ids, drop_errors
 
