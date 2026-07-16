@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Features
+- **Reasoning field on traces** — `SourceryKitAgentResponse.reasoning` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
+- **CLI `trace show --ui/--no-ui`** — default opens the interactive dashboard in the browser; `--no-ui` prints the CLI panel output. Trace ID prefixes are accepted (unambiguous prefix resolution).
+- **Dashboard activity section** — trace activity log with outcome counts.
+
+### Refactoring
+- **CLI `trace show` presentation** — header and summary wrapped in a styled Rich panel.
+
+### Documentation
+- Updated CLI docs with `--ui/--no-ui` option.
+
 ## 1.0.1
 
 ### Bug fixes
