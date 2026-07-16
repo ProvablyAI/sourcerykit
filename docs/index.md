@@ -14,6 +14,9 @@ Welcome to the developer documentation for the Provably Python SDK (**SourceryKi
 ## Cookbooks
 Explore how to integrate SourceryKit seamlessly into your favorite production development stack — see the [Cookbooks Overview](src/cookbooks/index) for a full comparison table and guidance on choosing an example.
 
+## Migrations
+Upgrading from a previous version? See the [Migration Guides](migrations/index) for breaking changes, schema updates, and upgrade instructions.
+
 ## API Reference & Development
 * Consult the [CLI Reference](getting_started/cli) for all available commands, options, and usage examples.
 * Explore the [API Reference](api) for a complete mapping of all public functions, classes, and types.
