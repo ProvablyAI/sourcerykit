@@ -8,6 +8,7 @@ from sourcerykit.cli.endpoints import endpoints
 from sourcerykit.cli.feedback import send_feedback
 from sourcerykit.cli.init import config_provably
 from sourcerykit.cli.trace import trace
+from sourcerykit.cli.upgrade import run_upgrade
 from sourcerykit.cli.utils import console
 from sourcerykit.cli.utils import logout as logout_session
 
@@ -59,6 +60,11 @@ def logout() -> None:
 def version() -> None:
     v = importlib.metadata.version("sourcerykit")
     console.print(f"v{v}")
+
+
+@app.command(help="upgrade package and run database migrations")
+def upgrade() -> None:
+    run_upgrade()
 
 
 if __name__ == "__main__":

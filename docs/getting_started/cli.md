@@ -19,6 +19,7 @@ Run `sourcerykit --help` to see all available commands.
 | [`feedback`](#sourcerykit-feedback) | Submit feedback or bug reports |
 | [`logout`](#sourcerykit-logout) | Clear stored session |
 | [`version`](#sourcerykit-version) | Print package version |
+| [`upgrade`](#sourcerykit-upgrade) | Upgrade package and run database migrations |
 | [`endpoints add`](#sourcerykit-endpoints-add) | Add a trusted endpoint |
 | [`endpoints list`](#sourcerykit-endpoints-list) | List all trusted endpoints |
 | [`endpoints remove`](#sourcerykit-endpoints-remove) | Remove a trusted endpoint |
@@ -225,6 +226,41 @@ sourcerykit version
 **Example output:**
 ```bash
 v1.0
+```
+
+---
+
+### `sourcerykit upgrade`
+
+Check for a newer package version on PyPI, offer to install it, and run all pending database migrations.
+
+```bash
+sourcerykit upgrade
+```
+
+**What it does:**
+1. Compares the installed version against the latest release on PyPI
+2. If a newer version exists, prompts to upgrade via `pip install --upgrade sourcerykit`
+3. Runs `alembic upgrade head` against your database to apply pending schema migrations
+
+**Example output (up-to-date):**
+```bash
+⬆️  SourceryKit Upgrade
+
+  ✅ Already on latest version: v1.0.1
+
+  Running database migrations... DONE ✅
+```
+
+**Example output (upgrade available):**
+```bash
+⬆️  SourceryKit Upgrade
+
+  📦 Installed: v1.0.0  →  Latest: v1.0.1
+  Upgrade package now? [Y/n]: Y
+  Upgrading... DONE ✅
+
+  Running database migrations... DONE ✅
 ```
 
 ---
