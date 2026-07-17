@@ -66,8 +66,7 @@ async def build_handoff_payload(
         list_all_trusted_endpoints(),
     )
 
-    _log.info("build_handoff_payload_completed", claim_count=len(claims),
-              dropped=len(build_errors))
+    _log.info("build_handoff_payload_completed", claim_count=len(claims), dropped=len(build_errors))
 
     return HandoffPayload(
         provably_mcp_url=settings.provably_mcp,
