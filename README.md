@@ -3,11 +3,10 @@
 
   <br />
 
-  [![CI](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml/badge.svg)](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml)
   [![PyPI version](https://img.shields.io/pypi/v/sourcerykit)](https://pypi.org/project/sourcerykit/)
   [![Python versions](https://img.shields.io/pypi/pyversions/sourcerykit)](https://pypi.org/project/sourcerykit/)
-  [![License](https://img.shields.io/pypi/l/sourcerykit)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
-  [![Types: Mypy](https://img.shields.io/badge/types-mypy-blue)](https://mypy-lang.org/)
+  [![License: BSL 1.1](https://img.shields.io/badge/license-BSL%201.1-blue)](https://github.com/ProvablyAI/sourcerykit/blob/main/LICENSE.md)
+  [![CI](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml/badge.svg)](https://github.com/ProvablyAI/sourcerykit/actions/workflows/ci.yml)
 </div>
 
 
@@ -25,77 +24,14 @@ pip install sourcerykit
 sourcerykit init          # one-time setup: account, database, credentials
 ```
 
-Give your agent `SourceryKitAgentResponse` as its output type, then verify its claims against the recorded calls before you trust them:
-
-```python
-import sourcerykit
-from sourcerykit import SourceryKitAgentResponse  # your agent's output_type
-
-await sourcerykit.bootstrap_system()
-await sourcerykit.insert_trusted_endpoint(url="https://api.example.com/data")
-
-# ... run your agent inside an intercept context, then build the payload ...
-result = await sourcerykit.evaluate_handoff(payload=payload)
-print(result["outcome"])  # PASS | CAUGHT | ERROR
-```
-
-See the [full runnable example](#quick-example) below.
-
-
-## How Does It Work?
-
-SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/architecture.svg" alt="architecture" width="550" />
-</div>
-
-### The Pieces
-
-- **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
-- **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
-- **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
-- **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
-- **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
-- **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
-- **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
-
-
-## Configuration
-To get things running, SourceryKit must be configured with your project variables. The interactive CLI handles account provisioning, organization workspace initialization, database validation, and persists credentials globally (OS application folder) and locally (project `.env`).
+Or install from source:
 
 ```bash
-sourcerykit init
+git clone git@github.com:ProvablyAI/sourcerykit.git
+pip install -e ./sourcerykit
 ```
 
-The wizard will guide you through:
-- **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
-- **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
-- **Database Handshake**: Enter your database details, test the connection, and ensure it's accessible.
-- **Save Config**: Automatically write your credentials and tokens straight to a local .env file.
-
-> ⚠️ **IMPORTANT:** The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
-
-### Manual configuration (fallback)
-
-Already have credentials, or need to bypass the wizard (CI, containers, debugging)? Environment
-variables override the stored config:
-
-```bash
-export PROVABLY_API_KEY="..."
-export SOURCERYKIT_ORG_ID="..."
-export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
-```
-
-For a full list of CLI commands, check out the [CLI Documentation](https://provably.ai/docs/getting_started/cli) file, or simply run:
-```bash
-sourcerykit --help
-```
-
-For a full list of environment variables, see [.env.example](https://github.com/ProvablyAI/sourcerykit/blob/main/.env.example).
-
-## Quick Example
-Here is how to bootstrap the system, run an intercepted request, build a payload, and check if everything passes validation:
+Bootstrap the system, run an intercepted request, build the payload, and check the verdict:
 
 ```python
 import uuid
@@ -157,6 +93,59 @@ async def run_verifiable_agent():
     result = await sourcerykit.evaluate_handoff(payload=payload)
     print(f"Evaluation Outcome: {result.get('outcome')}") # PASS, CAUGHT, or ERROR
 ```
+
+
+## How Does It Work?
+
+SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/architecture.svg" alt="architecture" width="550" />
+</div>
+
+### The Pieces
+
+- **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
+- **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
+- **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
+- **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
+- **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
+- **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
+- **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
+
+
+## Configuration
+To get things running, SourceryKit must be configured with your project variables. The interactive CLI handles account provisioning, organization workspace initialization, database validation, and persists credentials globally (OS application folder) and locally (project `.env`).
+
+```bash
+sourcerykit init
+```
+
+The wizard will guide you through:
+- **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
+- **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
+- **Database Handshake**: Enter your database details, test the connection, and ensure it's accessible.
+- **Save Config**: Automatically write your credentials and tokens straight to a local .env file.
+
+> ⚠️ **IMPORTANT:** The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
+
+### Manual configuration (fallback)
+
+Already have credentials, or need to bypass the wizard (CI, containers, debugging)? Environment
+variables override the stored config:
+
+```bash
+export PROVABLY_API_KEY="..."
+export SOURCERYKIT_ORG_ID="..."
+export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
+```
+
+For a full list of CLI commands, check out the [CLI Documentation](https://provably.ai/docs/getting_started/cli) file, or simply run:
+```bash
+sourcerykit --help
+```
+
+For a full list of environment variables, see [.env.example](https://github.com/ProvablyAI/sourcerykit/blob/main/.env.example).
 
 
 ## More Docs
