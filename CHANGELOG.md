@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Breaking changes
+- **`SourceryKitAgentResponse.reasoning` renamed to `.answer`** — the field, database column, `HandoffPayload`, and all related APIs now use `answer`. Update your agent code, structured output bindings, and any queries against the `traces` table.
+
 ### Features
 - **Answer field on traces** — `SourceryKitAgentResponse.answer` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
 - **CLI `trace show --ui/--no-ui`** — default opens the interactive dashboard in the browser; `--no-ui` prints the CLI panel output. Trace ID prefixes are accepted (unambiguous prefix resolution).

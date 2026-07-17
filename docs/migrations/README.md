@@ -4,7 +4,7 @@ Upgrade guides for SourceryKit releases. Each guide covers breaking changes, new
 
 | Version | Action | Guide |
 |---|---|---|
-| [Unreleased](unreleased/unreleased.md) | `sourcerykit upgrade` | Schema change (traces.answer) |
+| [Unreleased](unreleased/unreleased.md) | `sourcerykit upgrade` | Breaking: `reasoning` → `answer`; schema change (traces.answer) |
 | [v1.0.1](https://github.com/ProvablyAI/sourcerykit/blob/main/CHANGELOG.md#101) | `pip install --upgrade sourcerykit` | No schema change |
 | [v1.0](v1_0/v1_0.md) | `sourcerykit upgrade` | Full migration from previous versions |
 
