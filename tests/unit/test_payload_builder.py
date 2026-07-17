@@ -131,7 +131,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=mock_engine),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             await build_handoff_payload({"answer": "test answer"}, prompt="my task")
         conn = mock_engine.begin.return_value.__aenter__.return_value
@@ -139,3 +139,15 @@ class TestBuildHandoffPayloadEmpty:
         compiled = stmt.compile(compile_kwargs={"literal_binds": True})
         sql_str = str(compiled)
         assert "answer" in sql_str.lower()
+
+    async def test_build_errors_propagated(self, _env: None) -> None:
+        errors = ["claim 'weather' dropped: sourcerykit_ref not found"]
+        with (
+            patch("sourcerykit.handoff.payload_builder.get_bootstrap", return_value=_mock_bootstrap()),
+            patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
+            patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
+            patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], errors))),
+        ):
+            hp = await build_handoff_payload(None, prompt="test")
+        assert hp.build_errors == errors
