@@ -23,12 +23,7 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides v
 - **Deterministic verdicts** — every run resolves to `PASS`, `CAUGHT`, or `ERROR` against cryptographically anchored records.
 - **Framework-agnostic** — drops into OpenAI Agents SDK, LangChain, Claude Agent SDK, CrewAI, and LangGraph.
 
-
-## How Does It Work?
-
-SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
-
-### The Pieces
+Under the hood, these are the pieces doing the work:
 
 - **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
 - **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
