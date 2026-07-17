@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/logo.svg" alt="SourceryKit" width="180" />
+  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/logo.svg" alt="SourceryKit" width="220" />
 
   <br />
 
