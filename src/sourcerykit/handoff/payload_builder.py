@@ -61,12 +61,12 @@ async def build_handoff_payload(
     instr = instructions if instructions is not None else default_instructions()
 
     # Run claim resolution and trusted-endpoint fetch concurrently
-    (claims, query_urls, query_ids), trusted_endpoint_registry = await asyncio.gather(
+    (claims, query_urls, query_ids, build_errors), trusted_endpoint_registry = await asyncio.gather(
         _build_claims(trace_id, blob, intercept_agent_id),
         list_all_trusted_endpoints(),
     )
 
-    _log.info("build_handoff_payload_completed", claim_count=len(claims))
+    _log.info("build_handoff_payload_completed", claim_count=len(claims), dropped=len(build_errors))
 
     return HandoffPayload(
         provably_mcp_url=settings.provably_mcp,
@@ -83,6 +83,7 @@ async def build_handoff_payload(
         query_urls=query_urls,
         task=task,
         reasoning=reasoning,
+        build_errors=build_errors,
     )
 
 
@@ -123,15 +124,15 @@ async def _build_claims(
     trace_id: uuid.UUID,
     fetch_and_claim_json: Any,
     intercept_agent_id: str,
-) -> tuple[list[HandoffClaim], list[str], list[uuid.UUID]]:
+) -> tuple[list[HandoffClaim], list[str], list[uuid.UUID], list[str]]:
     """Aggregates, resolves intercept IDs, and emits tracking metadata."""
 
     if not isinstance(fetch_and_claim_json, dict):
-        return [], [], []
+        return [], [], [], ["fetch_and_claim is not a dict; no claims could be read"]
 
     raw_claims = fetch_and_claim_json.get("claims")
     if not isinstance(raw_claims, list):
-        return [], [], []
+        return [], [], [], ["fetch_and_claim['claims'] is missing or not a list"]
 
     # Filter to valid claim dicts up-front
     valid_raws = [raw for raw in raw_claims if isinstance(raw, dict) and str(raw.get("action_name") or "").strip()]
@@ -150,19 +151,22 @@ async def _build_claims(
     claims = []
     urls = []
     ids = []
-    for raw, r in zip(expanded, results):
-        if isinstance(r, BaseException):
+    drop_errors: list[str] = []
+    for raw, outcome in zip(expanded, results):
+        if isinstance(outcome, BaseException):
             _log.warning(
                 "claim_resolution_failed",
                 action_name=raw.get("action_name"),
-                error=str(r),
+                error=str(outcome),
             )
+            drop_errors.append(f"claim '{raw.get('action_name')}' dropped: {outcome}")
             continue
-        claims.append(r[0])
-        urls.append(r[1])
-        ids.append(r[2])
+        claim, url, qid = outcome
+        claims.append(claim)
+        urls.append(url)
+        ids.append(qid)
 
-    return claims, urls, ids
+    return claims, urls, ids, drop_errors
 
 
 async def _resolve_claim(
