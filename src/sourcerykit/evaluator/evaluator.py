@@ -71,7 +71,19 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
         }
         per_claim.append(verdict)
 
+    # Claims dropped while building the payload never reach the verifier above. Surface those
+    # reasons — otherwise a payload that arrives with zero claims is an ERROR with no
+    # explanation of what went wrong.
+    errors = list(payload.build_errors) + errors
+
     outcome = _resolve_outcome(per_claim, errors)
+
+    if outcome == Outcome.ERROR and not per_claim and not errors:
+        errors = [
+            f"no claims were verified: the handoff payload contained {len(payload.claims)} "
+            "claim(s), and none resolved to a recorded intercept. Check that each claimed "
+            "value carries a sourcerykit_ref matching a recorded tool call."
+        ]
 
     return {"outcome": outcome, "per_claim": per_claim, "errors": errors}
 

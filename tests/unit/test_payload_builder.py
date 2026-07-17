@@ -52,7 +52,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload(None, prompt="test")
         assert hp.claims == []
@@ -64,7 +64,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload(None, prompt="test")
         assert isinstance(hp.field_guide, dict)
@@ -76,7 +76,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload(None, prompt="test", task="My custom task")
         assert hp.task == "My custom task"
@@ -97,7 +97,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload(None, prompt="test", run_id=rid)
         assert hp.run_id == rid
@@ -108,7 +108,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload(None, prompt="test")
         assert hp.integration_api_key == "my-int-key"
@@ -119,7 +119,7 @@ class TestBuildHandoffPayloadEmpty:
             patch("sourcerykit.handoff.payload_builder.get_settings", return_value=_mock_settings()),
             patch("sourcerykit.handoff.payload_builder.get_engine", return_value=_mock_engine()),
             patch("sourcerykit.handoff.payload_builder.list_all_trusted_endpoints", AsyncMock(return_value=[])),
-            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], []))),
+            patch("sourcerykit.handoff.payload_builder._build_claims", AsyncMock(return_value=([], [], [], []))),
         ):
             hp = await build_handoff_payload({"answer": "answer"}, prompt="test")
         assert hp.answer == "answer"

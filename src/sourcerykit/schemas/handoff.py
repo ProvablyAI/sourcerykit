@@ -107,6 +107,11 @@ class HandoffPayload(BaseModel):
     )
     task: str = Field(default="", description="Short task title.")
     answer: str = Field(default="", description="Agent's natural-language answer.")
+    build_errors: list[str] = Field(
+        default_factory=list,
+        description="Reasons any claims were dropped while building this payload (e.g. a claim "
+        "whose sourcerykit_ref matched no recorded intercept). Surfaced by evaluate_handoff.",
+    )
     sdk_precheck: dict[str, Any] | None = Field(
         default=None,
         description="Optional SDK-side health/precheck output captured before handoff.",

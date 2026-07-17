@@ -228,4 +228,6 @@ class TestEvaluateHandoff:
         result = await evaluate_handoff(payload=payload)
         assert result["outcome"] == Outcome.ERROR
         assert result["per_claim"] == []
-        assert result["errors"] == []
+        # A zero-claim ERROR now explains itself instead of returning an empty errors list.
+        assert result["errors"]
+        assert "no claims were verified" in result["errors"][0]
