@@ -15,6 +15,30 @@ SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides v
 > ⚠️ **IMPORTANT:** Upgrading the SDK from v0.2 to v1.0? See the [v1.0 migration guide](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/migrations/v1_0/v1_0.md).
 
 
+## Features
+
+- **Verifiable guardrails** — checks your agent's claims against recorded ground truth, so a hallucinated value is caught before it ships.
+- **Automatic HTTP interception** — records every outbound call (`httpx`, `aiohttp`, `requests`) with no changes to your agent code.
+- **Endpoint allow-listing** — blocks requests to untrusted destinations at the source.
+- **Deterministic verdicts** — every run resolves to `PASS`, `CAUGHT`, or `ERROR` against cryptographically anchored records.
+- **Framework-agnostic** — drops into OpenAI Agents SDK, LangChain, Claude Agent SDK, CrewAI, and LangGraph.
+
+
+## How Does It Work?
+
+SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
+
+### The Pieces
+
+- **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
+- **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
+- **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
+- **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
+- **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
+- **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
+- **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
+
+
 ## Quickstart
 
 Requires **Python 3.12+**.
@@ -93,21 +117,6 @@ async def run_verifiable_agent():
     result = await sourcerykit.evaluate_handoff(payload=payload)
     print(f"Evaluation Outcome: {result.get('outcome')}") # PASS, CAUGHT, or ERROR
 ```
-
-
-## How Does It Work?
-
-SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
-
-### The Pieces
-
-- **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
-- **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
-- **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
-- **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
-- **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
-- **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
-- **Provably Backend**: The source of truth that turns your local intercepts into anchored verification proofs.
 
 
 ## Configuration
