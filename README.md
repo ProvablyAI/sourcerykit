@@ -24,20 +24,6 @@ pip install sourcerykit
 sourcerykit init          # one-time setup: account, database, credentials
 ```
 
-Give your agent `SourceryKitAgentResponse` as its output type, then verify its claims before you trust them:
-
-```python
-import sourcerykit
-from sourcerykit import SourceryKitAgentResponse  # your agent's output_type
-
-await sourcerykit.bootstrap_system()
-await sourcerykit.insert_trusted_endpoint(url="https://api.example.com/data")
-
-# ... run your agent inside an intercept context, then build the payload ...
-result = await sourcerykit.evaluate_handoff(payload=payload)
-print(result["outcome"])  # PASS | CAUGHT | ERROR
-```
-
 Prefer installing from source?
 
 ```bash
@@ -45,10 +31,7 @@ git clone git@github.com:ProvablyAI/sourcerykit.git
 pip install -e ./sourcerykit
 ```
 
-
-## Example
-
-Bootstrap the system, run an intercepted request, build the payload, and check the verdict:
+Give your agent `SourceryKitAgentResponse` as its output type, run it inside an intercept context, then check the verdict before you trust its claims:
 
 ```python
 import uuid
@@ -115,10 +98,6 @@ async def run_verifiable_agent():
 ## How Does It Work?
 
 SourceryKit handles policy enforcement and logging right inside your agent's normal workflow:
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/ProvablyAI/sourcerykit/refs/heads/main/docs/images/architecture.svg" alt="architecture" width="550" />
-</div>
 
 ### The Pieces
 
