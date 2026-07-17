@@ -1,4 +1,4 @@
-"""Add reasoning column to traces table.
+"""Add answer column to traces table.
 
 Revision ID: 005
 Revises: 004
@@ -20,12 +20,12 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.execute("""
         ALTER TABLE traces
-        ADD COLUMN IF NOT EXISTS reasoning TEXT NOT NULL DEFAULT ''
+        ADD COLUMN IF NOT EXISTS answer TEXT NOT NULL DEFAULT ''
     """)
 
 
 def downgrade() -> None:
     op.execute("""
         ALTER TABLE traces
-        DROP COLUMN IF EXISTS reasoning
+        DROP COLUMN IF EXISTS answer
     """)

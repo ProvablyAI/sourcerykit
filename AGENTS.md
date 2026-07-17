@@ -61,7 +61,7 @@ cookbook's README covers its own wiring.
 bootstrap_system()              # init: schema, handshake, HTTP interceptor — call first, once
 insert_trusted_endpoint(url)    # allow-list each outbound endpoint
 async_intercept_context(...)    # wrap the tool's HTTP call — records it
-SourceryKitAgentResponse        # the agent's structured output (reasoning + claimed_values)
+SourceryKitAgentResponse        # the agent's structured output (answer + claimed_values)
 build_handoff_payload(...)      # compile claims; intercept_agent_id must match the agent_id above
 evaluate_handoff(payload)       # -> {"outcome": "PASS" | "CAUGHT" | "ERROR", "per_claim": [...]}
 ```

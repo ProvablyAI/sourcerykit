@@ -175,7 +175,7 @@ def _make_order_status_agent() -> Agent:
             "3. In claimed_values, use paths like '$.json.status', '$.json.items'.\n"
             "4. For array values (like items), represent them as JSON arrays: "
             'e.g., \'["Wireless Keyboard", "USB-C Hub"]\'.\n'
-            "5. Return SourceryKitAgentResponse with claimed_values and reasoning."
+            "5. Return SourceryKitAgentResponse with claimed_values and answer."
         ),
         tools=[query_order_status],
         model=_DEFAULT_MODEL,
@@ -194,7 +194,7 @@ def _make_return_policy_agent() -> Agent:
             "3. In claimed_values, use paths like '$.json.policy', '$.json.days_allowed'.\n"
             "4. For array values (like conditions), represent them as JSON arrays: "
             'e.g., \'["Original packaging required", "No physical damage"]\'.\n'
-            "5. Return SourceryKitAgentResponse with claimed_values and reasoning."
+            "5. Return SourceryKitAgentResponse with claimed_values and answer."
         ),
         tools=[query_return_policy],
         model=_DEFAULT_MODEL,
@@ -211,7 +211,7 @@ def _make_account_balance_agent() -> Agent:
             "1. Call query_account_balance(customer_id) to fetch the data.\n"
             "2. The response has a 'json' field with the account data.\n"
             "3. In claimed_values, use paths like '$.json.balance', '$.json.currency'.\n"
-            "4. Return SourceryKitAgentResponse with claimed_values and reasoning."
+            "4. Return SourceryKitAgentResponse with claimed_values and answer."
         ),
         tools=[query_account_balance],
         model=_DEFAULT_MODEL,
@@ -231,12 +231,12 @@ async def _run_specialist_and_build_payload(
     response: SourceryKitAgentResponse = result.final_output
 
     print(f"\n[{agent.name}] Response:")
-    print(f"  reasoning: {response.reasoning}")
+    print(f"  answer: {response.answer}")
     print(f"  claimed_values: {response.claimed_values}")
 
     payload = await build_handoff_payload(
         {
-            "reasoning": response.reasoning,
+            "answer": response.answer,
             "claims": [
                 {
                     "action_name": action_name,
@@ -372,7 +372,7 @@ async def main(tamper: bool = False) -> None:
         print(f"{'----' * 10}")
 
         final_output = result.final_output
-        print(f"\n[Orchestrator] Final response:\n{final_output.reasoning}\n")
+        print(f"\n[Orchestrator] Final response:\n{final_output.answer}\n")
     finally:
         await runner.cleanup()
 

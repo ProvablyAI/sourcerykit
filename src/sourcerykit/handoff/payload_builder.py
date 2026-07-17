@@ -40,12 +40,12 @@ async def build_handoff_payload(
         raise RuntimeError("Provably infrastructure bootstrapping incomplete or uninitialized.")
 
     blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
-    reasoning = str(blob.get("reasoning") or "")
+    answer = str(blob.get("answer") or "")
 
     # insert trace
     try:
         async with get_engine().begin() as conn:
-            result = await conn.execute(insert_trace(task=prompt, reasoning=reasoning))
+            result = await conn.execute(insert_trace(task=prompt, answer=answer))
             trace_id: uuid.UUID | None = result.scalar()
 
             if trace_id is None:
@@ -82,7 +82,7 @@ async def build_handoff_payload(
         verification_results=[],
         query_urls=query_urls,
         task=task,
-        reasoning=reasoning,
+        answer=answer,
     )
 
 

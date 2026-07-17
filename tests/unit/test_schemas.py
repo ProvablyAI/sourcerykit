@@ -122,10 +122,10 @@ class TestHandoffPayload:
 class TestSourceryKitAgentResponse:
     def test_construction(self) -> None:
         resp = SourceryKitAgentResponse(
-            reasoning="I found the value",
+            answer="I found the value",
             claimed_values=[ClaimedValue(path="$.status", value="open")],
         )
-        assert resp.reasoning == "I found the value"
+        assert resp.answer == "I found the value"
         assert len(resp.claimed_values) == 1
 
     def test_claimed_value_path_and_value(self) -> None:
@@ -135,4 +135,4 @@ class TestSourceryKitAgentResponse:
 
     def test_missing_claimed_values_raises(self) -> None:
         with pytest.raises(ValidationError):
-            SourceryKitAgentResponse(reasoning="ok")  # type: ignore[call-arg]
+            SourceryKitAgentResponse(answer="ok")  # type: ignore[call-arg]

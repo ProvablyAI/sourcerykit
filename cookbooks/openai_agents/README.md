@@ -5,7 +5,7 @@ This example demonstrates how to integrate SourceryKit with the [OpenAI Agents S
 ## How It Works
 1. **HTTP Interception**: The `bootstrap_system()` hook dynamically monitors outbound `httpx` calls, ensuring that network operations generated within the agent tool loop (`get_current_temperature_london`) are securely logged to your database intercepts table.
 2. **All-Method Trust Gate**: SourceryKit enforces structural target validation checks against your external network endpoints. The external weather lookup endpoint (`api.open-meteo.com`) is explicitly registered via policy seeds (`insert_trusted_endpoint`) before execution.
-3. **Automated Handoff & Evaluation**: Captured network states are bundled alongside the agent's structured `SourceryKitAgentResponse` output. The agent is configured with `output_type=SourceryKitAgentResponse`, which enforces a typed contract—the LLM returns a `reasoning` string and a `claimed_values` list of `ClaimedValue` objects (each with a JSONPath `path` and extracted string `value`). These `claimed_values` are passed as the `claimed_value` field in the handoff payload and submitted to `evaluate_handoff` to verify data integrity and catch hallucinations.
+3. **Automated Handoff & Evaluation**: Captured network states are bundled alongside the agent's structured `SourceryKitAgentResponse` output. The agent is configured with `output_type=SourceryKitAgentResponse`, which enforces a typed contract—the LLM returns an `answer` string and a `claimed_values` list of `ClaimedValue` objects (each with a JSONPath `path` and extracted string `value`). These `claimed_values` are passed as the `claimed_value` field in the handoff payload and submitted to `evaluate_handoff` to verify data integrity and catch hallucinations.
 
 ---
 

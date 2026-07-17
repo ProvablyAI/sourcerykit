@@ -95,7 +95,7 @@ async def main(tamper: bool = False) -> None:
     # 5. Build the handoff payload container
     payload = await build_handoff_payload(
         {
-            "reasoning": structured_response.reasoning,
+            "answer": structured_response.answer,
             "claims": [
                 {
                     "action_name": "get_weather",

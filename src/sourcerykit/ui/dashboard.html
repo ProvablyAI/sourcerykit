@@ -289,13 +289,13 @@
                             <span>🕒 ${created}</span>
                             <span>ID: <code>${escapeHtml(trace.id)}</code></span>
                         </div>
-                        ${trace.reasoning ? `
-                        <details class="trace-reasoning" open>
-                            <summary class="trace-reasoning-label">
-                                <span>Agent Reasoning Process</span>
+                        ${trace.answer ? `
+                        <details class="trace-answer" open>
+                            <summary class="trace-answer-label">
+                                <span>Agent Answer</span>
                                 <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                             </summary>
-                            <div class="trace-reasoning-text">${parseMarkdown(trace.reasoning)}</div>
+                            <div class="trace-answer-text">${parseMarkdown(trace.answer)}</div>
                         </details>
                         ` : ''}
                     </div>

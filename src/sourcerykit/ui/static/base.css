@@ -68,7 +68,7 @@ details summary:focus-visible {
     text-transform: uppercase;
 }
 
-/* Trace info & Collapsible Reasoning Widget */
+/* Trace info & Collapsible Answer Widget */
 .trace-info {
     margin-bottom: 40px;
 }
@@ -97,7 +97,7 @@ details summary:focus-visible {
 }
 
 /* Interactive details wrap */
-.trace-reasoning {
+.trace-answer {
     margin-top: 24px;
     border-radius: 8px;
     background: var(--primary-light);
@@ -106,7 +106,7 @@ details summary:focus-visible {
     overflow: hidden;
 }
 
-.trace-reasoning-label {
+.trace-answer-label {
     padding: 12px 20px;
     font-size: 11px;
     font-weight: 600;
@@ -123,25 +123,25 @@ details summary:focus-visible {
     user-select: none;
 }
 
-.trace-reasoning-label::-webkit-details-marker {
+.trace-answer-label::-webkit-details-marker {
     display: none;
 }
 
-.trace-reasoning-label:hover {
+.trace-answer-label:hover {
     background: var(--primary-light);
 }
 
-.trace-reasoning .chevron-icon {
+.trace-answer .chevron-icon {
     transition: transform 0.2s ease;
     color: var(--muted-foreground);
 }
 
-.trace-reasoning[open] .chevron-icon {
+.trace-answer[open] .chevron-icon {
     transform: rotate(180deg);
     color: var(--primary);
 }
 
-.trace-reasoning-text {
+.trace-answer-text {
     padding: 16px 20px;
     font-size: 14px;
     line-height: 1.6;
@@ -152,12 +152,12 @@ details summary:focus-visible {
 }
 
 /* Localized Markdown Styles */
-.trace-reasoning-text strong {
+.trace-answer-text strong {
     color: var(--foreground);
     font-weight: 600;
 }
 
-.trace-reasoning-text code {
+.trace-answer-text code {
     font-family: var(--font-mono);
     font-size: 13px;
     background: var(--muted);
@@ -166,7 +166,7 @@ details summary:focus-visible {
     color: var(--foreground);
 }
 
-.trace-reasoning-text ul {
+.trace-answer-text ul {
     margin: 4px 0 4px 20px;
     list-style-type: disc;
 }

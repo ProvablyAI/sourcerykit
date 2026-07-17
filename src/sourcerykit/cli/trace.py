@@ -104,11 +104,11 @@ def show(
     info.append(f"{counts['PASS']} PASS", style=green)
     info.append(f"  {counts['CAUGHT']} CAUGHT", style=red)
     info.append(f"  {counts['ERROR']} ERROR", style=yellow)
-    if trace_row.get("reasoning"):
+    if trace_row.get("answer"):
         info.append("\n\n")
-        info.append("Reasoning\n", style="bold")
-        reasoning_text = Text(rich_escape(trace_row["reasoning"]), no_wrap=False)
-        info.append_text(reasoning_text)
+        info.append("answer\n", style="bold")
+        answer_text = Text(rich_escape(trace_row["answer"]), no_wrap=False)
+        info.append_text(answer_text)
     console.print(Panel(info, title=f"[bold]{rich_escape(title)}[/bold]", border_style="dim", expand=False))
 
     if not intercept_rows:

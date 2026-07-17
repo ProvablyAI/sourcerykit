@@ -481,7 +481,7 @@ sourcerykit trace show 123e4567 --no-ui
 │ ID: 123e4567-e89b-12d3-a456-426614174000  Created: 2026-06-30 │
 │ 2 PASS  0 CAUGHT  0 ERROR                                     │
 │                                                                │
-│ Reasoning                                                      │
+│ Answer                                                      │
 │ Fetched weather data from the API and extracted temperature.   │
 ╰────────────────────────────────────────────────────────────────╯
 

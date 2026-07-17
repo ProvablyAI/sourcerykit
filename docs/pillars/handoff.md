@@ -1,7 +1,7 @@
 # Handoff
 The handoff mechanism structures agent claims—such as the result of an API call—and submits them to an evaluation service. These claims are evaluated deterministically against authoritative records to provide verifiable runtime guardrails.
 
-Agent frameworks (OpenAI Agents SDK, LangChain) should use `SourceryKitAgentResponse` as the structured output type. This enforces a typed contract where the LLM returns a `reasoning` string and a `claimed_values` list—a flat collection of `ClaimedValue` objects, each with a JSONPath-style `path` and an extracted string `value`. These `claimed_values` feed directly into the handoff payload.
+Agent frameworks (OpenAI Agents SDK, LangChain) should use `SourceryKitAgentResponse` as the structured output type. This enforces a typed contract where the LLM returns an `answer` string and a `claimed_values` list—a flat collection of `ClaimedValue` objects, each with a JSONPath-style `path` and an extracted string `value`. These `claimed_values` feed directly into the handoff payload.
 
 
 ## Core Flow
@@ -34,7 +34,7 @@ final_output: SourceryKitAgentResponse = result.final_output
 
 # Build the handoff payload from the agent's structured output
 payload_data = {
-    "reasoning": final_output.reasoning,
+    "answer": final_output.answer,
     "claims": [
         {
             "action_name": "get_data",
@@ -73,7 +73,7 @@ The `build_handoff_payload` function accepts a structured `payload_data` diction
 ### Payload Input Fields
 | Field | Type | Description |
 |---|---|---|
-| `reasoning` | `str \| None` | Detailing the agent's logic or intent for the overall execution slice. |
+| `answer` | `str \| None` | Detailing the agent's logic or intent for the overall execution slice. |
 | `claims` | `list[HandoffClaim]` | A complete list of raw claim dictionaries to be resolved into execution claims. |
 
 

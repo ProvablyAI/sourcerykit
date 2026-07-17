@@ -83,7 +83,7 @@ async def get_trace(trace_id: str) -> dict[str, Any]:
         "trace": {
             "id": str(trace["id"]),
             "task": trace["task"],
-            "reasoning": trace["reasoning"],
+            "answer": trace["answer"],
             "created_at": trace["created_at"].isoformat() if trace.get("created_at") else None,
         },
         "intercepts": intercepts,

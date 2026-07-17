@@ -106,7 +106,7 @@ class HandoffPayload(BaseModel):
         description="Dashboard deep-links, parallel to query_ids.",
     )
     task: str = Field(default="", description="Short task title.")
-    reasoning: str = Field(default="", description="Agent's natural-language reasoning trace.")
+    answer: str = Field(default="", description="Agent's natural-language answer.")
     sdk_precheck: dict[str, Any] | None = Field(
         default=None,
         description="Optional SDK-side health/precheck output captured before handoff.",

@@ -23,7 +23,7 @@ User: "Customer CUST-001 is asking about order ORD-123..."
 
 ## How It Works
 1. **HTTP Interception**: Each specialist's tool wraps its HTTP call with `async_intercept_context(agent_id=..., action_name=...)`, logging the request/response to the database separately per agent and per table.
-2. **Specialist Agents**: Three agents, each querying a different support table (orders, policies, accounts). Specialists perform basic validation and return confidence scores in their reasoning.
+2. **Specialist Agents**: Three agents, each querying a different support table (orders, policies, accounts). Specialists perform basic validation and return confidence scores in their answers.
 3. **Payload Building**: Deterministic code builds a `HandoffPayload` per specialist and stores it in a global `_payloads` dict. This is the producer side — agents create verifiable artifacts.
 4. **Verification**: The orchestrator calls `verify_claims(specialist='<name>')` to evaluate each payload via `evaluate_handoff`. This is the verifier side — the orchestrator decides WHEN to verify but doesn't pass JSON.
 

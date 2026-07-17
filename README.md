@@ -127,7 +127,7 @@ async def run_verifiable_agent():
 
     # 5. Build the handoff payload from the agent's structured output
     payload_data = {
-        "reasoning": final_output.reasoning,
+        "answer": final_output.answer,
         "claims": [
             {
                 "action_name": "get_data",

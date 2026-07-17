@@ -39,7 +39,7 @@ def _make_trace_row(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
         "id": _TRACE_ID,
         "task": "test-task",
-        "reasoning": "",
+        "answer": "",
         "created_at": "2026-01-01T00:00:00",
         "pass": 1,
         "caught": 0,
@@ -141,8 +141,8 @@ class TestShow:
             ).side_effect
             show(id=str(_TRACE_ID), ui=False)
 
-    def test_reasoning_printed_when_present(self) -> None:
-        trace_row = _make_trace_row(reasoning="because reasons")
+    def test_answer_printed_when_present(self) -> None:
+        trace_row = _make_trace_row(answer="because reasons")
         with (
             patch("sourcerykit.cli.trace.require_settings"),
             patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock((trace_row, []))),
@@ -228,7 +228,7 @@ class TestResolveTraceId:
 
     def test_prefix_single_match(self) -> None:
         prefix = str(_TRACE_ID)[:8]
-        row = {"id": _TRACE_ID, "task": "t", "reasoning": "", "created_at": "2026-01-01"}
+        row = {"id": _TRACE_ID, "task": "t", "answer": "", "created_at": "2026-01-01"}
         with patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock([row])):
             result = _resolve_trace_id(prefix)
         assert result == _TRACE_ID
@@ -246,8 +246,8 @@ class TestResolveTraceId:
         id2 = uuid.uuid4()
         prefix = str(id1)[:8]
         rows = [
-            {"id": id1, "task": "a", "reasoning": "", "created_at": "2026-01-01"},
-            {"id": id2, "task": "b", "reasoning": "", "created_at": "2026-01-02"},
+            {"id": id1, "task": "a", "answer": "", "created_at": "2026-01-01"},
+            {"id": id2, "task": "b", "answer": "", "created_at": "2026-01-02"},
         ]
         with (
             patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock(rows)),

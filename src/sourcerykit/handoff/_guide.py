@@ -16,7 +16,7 @@ _FIELD_DESCRIPTIONS: Final[dict[str, str]] = {
         "and query_record_id. The evaluator fetches ground truth from Provably using query_record_id."
     ),
     "provably_mcp_url": "Provably MCP endpoint; alternative verification path.",
-    "reasoning": "Free-text reasoning from the sending agent; informational only, not verified.",
+    "answer": "Free-text answer from the sending agent; informational only, not verified.",
     "query_ids": "Parallel list of Provably query UUIDs aligned with claims.",
     "trusted_endpoint_registry": "Snapshot of trusted endpoint URLs for provably_org_id at handoff time.",
     "query_urls": "Human-readable query record URLs aligned with claims.",

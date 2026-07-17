@@ -208,19 +208,19 @@ class AuditFlow(Flow[AuditState]):
 
         amount_task = Task(
             description=amount_task_desc,
-            expected_output="A structured report with the amount value and your reasoning.",
+            expected_output="A structured report with the amount value and your answer.",
             agent=amount_validator,
             output_pydantic=SourceryKitAgentResponse,
         )
         vendor_task = Task(
             description=f"Retrieve vendor data for invoice {invoice_id} using the query_vendor tool.",
-            expected_output="A structured report with the vendor value and your reasoning.",
+            expected_output="A structured report with the vendor value and your answer.",
             agent=vendor_checker,
             output_pydantic=SourceryKitAgentResponse,
         )
         currency_task = Task(
             description=f"Retrieve currency data for invoice {invoice_id} using the query_currency tool.",
-            expected_output="A structured report with the currency value and your reasoning.",
+            expected_output="A structured report with the currency value and your answer.",
             agent=currency_verifier,
             output_pydantic=SourceryKitAgentResponse,
         )
@@ -276,7 +276,7 @@ class AuditFlow(Flow[AuditState]):
             response = SourceryKitAgentResponse.model_validate(raw)
             payload = await build_handoff_payload(
                 {
-                    "reasoning": response.reasoning,
+                    "answer": response.answer,
                     "claims": [
                         {
                             "action_name": action_names[name],

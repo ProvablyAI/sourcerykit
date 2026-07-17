@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Features
-- **Reasoning field on traces** — `SourceryKitAgentResponse.reasoning` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
+- **Answer field on traces** — `SourceryKitAgentResponse.answer` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
 - **CLI `trace show --ui/--no-ui`** — default opens the interactive dashboard in the browser; `--no-ui` prints the CLI panel output. Trace ID prefixes are accepted (unambiguous prefix resolution).
 - **Dashboard activity section** — trace activity log with outcome counts.
 - **CLI `upgrade` command** — `sourcerykit upgrade` checks for a newer package version on PyPI, offers to install it, and runs pending database migrations.
