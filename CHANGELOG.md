@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Breaking changes
+- **`SourceryKitAgentResponse.reasoning` renamed to `.answer`** — the field, database column, `HandoffPayload`, and all related APIs now use `answer`. Update your agent code, structured output bindings, and any queries against the `traces` table.
+
+### Features
+- **Answer field on traces** — `SourceryKitAgentResponse.answer` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
+- **CLI `trace show --ui/--no-ui`** — default opens the interactive dashboard in the browser; `--no-ui` prints the CLI panel output. Trace ID prefixes are accepted (unambiguous prefix resolution).
+- **Dashboard activity section** — trace activity log with outcome counts.
+- **CLI `upgrade` command** — `sourcerykit upgrade` checks for a newer package version on PyPI, offers to install it, and runs pending database migrations.
+
+### Refactoring
+- **CLI `trace show` presentation** — header and summary wrapped in a styled Rich panel.
+
+### Maintenance
+- **Alembic migrations shipped with package** — migration scripts are now included in the pip wheel via `force-include`, enabling `sourcerykit upgrade` for non-repo installs.
+
+### Documentation
+- Updated CLI docs with `--ui/--no-ui` option.
+- Added migration guides (`docs/migrations/`) with README index, expanded v1.0 guide, and updated README migration links.
+
 ## 1.0.1
 
 ### Bug fixes

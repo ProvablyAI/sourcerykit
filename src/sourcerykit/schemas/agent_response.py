@@ -27,7 +27,7 @@ class ClaimedValue(BaseModel):
 
 
 class SourceryKitAgentResponse(BaseModel):
-    reasoning: str = Field(description="Human-readable conversational explanation of the result.")
+    answer: str = Field(description="Human-readable conversational explanation of the result.")
 
     claimed_values: list[ClaimedValue] = Field(
         description=(

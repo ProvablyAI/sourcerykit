@@ -4,21 +4,21 @@ import json
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Insert, Select, Update, case, func, insert, select, update
+from sqlalchemy import Insert, Select, String, Update, case, func, insert, select, update
 
 from sourcerykit.db._schema import intercepts, trace_intercepts, traces
 
 
-def insert_trace(task: str) -> Insert:
+def insert_trace(task: str, answer: str) -> Insert:
     """Return a SQLAlchemy Core INSERT statement for a new trace row.
 
     Equivalent raw SQL::
 
-        INSERT INTO traces (task)
+        INSERT INTO traces (task, answer)
         VALUES (...)
         RETURNING id
     """
-    return insert(traces).values(task=task).returning(traces.c.id)
+    return insert(traces).values(task=task, answer=answer).returning(traces.c.id)
 
 
 def insert_trace_intercept(
@@ -90,6 +90,7 @@ def select_traces_with_intercept_count(limit: int = 20, offset: int = 0) -> Sele
         select(
             traces.c.id,
             traces.c.task,
+            traces.c.answer,
             traces.c.created_at,
             func.count(trace_intercepts.c.id).label("total"),
             func.count(case((trace_intercepts.c.outcome == "PASS", 1))).label("pass"),
@@ -97,7 +98,7 @@ def select_traces_with_intercept_count(limit: int = 20, offset: int = 0) -> Sele
             func.count(case((trace_intercepts.c.outcome == "ERROR", 1))).label("error"),
         )
         .select_from(traces.outerjoin(trace_intercepts, traces.c.id == trace_intercepts.c.trace_id))
-        .group_by(traces.c.id, traces.c.task, traces.c.created_at)
+        .group_by(traces.c.id, traces.c.task, traces.c.answer, traces.c.created_at)
         .order_by(traces.c.created_at.desc())
         .offset(offset)
         .limit(limit)
@@ -106,7 +107,14 @@ def select_traces_with_intercept_count(limit: int = 20, offset: int = 0) -> Sele
 
 def select_trace_by_id(trace_id: UUID) -> Select[tuple[Any, ...]]:
     """Return a SELECT for a single trace by ID."""
-    return select(traces.c.id, traces.c.task, traces.c.created_at).where(traces.c.id == trace_id)
+    return select(traces.c.id, traces.c.task, traces.c.answer, traces.c.created_at).where(traces.c.id == trace_id)
+
+
+def select_trace_by_id_prefix(prefix: str) -> Select[tuple[Any, ...]]:
+    """Return a SELECT for traces whose UUID starts with *prefix*."""
+    return select(traces.c.id, traces.c.task, traces.c.answer, traces.c.created_at).where(
+        func.cast(traces.c.id, String).like(f"{prefix}%")
+    )
 
 
 def select_trace_intercepts_by_trace_id(trace_id: UUID) -> Select[tuple[Any, ...]]:
@@ -133,6 +141,7 @@ def select_trace_intercepts_by_trace_id(trace_id: UUID) -> Select[tuple[Any, ...
             trace_intercepts.c.created_at,
             intercepts.c.action_name,
             intercepts.c.source_url,
+            intercepts.c.raw_response,
         )
         .select_from(trace_intercepts.join(intercepts, trace_intercepts.c.intercept_id == intercepts.c.id))
         .where(trace_intercepts.c.trace_id == trace_id)

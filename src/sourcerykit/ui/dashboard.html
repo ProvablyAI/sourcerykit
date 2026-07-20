@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trace Dashboard | SourceryKit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/base.css">
+    <link rel="stylesheet" href="/static/components.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-logo">
+                <img src="/static/logo.svg" alt="SourceryKit">
+            </div>
+            <span class="header-title">Trace Dashboard</span>
+        </header>
+
+        <main id="content" aria-live="polite">
+            <div class="loading">
+                <div class="loading-spinner" role="status" aria-label="Loading content"></div>
+                Loading trace...
+            </div>
+        </main>
+
+        <footer class="footer">
+            Powered by <a href="https://provably.ai" target="_blank" rel="noopener">Provably</a>
+        </footer>
+    </div>
+
+    <script>
+        const PROVABLY_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 17 17" fill="none" aria-hidden="true">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M16.7614 3.01468V2.76746C16.7614 1.52593 15.755 0.519531 14.5135 0.519531H2.68933C1.44781 0.519531 0.441406 1.52593 0.441406 2.76746V3.01468H16.7614ZM10.6459 14.6355C10.6459 14.6741 10.6462 14.7078 10.6468 14.7386H10.6469C10.6598 15.4772 10.8246 16.192 11.1238 16.8387H6.55469V6.18359H10.6459V14.6355ZM16.7613 6.18359V14.5908C16.7613 14.9832 16.6606 15.3521 16.4838 15.6732C16.2309 16.1324 15.7419 16.4112 15.2177 16.4046C14.8606 16.4001 14.5185 16.2234 14.2543 15.9071C13.9802 15.5791 13.8249 15.144 13.8169 14.6824C13.8166 14.6674 13.8164 14.6514 13.8164 14.6355V6.18359H16.7613ZM0.441406 6.18359H3.38626V16.8387H2.68933C1.44781 16.8387 0.441406 15.8323 0.441406 14.5908V6.18359Z" fill="currentColor"/>
+        </svg>`;
+
+        let state = {
+            intercepts: [],
+            activeFilter: null
+        };
+
+        function getTraceId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function parseMarkdown(str) {
+            if (!str) return '';
+            let html = escapeHtml(str);
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+            const lines = html.split('\n');
+            const formattedLines = lines.map(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+                    return `<li>${trimmed.substring(2)}</li>`;
+                }
+                return line;
+            });
+            const joined = formattedLines.join('\n');
+            return joined.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+        }
+
+        function formatJson(str) {
+            if (!str) return '';
+            try {
+                const parsed = typeof str === 'string' ? JSON.parse(str) : str;
+                return JSON.stringify(parsed, null, 2);
+            } catch {
+                return String(str);
+            }
+        }
+
+        function extractClaimedPairs(claimedValue) {
+            if (!claimedValue) return [];
+            try {
+                const parsed = typeof claimedValue === 'string' ? JSON.parse(claimedValue) : claimedValue;
+                if (Array.isArray(parsed)) {
+                    return parsed.map(entry => ({
+                        path: entry.path || '$',
+                        value: entry.value ?? String(entry)
+                    }));
+                }
+                return [{ path: '$', value: formatJson(parsed) }];
+            } catch {
+                return [{ path: '$', value: String(claimedValue) }];
+            }
+        }
+
+        function toggleFilter(outcome) {
+            state.activeFilter = state.activeFilter === outcome ? null : outcome;
+            renderFilteredClaims();
+        }
+
+        function renderSummary(intercepts) {
+            const counts = { PASS: 0, CAUGHT: 0, ERROR: 0 };
+            intercepts.forEach(i => {
+                const o = (i.outcome || '').toUpperCase();
+                if (o in counts) counts[o]++;
+            });
+
+            const f = state.activeFilter;
+            const containerClass = f ? 'summary has-active' : 'summary';
+
+            return `
+        <div class="summary-wrapper">
+            <span class="summary-label">Filter:</span>
+            <div class="${containerClass}" role="group" aria-label="Filter outputs by status">
+                <button class="badge badge-pass ${f === 'PASS' ? 'active' : ''}" onclick="toggleFilter('PASS')" aria-pressed="${f === 'PASS'}">
+                    <span class="badge-dot"></span>${counts.PASS} PASS
+                </button>
+                <button class="badge badge-caught ${f === 'CAUGHT' ? 'active' : ''}" onclick="toggleFilter('CAUGHT')" aria-pressed="${f === 'CAUGHT'}">
+                    <span class="badge-dot"></span>${counts.CAUGHT} CAUGHT
+                </button>
+                <button class="badge badge-error ${f === 'ERROR' ? 'active' : ''}" onclick="toggleFilter('ERROR')" aria-pressed="${f === 'ERROR'}">
+                    <span class="badge-dot"></span>${counts.ERROR} ERROR
+                </button>
+            </div>
+        </div>
+    `;
+        }
+
+        function renderComparison(outcome, claimedPairs, actualMap) {
+            if (outcome === 'PASS') {
+                return `
+                    <div class="single-value">
+                        <div class="comparison">
+                            <div class="comparison-panel">
+                                <div class="comparison-panel-header">Verified Agent Outputs</div>
+                                <div class="comparison-panel-body">${claimedPairs.map(p =>
+                    `<div class="value-match"><span class="comparison-path">${escapeHtml(p.path)}</span>: ${escapeHtml(p.value)}</div>`
+                ).join('')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            if (outcome === 'CAUGHT') {
+                return `
+                    <div class="comparison comparison-caught">
+                        <div class="comparison-panel">
+                            <div class="comparison-panel-header claimed-header">Agent's Claimed Output</div>
+                            <div class="comparison-panel-body">${claimedPairs.map(p =>
+                                `<div class="value-mismatch"><span class="comparison-path">${escapeHtml(p.path)}</span>: ${escapeHtml(p.value)}</div>`
+                            ).join('')}</div>
+                        </div>
+                        <div class="comparison-panel">
+                            <div class="comparison-panel-header actual-header">Actual Source Truth</div>
+                            <div class="comparison-panel-body">${claimedPairs.map(p => {
+                                const actual = actualMap[p.path];
+                                return actual != null
+                                    ? `<div class="value-match"><span class="comparison-path">${escapeHtml(p.path)}</span>: ${escapeHtml(formatJson(actual))}</div>`
+                                    : `<div><span class="comparison-path">${escapeHtml(p.path)}</span>: <span class="text-muted">N/A</span></div>`;
+                            }).join('')}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            return '';
+        }
+
+        function renderClaimCard(intercept, index) {
+            const outcome = (intercept.outcome || '').toUpperCase();
+            const claimedPairs = extractClaimedPairs(intercept.claimed_value);
+            const actualMap = intercept.actual_value || {};
+            const comparisonHtml = renderComparison(outcome, claimedPairs, actualMap);
+
+            let detailsHtml = '';
+            if (intercept.details && outcome !== 'PASS') {
+                const detailClass = outcome === 'CAUGHT' ? 'caught-detail' : 'error-detail';
+                detailsHtml = `<div class="claim-details ${detailClass}">${escapeHtml(intercept.details)}</div>`;
+            }
+
+            return `
+                <div class="claim-card outcome-group-${outcome.toLowerCase()}">
+                    <div class="claim-header">
+                        <div class="claim-header-left">
+                            <span class="claim-number">#${index + 1}</span>
+                            <span class="tool-call-indicator">TOOL CALL</span>
+                            <span class="claim-action" title="${escapeHtml(intercept.action_name)}">${escapeHtml(intercept.action_name)}()</span>
+                        </div>
+                        <div class="claim-header-right">
+                            <span class="badge badge-${outcome.toLowerCase()}">${outcome}</span>
+                        </div>
+                    </div>
+                    <div class="claim-body">
+                        <div class="claim-meta">
+                            <div class="claim-meta-details">
+                                <div class="claim-meta-item">
+                                    <span class="claim-meta-label">Source URL:</span>
+                                    <span class="claim-meta-val" title="${escapeHtml(intercept.source_url)}">${escapeHtml(intercept.source_url)}</span>
+                                </div>
+                                <div class="claim-meta-item">
+                                    <span class="claim-meta-label">Verification Mode:</span>
+                                    <span class="claim-meta-val">${escapeHtml(intercept.verification_mode)}</span>
+                                </div>
+                            </div>
+                            ${intercept.query_url ? `
+                                <div class="claim-meta-action">
+                                    <a class="query-link-btn" href="${escapeHtml(intercept.query_url)}" target="_blank" rel="noopener">
+                                        ${PROVABLY_LOGO_SVG}
+                                        <span>Query Record</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${comparisonHtml}
+                        ${detailsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFilteredClaims() {
+            const summaryContainer = document.getElementById('summary-section');
+            if (summaryContainer) {
+                summaryContainer.innerHTML = renderSummary(state.intercepts);
+            }
+
+            const container = document.getElementById('claims-list-container');
+            if (!container) return;
+
+            const filtered = state.intercepts.filter(i => {
+                if (!state.activeFilter) return true;
+                return (i.outcome || '').toUpperCase() === state.activeFilter;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>No trace records match the selected status: <strong>${state.activeFilter}</strong></p>
+                        <button class="clear-filter-btn" onclick="toggleFilter('${state.activeFilter}')">Reset Filters</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map((intercept, i) => renderClaimCard(intercept, i)).join('');
+        }
+
+        async function loadTrace() {
+            const traceId = getTraceId();
+            if (!traceId) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error-state">
+                        <h2>No Trace ID Provided</h2>
+                        <p>Please append <code>?id=&lt;trace-id&gt;</code> to your address bar.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/api/traces/${traceId}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    const detail = Array.isArray(err.detail)
+                        ? err.detail.map(e => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
+                        : typeof err.detail === 'object' ? JSON.stringify(err.detail) : err.detail;
+                    throw new Error(detail || `HTTP ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                const trace = data.trace;
+                state.intercepts = data.intercepts || [];
+
+                const created = trace.created_at
+                    ? new Date(trace.created_at).toLocaleString()
+                    : 'N/A';
+
+                document.getElementById('content').innerHTML = `
+                    <div class="trace-info">
+                        <h1 class="trace-task">${escapeHtml(trace.task || 'Untitled trace')}</h1>
+                        <div class="trace-meta">
+                            <span>🕒 ${created}</span>
+                            <span>ID: <code>${escapeHtml(trace.id)}</code></span>
+                        </div>
+                        ${trace.answer ? `
+                        <details class="trace-answer" open>
+                            <summary class="trace-answer-label">
+                                <span>Agent Answer</span>
+                                <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </summary>
+                            <div class="trace-answer-text">${parseMarkdown(trace.answer)}</div>
+                        </details>
+                        ` : ''}
+                    </div>
+
+                    <div class="activity-section">
+                        <div class="activity-header-bar">
+                            <h2 class="activity-heading">Trace Activity Log</h2>
+                            <div id="summary-section">
+                                ${renderSummary(state.intercepts)}
+                            </div>
+                        </div>
+                        <div id="claims-list-container" class="claims-list"></div>
+                    </div>
+                `;
+
+                // Render the filtered claims list instantly
+                renderFilteredClaims();
+            } catch (err) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error-state">
+                        <h2>Failed to load trace</h2>
+                        <p>${escapeHtml(err.message)}</p>
+                    </div>
+                `;
+            }
+        }
+
+        loadTrace();
+    </script>
+</body>
+
+</html>

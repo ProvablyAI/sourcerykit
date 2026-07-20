@@ -19,6 +19,7 @@ Run `sourcerykit --help` to see all available commands.
 | [`feedback`](#sourcerykit-feedback) | Submit feedback or bug reports |
 | [`logout`](#sourcerykit-logout) | Clear stored session |
 | [`version`](#sourcerykit-version) | Print package version |
+| [`upgrade`](#sourcerykit-upgrade) | Upgrade package and run database migrations |
 | [`endpoints add`](#sourcerykit-endpoints-add) | Add a trusted endpoint |
 | [`endpoints list`](#sourcerykit-endpoints-list) | List all trusted endpoints |
 | [`endpoints remove`](#sourcerykit-endpoints-remove) | Remove a trusted endpoint |
@@ -229,6 +230,41 @@ v1.0
 
 ---
 
+### `sourcerykit upgrade`
+
+Check for a newer package version on PyPI, offer to install it, and run all pending database migrations.
+
+```bash
+sourcerykit upgrade
+```
+
+**What it does:**
+1. Compares the installed version against the latest release on PyPI
+2. If a newer version exists, prompts to upgrade via `pip install --upgrade sourcerykit`
+3. Runs `alembic upgrade head` against your database to apply pending schema migrations
+
+**Example output (up-to-date):**
+```bash
+⬆️  SourceryKit Upgrade
+
+  ✅ Already on latest version: v1.0.1
+
+  Running database migrations... DONE ✅
+```
+
+**Example output (upgrade available):**
+```bash
+⬆️  SourceryKit Upgrade
+
+  📦 Installed: v1.0.0  →  Latest: v1.0.1
+  Upgrade package now? [Y/n]: Y
+  Upgrading... DONE ✅
+
+  Running database migrations... DONE ✅
+```
+
+---
+
 ### `sourcerykit endpoints`
 
 Manage trusted endpoints (allowed URLs for HTTP interception).
@@ -420,52 +456,66 @@ sourcerykit trace list [--limit N] [--page P]
 Show details of a single trace and its intercepts.
 
 ```bash
-sourcerykit trace show <ID> [--save-proof]
+sourcerykit trace show <ID> [--save-proof] [--ui/--no-ui]
 ```
 
 **Arguments:**
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `ID` | Yes | Trace ID (UUID) |
+| `ID` | Yes | Trace ID (UUID) or unambiguous prefix |
 
 **Options:**
 | Option | Description |
 |--------|-------------|
 | `--save-proof` | Download and save proofs to `.provably` files |
+| `--ui` / `--no-ui` | Open interactive dashboard in browser (default: `--ui`). Use `--no-ui` for CLI output. |
 
-**Example:**
+**Example (CLI output):**
 ```bash
-sourcerykit trace show 123e4567-e89b-12d3-a456-426614174000
+sourcerykit trace show 123e4567 --no-ui
 ```
 
-**Example output:**
+**Example output (CLI):**
 ```bash
-Trace 123e4567-e89b-12d3-a456-426614174000
-  Task:    get_data
-  Created: 2026-06-30 10:00:00
+╭─ get_data ────────────────────────────────────────────────────╮
+│ ID: 123e4567-e89b-12d3-a456-426614174000  Created: 2026-06-30 │
+│ 2 PASS  0 CAUGHT  0 ERROR                                     │
+│                                                                │
+│ Answer                                                      │
+│ Fetched weather data from the API and extracted temperature.   │
+╰────────────────────────────────────────────────────────────────╯
 
-        Intercepts
-┌───┬────────────┬──────────────────────────┬─────────────────┬─────────┬────────┐
-│ # │ Action     │ Source                   │ Mode            │ Claimed │ Outcome│
-├───┼────────────┼──────────────────────────┼─────────────────┼─────────┼────────┤
-│ 1 │ get_data   │ https://api.example.com  │ field_extraction│ value1  │ PASS   │
-└───┴────────────┴──────────────────────────┴─────────────────┴─────────┴────────┘
-
-  1. get_data → PASS
-     SQL:    SELECT * FROM intercepts WHERE ...
-     Proof:
-             Status:     verified
-             Verified:   true
-             Exec time:  45ms
-     Result: {
-               "field": "value1"
-             }
-             Run with --save-proof to download the full proof.
+╭─ #1 get_data PASS ────────────────────────────────────────────╮
+│  Source: https://api.example.com/data                          │
+│  Mode:   field_extraction                                      │
+│  Query:  https://provably.ai/query/abc123                      │
+│                                                                │
+│  ✓ Verified Values                                             │
+│    temperature: 72                                             │
+│                                                                │
+│  ── Query Details ──                                           │
+│  SQL:    SELECT * FROM intercepts WHERE ...                    │
+│  Proof:                                                         │
+│              Status:     verified                               │
+│              Verified:   true                                   │
+│              Exec time:  45ms                                   │
+│  Result:                                                        │
+│  {                                                             │
+│    "field": "value1"                                           │
+│  }                                                             │
+╰────────────────────────────────────────────────────────────────╯
 ```
+
+**Example (browser dashboard):**
+```bash
+sourcerykit trace show 123e4567
+```
+
+Opens the interactive dashboard filtered to the given trace.
 
 **Error (trace not found):**
 ```bash
-Trace abc123 not found.
+No trace found matching prefix "abc123".
 ```
 
 ---

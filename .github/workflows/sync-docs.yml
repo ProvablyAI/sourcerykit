@@ -1,17 +1,12 @@
 name: Sync Docs to Website
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'cookbooks/**'
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - 'CONTRIBUTING.md'
-      - 'LICENSE.md'
+  workflow_run:
+    workflows: ["release"]
+    types: [completed]
 
 jobs:
   dispatch:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -26,4 +21,4 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           repository: ProvablyAI/fe-web
           event-type: sync-docs
-          client-payload: '{"sha": "${{ github.sha }}"}'
+          client-payload: '{"sha": "${{ github.event.workflow_run.head_sha }}"}'

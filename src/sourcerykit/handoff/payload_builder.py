@@ -39,10 +39,13 @@ async def build_handoff_payload(
     if not provably.integration_key:
         raise RuntimeError("Provably infrastructure bootstrapping incomplete or uninitialized.")
 
+    blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
+    answer = str(blob.get("answer") or "")
+
     # insert trace
     try:
         async with get_engine().begin() as conn:
-            result = await conn.execute(insert_trace(prompt))
+            result = await conn.execute(insert_trace(task=prompt, answer=answer))
             trace_id: uuid.UUID | None = result.scalar()
 
             if trace_id is None:
@@ -51,9 +54,6 @@ async def build_handoff_payload(
         _log.error("build_handoff_payload", error=str(e))
         raise SourceryKitStorageError("Failed to store agent trace") from e
 
-    blob: dict[str, Any] = dict(fetch_and_claim) if fetch_and_claim else {}
-
-    reasoning = str(blob.get("reasoning") or "")
     settings = get_settings()
 
     # Determine guide structures cleanly using ternary operators
@@ -82,7 +82,7 @@ async def build_handoff_payload(
         verification_results=[],
         query_urls=query_urls,
         task=task,
-        reasoning=reasoning,
+        answer=answer,
         build_errors=build_errors,
     )
 

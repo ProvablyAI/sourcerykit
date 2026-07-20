@@ -89,12 +89,12 @@ final_output: SourceryKitAgentResponse = result.final_output
 > To simulate a hallucination, see **Scenario B** in the [Verifying the Engine Verdicts](#verifying-the-engine-verdicts) section below.
 
 ### Step 4: Compiling the Handoff Payload
-We bundle our user-defined data structures (`reasoning` and our array of `claims`) into an input dictionary. Passing this to `build_handoff_payload` matches our local session information against the unalterable records captured by the Interceptor in Step 2.
+We bundle our user-defined data structures (`answer` and our array of `claims`) into an input dictionary. Passing this to `build_handoff_payload` matches our local session information against the unalterable records captured by the Interceptor in Step 2.
 
 ```python
 # Compile the user claims into a structured handoff payload
 payload_data = {
-    "reasoning": final_output.reasoning,
+    "answer": final_output.answer,
     "claims": [
         {
             "action_name": "get_weather",

@@ -1,8 +1,9 @@
 """Tests for sourcerykit.cli.trace."""
 
+import inspect
 import json
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import typer
@@ -10,10 +11,24 @@ import typer
 from sourcerykit.cli.trace import (
     _pretty_json,
     _proof_summary,
+    _resolve_trace_id,
     _wrap_proof,
     list_traces,
     show,
 )
+
+
+def _async_run_mock(*returns: object) -> MagicMock:
+    """Return a mock for ``asyncio.run`` that closes coroutines to avoid warnings."""
+    it = iter(returns)
+
+    def _run(coro: object) -> object:
+        if inspect.iscoroutine(coro):
+            coro.close()
+        return next(it)
+
+    return MagicMock(side_effect=_run)
+
 
 _TRACE_ID = uuid.uuid4()
 _INTERCEPT_ID = uuid.uuid4()
@@ -24,6 +39,7 @@ def _make_trace_row(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
         "id": _TRACE_ID,
         "task": "test-task",
+        "answer": "",
         "created_at": "2026-01-01T00:00:00",
         "pass": 1,
         "caught": 0,
@@ -58,7 +74,7 @@ class TestListTraces:
     def test_empty(self) -> None:
         with (
             patch("sourcerykit.cli.trace.require_settings"),
-            patch("sourcerykit.cli.trace.asyncio.run", return_value=[]),
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock([])),
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
             list_traces(limit=20, page=1)
@@ -69,7 +85,7 @@ class TestListTraces:
         rows = [_make_trace_row()]
         with (
             patch("sourcerykit.cli.trace.require_settings"),
-            patch("sourcerykit.cli.trace.asyncio.run", return_value=rows),
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock(rows)),
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
             list_traces(limit=20, page=1)
@@ -78,7 +94,7 @@ class TestListTraces:
     def test_pagination_offset(self) -> None:
         with (
             patch("sourcerykit.cli.trace.require_settings"),
-            patch("sourcerykit.cli.trace.asyncio.run", return_value=[]) as mock_run,
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock([])) as mock_run,
             patch("sourcerykit.cli.trace.console"),
         ):
             list_traces(limit=10, page=3)
@@ -94,21 +110,21 @@ class TestShow:
     def test_not_found(self) -> None:
         with (
             patch("sourcerykit.cli.trace.require_settings"),
-            patch("sourcerykit.cli.trace.asyncio.run", return_value=(None, [])),
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock((None, []))),
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
             with pytest.raises(typer.Exit):
-                show(id=str(_TRACE_ID))
+                show(id=str(_TRACE_ID), ui=False)
         assert "not found" in str(mock_console.print.call_args).lower()
 
     def test_no_intercepts(self) -> None:
         trace_row = _make_trace_row()
         with (
             patch("sourcerykit.cli.trace.require_settings"),
-            patch("sourcerykit.cli.trace.asyncio.run", return_value=(trace_row, [])),
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock((trace_row, []))),
             patch("sourcerykit.cli.trace.console") as mock_console,
         ):
-            show(id=str(_TRACE_ID))
+            show(id=str(_TRACE_ID), ui=False)
         assert any("No intercepts" in str(c) for c in mock_console.print.call_args_list)
 
     def test_with_intercepts(self) -> None:
@@ -119,19 +135,31 @@ class TestShow:
             patch("sourcerykit.cli.trace.asyncio.run") as mock_run,
             patch("sourcerykit.cli.trace.console"),
         ):
-            mock_run.side_effect = [
+            mock_run.side_effect = _async_run_mock(
                 (trace_row, [intercept_row]),
                 {_QUERY_ID: {"sql_query": "SELECT 1", "proof": None, "result": None}},
-            ]
-            show(id=str(_TRACE_ID))
+            ).side_effect
+            show(id=str(_TRACE_ID), ui=False)
+
+    def test_answer_printed_when_present(self) -> None:
+        trace_row = _make_trace_row(answer="because reasons")
+        with (
+            patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock((trace_row, []))),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            show(id=str(_TRACE_ID), ui=False)
+        panel = mock_console.print.call_args_list[0].args[0]
+        assert "because reasons" in str(panel.renderable)
 
     def test_invalid_uuid(self) -> None:
         with (
             patch("sourcerykit.cli.trace.require_settings"),
+            patch("sourcerykit.cli.trace._resolve_trace_id", side_effect=typer.Exit(code=1)),
             patch("sourcerykit.cli.trace.console"),
         ):
-            with pytest.raises(ValueError):
-                show(id="not-a-uuid")
+            with pytest.raises(typer.Exit):
+                show(id="not-a-uuid", ui=False)
 
 
 # ---------------------------------------------------------------------------
@@ -186,3 +214,47 @@ class TestPrettyJson:
         big = {f"k{i}": i for i in range(100)}
         result = _pretty_json(big, max_lines=5)
         assert "…" in result
+
+
+# ---------------------------------------------------------------------------
+# _resolve_trace_id
+# ---------------------------------------------------------------------------
+
+
+class TestResolveTraceId:
+    def test_full_uuid(self) -> None:
+        result = _resolve_trace_id(str(_TRACE_ID))
+        assert result == _TRACE_ID
+
+    def test_prefix_single_match(self) -> None:
+        prefix = str(_TRACE_ID)[:8]
+        row = {"id": _TRACE_ID, "task": "t", "answer": "", "created_at": "2026-01-01"}
+        with patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock([row])):
+            result = _resolve_trace_id(prefix)
+        assert result == _TRACE_ID
+
+    def test_prefix_no_match(self) -> None:
+        with (
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock([])),
+            patch("sourcerykit.cli.trace.console"),
+        ):
+            with pytest.raises(typer.Exit):
+                _resolve_trace_id("deadbeef")
+
+    def test_prefix_ambiguous(self) -> None:
+        id1 = uuid.uuid4()
+        id2 = uuid.uuid4()
+        prefix = str(id1)[:8]
+        rows = [
+            {"id": id1, "task": "a", "answer": "", "created_at": "2026-01-01"},
+            {"id": id2, "task": "b", "answer": "", "created_at": "2026-01-02"},
+        ]
+        with (
+            patch("sourcerykit.cli.trace.asyncio.run", _async_run_mock(rows)),
+            patch("sourcerykit.cli.trace.console") as mock_console,
+        ):
+            with pytest.raises(typer.Exit):
+                _resolve_trace_id(prefix)
+        printed = " ".join(str(c) for c in mock_console.print.call_args_list)
+        assert str(id1) in printed
+        assert str(id2) in printed

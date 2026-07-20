@@ -115,7 +115,7 @@ bump-pr: ## Bump version, commit, push branch (usage: make bump-pr TYPE=beta)
 
 tag: ## Create and push a version tag from current HEAD
 	@VERSION=$$(sed -n '/^\[project\]/,/^\[/p' pyproject.toml | sed -n 's/^version = "\(.*\)"/\1/p') && \
-	CHANGELOG=$$(awk "/^## \[?$$VERSION\]?/{found=1;next} /^## /{if(found)exit} found{print}" CHANGELOG.md | sed '/./,$$!d') && \
+	CHANGELOG=$$(awk "/^## \[?$$VERSION\]?/{found=1;next} /^## /{if(found)exit} found{print}" CHANGELOG.md | sed '1{/^$$/d}') && \
 	git tag -a v$$VERSION -m "$$CHANGELOG" && \
 	git push origin v$$VERSION
 

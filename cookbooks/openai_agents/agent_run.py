@@ -109,7 +109,7 @@ async def main(tamper: bool = False) -> None:
     # 6. Build the handoff payload container
     payload = await build_handoff_payload(
         {
-            "reasoning": final_output.reasoning,
+            "answer": final_output.answer,
             "claims": [
                 {
                     "action_name": "get_weather",

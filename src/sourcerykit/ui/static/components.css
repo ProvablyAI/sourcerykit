@@ -1,0 +1,449 @@
+/* Claim cards */
+.claims-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.claim-card {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--background);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Color indicator running fully up the card's edge */
+.claim-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    z-index: 2;
+}
+
+.claim-card.outcome-group-pass::before {
+    background-color: var(--success);
+}
+
+.claim-card.outcome-group-caught::before {
+    background-color: var(--destructive);
+}
+
+.claim-card.outcome-group-error::before {
+    background-color: var(--warning);
+}
+
+.claim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 14px 24px;
+    background: var(--muted);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.claim-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.claim-number {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+}
+
+/* Tool call Pill */
+.tool-call-indicator {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    border: 1px solid #c2c7ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+}
+
+.claim-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.claim-header-right .badge {
+    cursor: default;
+    pointer-events: none;
+}
+
+.claim-body {
+    padding: 20px 20px 20px 24px;
+}
+
+/* Claim meta */
+.claim-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    flex-wrap: wrap;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 16px;
+}
+
+.claim-meta-details {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.claim-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+/* Query link */
+.claim-meta-action {
+    flex-shrink: 0;
+}
+
+.query-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    background: var(--background);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12px;
+    transition: all 0.1s ease;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.query-link-btn:hover {
+    background: var(--muted);
+    color: var(--foreground);
+    border-color: #d1d5db;
+}
+
+.query-link-btn svg {
+    flex-shrink: 0;
+}
+
+/* Comparison panels */
+.comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .comparison {
+        grid-template-columns: 1fr;
+    }
+}
+
+.comparison-panel {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--muted);
+}
+
+.comparison-panel-header {
+    padding: 12px 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+    background: var(--background);
+    color: var(--primary);
+}
+
+.comparison-panel-body {
+    padding: 14px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--background);
+}
+
+.comparison-caught .comparison-panel-header.claimed-header {
+    background: var(--destructive-light);
+    color: #991b1b;
+    border-bottom-color: #fecaca;
+}
+
+.comparison-caught .comparison-panel-header.actual-header {
+    background: var(--success-light);
+    color: #166534;
+    border-bottom-color: #bbf7d0;
+}
+
+.value-mismatch {
+    background: var(--destructive-light);
+    border-left: 3px solid var(--destructive);
+    padding: 4px 10px;
+    margin: 4px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.value-match {
+    background: var(--success-light);
+    border-left: 3px solid var(--success);
+    padding: 4px 10px;
+    margin: 4px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+/* Details blocks below cards */
+.claim-details {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    line-height: 1.6;
+}
+
+.claim-details.caught-detail {
+    background: var(--destructive-light);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.claim-details.error-detail {
+    background: var(--warning-light);
+    border: 1px solid #fef08a;
+    color: #854d0e;
+}
+
+/* Verified Value Views (PASS) */
+.single-value {
+    margin-top: 12px;
+}
+
+.single-value .comparison-panel-header {
+    background: var(--success-light);
+    color: #166534;
+    border-bottom-color: #bbf7d0;
+}
+
+.text-muted {
+    color: var(--muted-foreground);
+}
+
+.comparison-path {
+    color: var(--muted-foreground);
+}
+
+/* Activity section */
+.activity-section {
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+}
+
+/* Header bar holding title on left, filters on right */
+.activity-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+/* Strip margins from summary-wrapper when nested here */
+.activity-header-bar .summary-wrapper {
+    margin-bottom: 0;
+}
+
+.activity-header-bar .summary-label {
+    text-align: right;
+}
+
+@media (max-width: 640px) {
+    .activity-header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .activity-header-bar .summary-label {
+        text-align: left;
+    }
+}
+
+.summary-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.summary-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+    text-align: right;
+}
+
+.summary {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    cursor: pointer;
+    background: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    letter-spacing: 0.08em;
+    border: 1px solid;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+}
+
+.badge-pass {
+    background: var(--success-light);
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.badge-caught {
+    background: var(--destructive-light);
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.badge-error {
+    background: var(--warning-light);
+    color: #854d0e;
+    border-color: #fef08a;
+}
+
+.badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+}
+
+/* Dim inactive badges when a filter is active */
+.summary.has-active .badge:not(.active) {
+    opacity: 0.45;
+    filter: grayscale(25%);
+}
+
+.summary.has-active .badge.active {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-width: 1.5px;
+}
+
+.badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.badge-pass .badge-dot {
+    background: var(--success);
+}
+
+.badge-caught .badge-dot {
+    background: var(--destructive);
+}
+
+.badge-error .badge-dot {
+    background: var(--warning);
+}
+
+@media (max-width: 640px) {
+    .summary-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+    }
+}
+
+.activity-heading {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+    margin-bottom: 8px;
+}
+
+.claim-meta-label {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+}
+
+.claim-meta-val {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+.claim-action {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -106,7 +106,7 @@ class HandoffPayload(BaseModel):
         description="Dashboard deep-links, parallel to query_ids.",
     )
     task: str = Field(default="", description="Short task title.")
-    reasoning: str = Field(default="", description="Agent's natural-language reasoning trace.")
+    answer: str = Field(default="", description="Agent's natural-language answer.")
     build_errors: list[str] = Field(
         default_factory=list,
         description="Reasons any claims were dropped while building this payload (e.g. a claim "

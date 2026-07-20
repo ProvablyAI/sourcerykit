@@ -14,7 +14,7 @@ Claims originate from the agent itself, not from your code. Agent frameworks (Op
 
 | Field | Type | Description |
 |---|---|---|
-| `reasoning` | `str` | The agent's explanation of its actions for this execution slice. |
+| `answer` | `str` | Human-readable conversational explanation of the result. |
 | `claimed_values` | `list[ClaimedValue]` | A **flat list** of the values the agent claims it produced (see below). |
 
 Each `ClaimedValue` in that list has three string fields — nothing else:
@@ -37,7 +37,7 @@ The `build_handoff_payload` function accepts a structured `payload_data` diction
 ### Payload Input Fields
 | Field | Type | Description |
 |---|---|---|
-| `reasoning` | `str \| None` | Detailing the agent's logic or intent for the overall execution slice. |
+| `answer` | `str \| None` | Human-readable conversational explanation of the result. |
 | `claims` | `list[HandoffClaim]` | A complete list of raw claim dictionaries to be resolved into execution claims. |
 
 
@@ -100,7 +100,7 @@ final_output: SourceryKitAgentResponse = result.final_output
 
 # Build the handoff payload from the agent's structured output
 payload_data = {
-    "reasoning": final_output.reasoning,
+    "answer": final_output.answer,
     "claims": [
         {
             "action_name": "get_data",
