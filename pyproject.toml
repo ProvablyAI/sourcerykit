@@ -15,14 +15,29 @@ keywords = [
     "provably",
     "verifiable",
     "agent",
+    "ai-agents",
+    "llm",
+    "guardrails",
+    "llm-security",
+    "observability",
+    "hallucination",
     "handoff",
     "interceptor",
 ]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: System :: Monitoring",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 dependencies = [
     "alembic>=1.13",
@@ -158,11 +173,6 @@ depends_on = "pre"
 filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
-
-[[tool.bumpversion.files]]
-filename = "README.md"
-search = "v{current_version}"
-replace = "v{new_version}"
 
 [[tool.bumpversion.files]]
 filename = "CHANGELOG.md"
