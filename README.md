@@ -10,15 +10,16 @@
 </div>
 
 
-SourceryKit is the Python SDK for [Provably](https://provably.ai). It provides verifiable guardrails for AI agents by automatically recording outbound HTTP calls, enforcing endpoint policies, and checking your agent's claims against a source of truth—all before any request leaves your process.
+SourceryKit is the Python SDK for [Provably](https://provably.ai). Agents self verify API and MCP calls against recorded source evidence and create portable proofs. SourceryKit detects 100% of covered tool calling errors and data hallucinations ([see our benchmark](https://provably.ai/blogs/The-Agent-Was-Right-The-Evidence-Wasnt)). Downstream agents and workflows use those proofs to trigger retries, repair workflows and increase accuracy.
+
+SourceryKit is powered by Provably's [QEDB verifiable database](https://eprint.iacr.org/2025/1408), accepted at [ACM CCS 2026](https://www.sigsac.org/ccs/CCS2026/). QEDB proves that SQL query results were computed correctly over the complete committed data, producing small, database size independent proofs averaging around 1 KB that can be proven and verified in milliseconds.
 
 > ⚠️ **IMPORTANT:** Upgrading from a previous version? See the [Migration Guides](https://github.com/ProvablyAI/sourcerykit/blob/main/docs/migrations/README.md).
 
-
 ## Features
 
-- **Verifiable guardrails** — checks your agent's claims against recorded ground truth, so a hallucinated value is caught before it ships.
-- **Automatic HTTP interception** — records every outbound call (`httpx`, `aiohttp`, `requests`) with no changes to your agent code.
+- **Verifiable claim evaluation** — allows the source agent or another agent or system to verify a claim against a portable proof of the recorded tool call.
+- **Automatic HTTP interception** — records supported API and MCP requests and responses, then commits the evidence to a QEDB-backed verifiable database with no changes to your agent code.
 - **Endpoint allow-listing** — blocks requests to untrusted destinations at the source.
 - **Deterministic verdicts** — every run resolves to `PASS`, `CAUGHT`, or `ERROR` against cryptographically anchored records.
 - **Framework-agnostic** — drops into OpenAI Agents SDK, LangChain, Claude Agent SDK, CrewAI, and LangGraph.
@@ -27,7 +28,7 @@ Under the hood, these are the pieces doing the work:
 
 - **HTTP Interceptor**: Patches your HTTP libraries to watch and log outbound calls, blocking untrusted requests on the spot.
 - **Trusted Endpoints**: A database allow-list of approved destinations for your agent.
-- **Intercepts Table**: An append-only DB table that logs every request and response for auditing.
+- **Intercepts Table**: A QEDB-backed verifiable database table that logs and commits every request and response for auditing, proof generation and independent verification.
 - **SourceryKitAgentResponse**: A Pydantic model used as the structured response_format for your agent. Enforces a typed response contract with a `claimed_values` list of extracted values.
 - **Handoff Payload**: A clean data bundle containing the claims your agent is making about its external actions.
 - **Evaluator**: Compares the handoff payload against records in the Provably backend to give you a clear verdict.
