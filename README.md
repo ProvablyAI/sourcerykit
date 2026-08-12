@@ -18,13 +18,11 @@ SourceryKit is powered by Provably's [QEDB verifiable database](https://eprint.i
 
 ## Features
 
-- **Automatic tool call interception** — captures supported API and MCP requests and responses through `httpx`, `aiohttp` and `requests`.
-- **Trusted endpoint enforcement** — blocks outbound calls to destinations that are not registered in the agent's allow list.
-- **State of the art verifiable database** — Provably's QEDB middleware connects to your PostgreSQL database, commits intercepted tool call evidence, and generates and verifies portable proofs so agents can prove and independently verify API and MCP calls.
-- **Runtime self verification** — agents evaluate their own claims against committed source evidence before a workflow accepts them.
-- **Portable verifiable handoffs** — downstream agents and applications verify claims without accessing or requerying the original source system.
-- **Deterministic outcomes** — every evaluation returns `PASS`, `CAUGHT` or `ERROR`, allowing workflows to accept, retry, repair or stop.
-- **Framework independent** — works with OpenAI Agents SDK, Claude Agent SDK, LangChain, LangGraph, CrewAI and other Python agents using supported HTTP transports.
+- **Verifiable claim evaluation** — allows the source agent or another agent or system to verify a claim against a portable proof of the recorded tool call.
+- **Automatic HTTP interception** — records supported API and MCP requests and responses, then commits the evidence to a QEDB-backed verifiable database with no changes to your agent code.
+- **Endpoint allow-listing** — blocks requests to untrusted destinations at the source.
+- **Deterministic verdicts** — every run resolves to `PASS`, `CAUGHT`, or `ERROR` against cryptographically anchored records.
+- **Framework-agnostic** — drops into OpenAI Agents SDK, LangChain, Claude Agent SDK, CrewAI, and LangGraph.
 
 Under the hood, these are the pieces doing the work:
 
