@@ -1,0 +1,327 @@
+/**
+ * Page chrome for the local trace dashboard. Figma node 236:11508.
+ *
+ * The page is a grey field (#e9e9e9) covered by panels. Every horizontal band
+ * splits into three containers that total exactly 1440: a 168 margin, the 1104
+ * column, another 168 margin. The grid you see is the field showing through a
+ * 1px inset on the rails, plus a 1px band foot.
+ *
+ * The insets are transparent borders rather than margins, so they take their
+ * width from inside the container and the line still sums to 1440; as margins
+ * they pushed it to 1441 and every rule landed off-pixel. They sit whole on the
+ * rails rather than split half-and-half with the column (which is how Figma
+ * draws the first three bands) because a 0.5px border does not survive
+ * rasterising: the rail's half paints and the column's collapses, leaving every
+ * rule at half strength. Figma's own footer band, 246:8706, uses this same
+ * integer gutter, and it is the one that renders crisp.
+ *
+ * The nav rails are white (236:11512). Every other band's rails are #fafafa
+ * (236:11526, 246:8724, 246:8708). The footer is the one band that puts the
+ * whole gutter on its rails and runs a flush 1104 column (246:8706).
+ */
+
+/*
+ * Self-hosted latin subsets, taken from Google Fonts. The dashboard runs on
+ * localhost and often offline, where a render-blocking stylesheet from
+ * fonts.googleapis.com leaves a blank window until the request times out. It
+ * also stopped the tool sending a request to Google every time a developer
+ * opened a trace. 80 kB for the three families.
+ */
+@font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/static/fonts/geist-latin.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Geist Mono';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/static/fonts/geist-mono-latin.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url('/static/fonts/space-grotesk-latin.woff2') format('woff2');
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+}
+
+/**
+ * The page itself does not scroll: the chrome stays put and the activity trail
+ * inside sk-trace-view is the only scroller. Below 640px tall there is no room
+ * for that, so the page goes back to scrolling as a whole.
+ */
+/* Clipping here too, so a scripted scroll cannot strand the frame off-screen. */
+html {
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: #e9e9e9;
+    color: var(--sk-foreground, #0a0a0a);
+    font-family: var(--sk-font-sans, Geist, ui-sans-serif, system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* One horizontal band: margin | column | margin. */
+.band {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding-bottom: 1px;
+}
+
+.band > .margin {
+    flex: 1 1 168px;
+    min-width: 0;
+    border: 0 solid transparent;
+    background-color: var(--sk-sidebar, #fafafa);
+    background-clip: padding-box;
+}
+
+.topbar .margin {
+    background-color: var(--sk-card, #ffffff);
+}
+
+.band > .margin.left {
+    border-right-width: 1px;
+    border-radius: 0 4px 4px 0;
+}
+
+.band > .margin.right {
+    border-left-width: 1px;
+    border-radius: 4px 0 0 4px;
+}
+
+.band > .column {
+    flex: 0 1 1104px;
+    min-width: 0;
+    max-width: 1104px;
+}
+
+/* Below the full grid width the margins collapse and the column takes over. */
+@media (max-width: 1103px) {
+    .band > .margin {
+        display: none;
+    }
+
+    .band > .column {
+        flex: 1 1 auto;
+    }
+}
+
+.topbar {
+    flex: 0 0 auto;
+    background: #e9e9e9;
+}
+
+.topbar .column {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 60px;
+    padding: 0 16px;
+    background: var(--sk-card, #ffffff);
+    border-radius: 4px;
+}
+
+.topbar-logo {
+    display: flex;
+    align-items: center;
+}
+
+.topbar-logo img {
+    display: block;
+    height: 24px;
+    width: 141px;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    border-radius: var(--sk-radius-md, 8px);
+    font-size: var(--sk-text-xs, 12px);
+    line-height: var(--sk-text-xs-leading, 16px);
+    font-weight: var(--sk-weight-medium, 500);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.btn-outline {
+    padding: 6px 12px;
+    border: 1px solid var(--sk-input, #e5e5e5);
+    background: var(--sk-card, #ffffff);
+    color: var(--sk-foreground, #0a0a0a);
+    box-shadow: var(--sk-shadow-xs, 0 1px 2px 0 #0000000d);
+}
+
+.btn-outline:hover {
+    background: var(--sk-muted, #f5f5f5);
+}
+
+.btn-outline:active {
+    background: var(--sk-input, #e5e5e5);
+}
+
+.btn-primary {
+    padding: 8px 12px;
+    border: 1px solid rgb(255 255 255 / 0.25);
+    background: var(--sk-status-healed, #3944ea);
+    color: #ffffff;
+    overflow: hidden;
+}
+
+/* Figma 236:11522 strokes the glyph #fafafa while the label stays white. */
+.btn-primary svg {
+    stroke: var(--sk-status-on-solid, #fafafa);
+}
+
+.btn-primary:hover {
+    filter: brightness(0.94);
+}
+
+.btn-primary:active {
+    filter: brightness(0.88);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--sk-status-healed, #3944ea);
+    outline-offset: 2px;
+}
+
+.page {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.page .column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+sk-trace-view {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Figma 246:8721: 48px of the grey field between the card and the footer. */
+.gap-band {
+    flex: 0 0 auto;
+    min-height: 48px;
+}
+
+.sitefooter {
+    flex: 0 0 auto;
+}
+
+/*
+ * Too short, or too narrow to hold the three-panel layout: the whole page
+ * scrolls again. This must cover the same conditions the component uses to
+ * release its inner scroller, or content lands in a gap where nothing scrolls
+ * and the card silently clips it.
+ */
+@media (max-height: 640px), (max-width: 1103px) {
+    html {
+        overflow: visible;
+    }
+
+    body {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+}
+
+/*
+ * Figma 246:8726 is a pinstripe, not a fill: a 1px rule every 8px along the
+ * gradient axis, over white.
+ */
+.gap-band .column {
+    background-color: var(--sk-card, #ffffff);
+    background-image: repeating-linear-gradient(
+        -45deg,
+        #eeeeee 0 1px,
+        transparent 1px 8px
+    );
+    border-radius: 4px;
+}
+
+/* Figma 246:8706: the rails carry the whole gutter and the column runs flush. */
+.sitefooter .band {
+    padding-bottom: 0;
+}
+
+.sitefooter .margin.left {
+    border-radius: 0 4px 0 0;
+}
+
+.sitefooter .margin.right {
+    border-radius: 4px 0 0 0;
+}
+
+.sitefooter .column {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    min-height: 44px;
+    padding: 16px 32px;
+    background: var(--sk-card, #ffffff);
+    border-radius: 4px 4px 0 0;
+    font-size: var(--sk-text-xs, 12px);
+    line-height: var(--sk-text-xs-leading-none, 1);
+    /* Figma 246:8712/8715/8717: a literal, not --sk-muted-foreground. */
+    color: #373739;
+}
+
+.sitefooter nav {
+    display: flex;
+    gap: 24px;
+}
+
+.sitefooter a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.sitefooter a:hover {
+    color: var(--sk-foreground, #0a0a0a);
+    text-decoration: underline;
+}
