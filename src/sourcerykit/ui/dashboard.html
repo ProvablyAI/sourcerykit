@@ -10,6 +10,7 @@
     <link rel="preload" href="/static/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/static/tokens.css">
     <link rel="stylesheet" href="/static/page.css">
+    <link rel="stylesheet" href="/static/trace.css">
 </head>
 
 <body>
@@ -52,7 +53,7 @@
     <main class="page band">
         <div class="margin left"></div>
         <div class="column">
-            <sk-trace-view id="view"></sk-trace-view>
+            <div id="view"></div>
         </div>
         <div class="margin right"></div>
     </main>
@@ -78,12 +79,12 @@
         </div>
     </footer>
 
-    <script src="/static/sourcerykit-ui.iife.js"></script>
-    <script>
+    <script type="module">
+        import { TraceView } from '/static/trace.js';
+
         // The CLI opens this page as /?id=<trace id or prefix>.
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get('id');
-        if (id) document.getElementById('view').setAttribute('trace-id', id);
+        const id = new URLSearchParams(window.location.search).get('id');
+        new TraceView(document.getElementById('view')).load(id);
     </script>
 </body>
 

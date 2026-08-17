@@ -235,7 +235,7 @@ body {
     min-height: 0;
 }
 
-sk-trace-view {
+.sk-view {
     flex: 1 1 auto;
     min-height: 0;
 }
