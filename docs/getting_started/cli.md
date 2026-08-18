@@ -25,6 +25,9 @@ Run `sourcerykit --help` to see all available commands.
 | [`endpoints remove`](#sourcerykit-endpoints-remove) | Remove a trusted endpoint |
 | [`config list`](#sourcerykit-config-list) | Display active configuration |
 | [`config set`](#sourcerykit-config-set) | Update configuration variables |
+| [`sandbox create`](#sourcerykit-sandbox-create) | Create or retrieve a hosted sandbox database |
+| [`sandbox status`](#sourcerykit-sandbox-status) | Show sandbox status and connection URI |
+| [`sandbox delete`](#sourcerykit-sandbox-delete) | Delete the sandbox database |
 | [`trace list`](#sourcerykit-trace-list) | Show all traces |
 | [`trace show`](#sourcerykit-trace-show) | Show trace details and intercepts |
 
@@ -50,7 +53,7 @@ Global config is shared across all projects. Local config is project-specific an
 Setup wizard for account creation/login, database linking, and project initialization.
 
 ```bash
-sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME]
+sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME] [--sandbox]
 ```
 
 **Options:**
@@ -61,6 +64,7 @@ sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-
 | `--password` | Account password |
 | `--postgres-url` | Full `postgresql://` URL |
 | `--project-name` | Project name |
+| `--sandbox` | Use a hosted sandbox database instead of your own PostgreSQL |
 
 > [!NOTE]
 > `--email` and `--password` must be used together. Use `--register` to create a new account, or omit it to log in with an existing account. Registration requires email verification before you can log in.
@@ -68,11 +72,11 @@ sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-
 **What it does:**
 - Account setup (register or login)
 - API key retrieval
-- PostgreSQL database connection
+- Sandbox database provisioning (or custom PostgreSQL with `--postgres-url`)
 - Project naming
 - Bootstrap resource creation
 
-**Input:** Interactive prompts for email, password, database URL, and project name.
+**Input:** Interactive prompts for email, password, database, and project name.
 
 ```bash
 Welcome to the SourceryKit Wizard! How would you like to proceed?
@@ -84,8 +88,10 @@ Welcome to the SourceryKit Wizard! How would you like to proceed?
 Email address: user@example.com
 Password: ********
 
-🛠️  Link your Postgres database
-PostgreSQL URL: postgresql://user:pass@host:5432/db
+🗄️  Database setup
+How would you like to set up your database?
+❯ Hosted sandbox (recommended)
+  Use my own PostgreSQL database
 
 📦 Name your project
 Project name: my-project
@@ -105,6 +111,15 @@ sourcerykit init \
   --email user@example.com \
   --password secret \
   --postgres-url "postgresql://user:pass@host:5432/db" \
+  --project-name my-project
+```
+
+**Non-interactive login + sandbox:**
+```bash
+sourcerykit init \
+  --email user@example.com \
+  --password secret \
+  --sandbox \
   --project-name my-project
 ```
 
@@ -144,7 +159,7 @@ sourcerykit doctor [--fix]
 
 **Checks performed:**
 1. API key validity
-2. PostgreSQL connectivity
+2. Database connectivity (detects sandbox vs personal)
 3. Project name presence
 4. Bootstrap IDs presence
 5. Collection and resource ID verification
@@ -155,7 +170,7 @@ sourcerykit doctor [--fix]
 🩺 SourceryKit Doctor
 
   ✅ API key + org: API key valid, org found (1 org(s))
-  ✅ PostgreSQL: PostgreSQL connection successful
+  ✅ Database: Sandbox database (postgresql://user:***@host:5432/db)
   ✅ Project name: 'my-project'
   ✅ Bootstrap IDs: All bootstrap IDs present
   ✅ Collection + IDs: Collection 'my-project' verified (middleware, db, schema, table, collection)
@@ -169,7 +184,7 @@ All 6 checks passed!
 🩺 SourceryKit Doctor
 
   ❌ API key + org: API key is invalid or expired — run 'sourcerykit init'
-  ❌ PostgreSQL: PostgreSQL connection failed — check your SOURCERYKIT_POSTGRES_URL
+  ❌ Database: Database connection failed — check SOURCERYKIT_POSTGRES_URL
   ✅ Project name: 'my-project'
   ❌ Bootstrap IDs: Missing: middleware_id, database_id — run 'sourcerykit doctor --fix'
   ❌ Collection + IDs: Bootstrap IDs missing — run 'sourcerykit doctor --fix'
@@ -261,6 +276,80 @@ sourcerykit upgrade
   Upgrading... DONE ✅
 
   Running database migrations... DONE ✅
+```
+
+---
+
+### `sourcerykit sandbox`
+
+Manage hosted sandbox databases for development and testing.
+
+#### Subcommands
+
+##### `sourcerykit sandbox create`
+
+Create or retrieve a hosted sandbox database for the current organisation.
+
+```bash
+sourcerykit sandbox create
+```
+
+**What it does:**
+- Creates a new sandbox via the Provably API (or retrieves an existing one)
+- Saves the connection URI to the local `.env` file as `SOURCERYKIT_POSTGRES_URL`
+
+**Example output:**
+```bash
+Creating sandbox... DONE ✅
+
+  connection_uri = postgresql://user:***@sandbox.provably.ai:5432/db
+```
+
+---
+
+##### `sourcerykit sandbox status`
+
+Show sandbox status and connection URI.
+
+```bash
+sourcerykit sandbox status
+```
+
+**Example output (active sandbox):**
+```bash
+  status          = active
+  connection_uri  = postgresql://user:***@sandbox.provably.ai:5432/db
+  in_use          = True
+```
+
+**Example output (no sandbox):**
+```bash
+No sandbox found.
+```
+
+---
+
+##### `sourcerykit sandbox delete`
+
+Delete the sandbox database. All data will be lost.
+
+```bash
+sourcerykit sandbox delete [--yes]
+```
+
+**Options:**
+| Option | Description |
+|--------|-------------|
+| `--yes` / `-y` | Skip confirmation prompt |
+
+**Example:**
+```bash
+sourcerykit sandbox delete --yes
+```
+
+**Output:**
+```bash
+Deleting sandbox... DONE ✅
 ```
 
 ---
@@ -530,3 +619,5 @@ No trace found matching prefix "abc123".
 | PostgreSQL connection failed | Wrong URL or DB not reachable | Check `SOURCERYKIT_POSTGRES_URL` in `.env`; ensure the database is publicly accessible |
 | API key invalid | Wrong key or expired | Run `sourcerykit init` to re-authenticate and fetch a new key |
 | Config not loading | Missing global or local config | Run `sourcerykit doctor` to identify which values are missing |
+| Sandbox expired | Sandbox TTL exceeded | Auto-recreated on next bootstrap; or run `sourcerykit sandbox create` |
+| Sandbox not found | No sandbox created for this org | Run `sourcerykit init --sandbox` or `sourcerykit sandbox create` |
