@@ -125,6 +125,89 @@ class TestBootstrapSystem:
         mock_ensure.assert_not_called()
         mock_init.assert_called_once()
 
+    async def test_recreates_expired_sandbox(self) -> None:
+        mock_engine = MagicMock()
+
+        settings = MagicMock()
+        settings.postgres_url = "postgresql://old-sandbox/db"
+        settings.org_id = "org-123"
+        settings.has_bootstrap_ids = True
+
+        with (
+            patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
+            patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
+            patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.init_interceptor"),
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
+            patch("sourcerykit.bootstrap.bootstrap.save_local_env") as mock_save,
+            patch("sourcerykit.bootstrap.bootstrap.ensure_schema"),
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://old-sandbox/db", "status": "expired"}, True)
+            )
+            mock_svc.create_sandbox = AsyncMock(return_value="postgresql://new-sandbox/db")
+            mock_cache.load_from = MagicMock()
+
+            await bootstrap_system()
+
+        mock_svc.create_sandbox.assert_awaited_once_with("org-123")
+        mock_save.assert_called_once_with(SOURCERYKIT_POSTGRES_URL="postgresql://new-sandbox/db")
+
+    async def test_skips_recreation_for_active_sandbox(self) -> None:
+        mock_engine = MagicMock()
+
+        settings = MagicMock()
+        settings.postgres_url = "postgresql://sandbox/db"
+        settings.has_bootstrap_ids = True
+
+        with (
+            patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
+            patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
+            patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.init_interceptor"),
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
+            patch("sourcerykit.bootstrap.bootstrap.save_local_env") as mock_save,
+            patch("sourcerykit.bootstrap.bootstrap.ensure_schema"),
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://sandbox/db", "status": "active"}, True)
+            )
+            mock_svc.create_sandbox = AsyncMock()
+            mock_cache.load_from = MagicMock()
+
+            await bootstrap_system()
+
+        mock_svc.create_sandbox.assert_not_awaited()
+        mock_save.assert_not_called()
+
+    async def test_skips_recreation_when_no_org_id(self) -> None:
+        mock_engine = MagicMock()
+
+        settings = MagicMock()
+        settings.postgres_url = "postgresql://sandbox/db"
+        settings.org_id = None
+        settings.has_bootstrap_ids = True
+
+        with (
+            patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
+            patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
+            patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.init_interceptor"),
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
+            patch("sourcerykit.bootstrap.bootstrap.save_local_env") as mock_save,
+            patch("sourcerykit.bootstrap.bootstrap.ensure_schema"),
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://sandbox/db", "status": "expired"}, True)
+            )
+            mock_svc.create_sandbox = AsyncMock()
+            mock_cache.load_from = MagicMock()
+
+            await bootstrap_system()
+
+        mock_svc.create_sandbox.assert_not_awaited()
+        mock_save.assert_not_called()
+
 
 class TestGetBootstrap:
     def test_returns_bootstrap_cache_instance(self) -> None:
