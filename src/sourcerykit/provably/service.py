@@ -102,6 +102,22 @@ class ProvablyService:
             return sandbox.get("connection_uri")
         return None
 
+    async def get_sandbox_status(self, postgres_url: str) -> tuple[dict[str, Any] | None, bool]:
+        """Fetch sandbox and check if *postgres_url* matches its connection URI.
+
+        Returns:
+            (sandbox_data, is_sandbox) — ``is_sandbox`` is ``True`` when the
+            configured postgres_url points at the sandbox.
+        """
+        sandbox = await self.get_sandbox()
+        if not sandbox:
+            return None, False
+        uri = sandbox.get("connection_uri")
+        if not uri:
+            return None, False
+        is_sandbox = ConnectionInfo.from_url(postgres_url).same_server(ConnectionInfo.from_url(uri))
+        return sandbox, is_sandbox
+
     async def delete_sandbox(self, *, token: str | None = None) -> None:
         """Delete the sandbox for the authenticated user.
 

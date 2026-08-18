@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from sourcerykit.cli.doctor import (
     _check_api_key_and_org,
     _check_bootstrap_ids,
-    _check_postgres,
+    _check_database,
     _check_project_name,
     _deep_check_collection_and_ids,
     _deep_check_integration,
@@ -110,30 +110,92 @@ class TestCheckApiKeyAndOrg:
 
 
 # ---------------------------------------------------------------------------
-# _check_postgres
+# _check_database
 # ---------------------------------------------------------------------------
 
 
-class TestCheckPostgres:
+class TestCheckDatabase:
     def test_missing_url(self) -> None:
         s = _make_settings(postgres_url="")
-        ok, msg = _check_postgres(s)
+        ok, msg = _check_database(s)
         assert ok is False
         assert "SOURCERYKIT_POSTGRES_URL is missing" in msg
 
-    def test_connected(self) -> None:
+    def test_personal_db_connected(self) -> None:
         s = _make_settings()
-        with patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True):
-            ok, msg = _check_postgres(s)
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://other/db", "status": "active"}, False)
+            )
+            ok, msg = _check_database(s)
         assert ok is True
-        assert "successful" in msg
+        assert "Personal database" in msg
 
-    def test_connection_failed(self) -> None:
+    def test_personal_db_connection_failed(self) -> None:
         s = _make_settings()
-        with patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=False):
-            ok, msg = _check_postgres(s)
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=False),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://other/db", "status": "active"}, False)
+            )
+            ok, msg = _check_database(s)
         assert ok is False
         assert "connection failed" in msg.lower()
+
+    def test_sandbox_active(self) -> None:
+        s = _make_settings()
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": s.postgres_url, "status": "active"}, True)
+            )
+            ok, msg = _check_database(s)
+        assert ok is True
+        assert "Sandbox database" in msg
+
+    def test_sandbox_provisioning(self) -> None:
+        s = _make_settings()
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": s.postgres_url, "status": "provisioning"}, True)
+            )
+            ok, msg = _check_database(s)
+        assert ok is True
+        assert "Sandbox database" in msg
+
+    def test_sandbox_expired(self) -> None:
+        s = _make_settings()
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": s.postgres_url, "status": "expired"}, True)
+            )
+            ok, msg = _check_database(s)
+        assert ok is False
+        assert "expired" in msg.lower()
+
+    def test_sandbox_api_error_falls_through(self) -> None:
+        s = _make_settings()
+        with (
+            patch("sourcerykit.cli.doctor.run_connectivity_check", return_value=True),
+            patch("sourcerykit.cli.doctor.service") as mock_svc,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(side_effect=Exception("network"))
+            ok, msg = _check_database(s)
+        assert ok is True
+        assert "Personal database" in msg
 
 
 # ---------------------------------------------------------------------------
@@ -294,7 +356,7 @@ class TestRunDoctor:
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
             patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(True, "ok")),
-            patch("sourcerykit.cli.doctor._check_postgres", return_value=(True, "ok")),
+            patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._run_deep_check_collection_and_ids", return_value=(True, "ok")),
@@ -308,7 +370,7 @@ class TestRunDoctor:
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
             patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(False, "bad key")),
-            patch("sourcerykit.cli.doctor._check_postgres", return_value=(True, "ok")),
+            patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._run_deep_check_collection_and_ids", return_value=(True, "ok")),
@@ -322,7 +384,7 @@ class TestRunDoctor:
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
             patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(True, "ok")),
-            patch("sourcerykit.cli.doctor._check_postgres", return_value=(True, "ok")),
+            patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(False, "missing")),
             patch("sourcerykit.cli.doctor._run_deep_check_collection_and_ids", return_value=(True, "ok")),

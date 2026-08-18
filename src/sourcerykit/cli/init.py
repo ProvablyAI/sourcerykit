@@ -188,21 +188,22 @@ def save_bootstrap_ids() -> None:
     )
 
 
-def run_full_bootstrap(project_name: str) -> bool:
+def run_full_bootstrap(project_name: str, *, sandbox: bool = False) -> bool:
     """Run the full bootstrap: clear caches, create tables, handshake, save IDs.
 
     Returns True on success, False on failure (errors are printed).
     """
     clear_auth_caches()
 
-    console.print(" Creating database tables...", end=" ")
-    sys.stdout.flush()
-    try:
-        create_db_tables()
-        console.print("DONE ✅")
-    except Exception as e:
-        console.print(f"[red]FAILED ❌[/red]\n   {e}")
-        return False
+    if not sandbox:
+        console.print(" Creating database tables...", end=" ")
+        sys.stdout.flush()
+        try:
+            create_db_tables()
+            console.print("DONE ✅")
+        except Exception as e:
+            console.print(f"[red]FAILED ❌[/red]\n   {e}")
+            return False
 
     console.print(" Running Provably handshake...", end=" ")
     sys.stdout.flush()
@@ -361,7 +362,7 @@ def _execute_post_auth_phases(
         SOURCERYKIT_POSTGRES_URL=postgres_url,
     )
 
-    run_full_bootstrap(project_name)
+    run_full_bootstrap(project_name, sandbox=sandbox)
 
     console.print("\n[bold green]🎉 SOURCERYKIT SETUP COMPLETE[/bold green]\n")
     console.print(" Global config:")

@@ -4,9 +4,10 @@ import asyncio
 
 import questionary
 import typer
+from dotenv import unset_key
 
 from sourcerykit.cli.utils import console, mask_postgres_url, require_settings
-from sourcerykit.config import save_local_env
+from sourcerykit.config import LOCAL_ENV_FILE, save_local_env
 from sourcerykit.provably.service import service
 
 sandbox = typer.Typer(no_args_is_help=True)
@@ -31,9 +32,9 @@ def create() -> None:
 @sandbox.command()
 def status() -> None:
     """Show sandbox status and connection URI."""
-    require_settings()
+    settings = require_settings()
 
-    sandbox_data = asyncio.run(service.get_sandbox())
+    sandbox_data, is_sandbox = asyncio.run(service.get_sandbox_status(settings.postgres_url))
     if not sandbox_data:
         console.print("[yellow]No sandbox found.[/yellow]")
         return
@@ -42,6 +43,7 @@ def status() -> None:
     uri = sandbox_data.get("connection_uri", "")
     console.print(f"  status          = {status_val}")
     console.print(f"  connection_uri  = {mask_postgres_url(uri)}")
+    console.print(f"  in_use          = {is_sandbox}")
 
 
 @sandbox.command()
@@ -61,4 +63,5 @@ def delete(
 
     console.print("Deleting sandbox...", end=" ")
     asyncio.run(service.delete_sandbox())
+    unset_key(str(LOCAL_ENV_FILE), "SOURCERYKIT_POSTGRES_URL")
     console.print("DONE ✅")

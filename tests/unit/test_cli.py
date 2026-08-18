@@ -214,6 +214,7 @@ class TestRunLogin:
             email="user@example.com",
             postgres_url=None,
             project_name=None,
+            sandbox=False,
         )
 
     def test_handles_unauthorized_error_without_crash(self) -> None:
@@ -461,6 +462,7 @@ class TestRunLoginNonInteractive:
             email="a@b.com",
             postgres_url="postgresql://u:p@h:5432/db",
             project_name="myproj",
+            sandbox=False,
         )
 
     def test_handles_unauthorized_error(self) -> None:

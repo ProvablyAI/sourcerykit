@@ -21,12 +21,14 @@ class TestBootstrapSystem:
             patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
             patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
             patch("sourcerykit.bootstrap.bootstrap.init_interceptor") as mock_init,
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
         ):
             settings = MagicMock()
             settings.postgres_url = "postgresql://test"
             settings.has_bootstrap_ids = False
             settings.project_name = "test-project"
             mock_cfg.return_value = settings
+            mock_svc.get_sandbox_status = AsyncMock(return_value=(None, False))
             mock_cache.run_handshake = AsyncMock()
             await bootstrap_system()
 
@@ -46,7 +48,9 @@ class TestBootstrapSystem:
         with (
             patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
             patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
         ):
+            mock_svc.get_sandbox_status = AsyncMock(return_value=(None, False))
             with pytest.raises(SourceryKitStorageError):
                 await bootstrap_system()
 
@@ -66,7 +70,9 @@ class TestBootstrapSystem:
             patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
             patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
             patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
         ):
+            mock_svc.get_sandbox_status = AsyncMock(return_value=(None, False))
             mock_cache.run_handshake = AsyncMock(side_effect=RuntimeError("handshake failed"))
             with pytest.raises(RuntimeError, match="handshake failed"):
                 await bootstrap_system()
@@ -87,10 +93,37 @@ class TestBootstrapSystem:
             patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
             patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
             patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
         ):
+            mock_svc.get_sandbox_status = AsyncMock(return_value=(None, False))
             mock_cache.run_handshake = AsyncMock(side_effect=SourceryKitBootstrapError("explicit"))
             with pytest.raises(SourceryKitBootstrapError, match="explicit"):
                 await bootstrap_system()
+
+    async def test_sandbox_skips_ensure_schema(self) -> None:
+        mock_engine = MagicMock()
+
+        settings = MagicMock()
+        settings.postgres_url = "postgresql://sandbox/db"
+        settings.has_bootstrap_ids = True
+        settings.project_name = "test-project"
+
+        with (
+            patch("sourcerykit.bootstrap.bootstrap.get_settings", return_value=settings),
+            patch("sourcerykit.bootstrap.bootstrap.get_engine", return_value=mock_engine),
+            patch("sourcerykit.bootstrap.bootstrap._BOOTSTRAP_INSTANCE") as mock_cache,
+            patch("sourcerykit.bootstrap.bootstrap.init_interceptor") as mock_init,
+            patch("sourcerykit.bootstrap.bootstrap.provably_service") as mock_svc,
+            patch("sourcerykit.bootstrap.bootstrap.ensure_schema") as mock_ensure,
+        ):
+            mock_svc.get_sandbox_status = AsyncMock(
+                return_value=({"connection_uri": "postgresql://sandbox/db", "status": "active"}, True)
+            )
+            mock_cache.load_from = MagicMock()
+            await bootstrap_system()
+
+        mock_ensure.assert_not_called()
+        mock_init.assert_called_once()
 
 
 class TestGetBootstrap:
@@ -99,3 +132,4 @@ class TestGetBootstrap:
 
         result = get_bootstrap()
         assert isinstance(result, ProvablyBootstrapCache)
+

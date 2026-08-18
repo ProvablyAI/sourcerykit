@@ -21,6 +21,26 @@ class ConnectionInfo:
     provider: str
     uri: str
 
+    @classmethod
+    def from_url(cls, url: str) -> "ConnectionInfo":
+        """Parse a PostgreSQL URL into a ConnectionInfo."""
+        parsed = urlparse(url)
+        provider = parsed.scheme.split("+", 1)[0]
+        host = parsed.hostname or ""
+        port = parsed.port
+        uri = f"{host}:{port}" if port else host
+        return cls(
+            name=parsed.path.lstrip("/"),
+            username=unquote(parsed.username or ""),
+            password=unquote(parsed.password or ""),
+            provider=provider,
+            uri=uri,
+        )
+
+    def same_server(self, other: "ConnectionInfo") -> bool:
+        """True if both point to the same database server and name (ignores credentials and query params)."""
+        return (self.provider, self.uri, self.name) == (other.provider, other.uri, other.name)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
@@ -80,19 +100,4 @@ def get_connection_info() -> ConnectionInfo:
     """
     Return the parsed connection details of the configured PostgreSQL URL.
     """
-    url = get_settings().postgres_url
-    parsed = urlparse(url)
-
-    provider = parsed.scheme.split("+", 1)[0]
-
-    host = parsed.hostname or ""
-    port = parsed.port
-    uri = f"{host}:{port}" if port else host
-
-    return ConnectionInfo(
-        name=parsed.path.lstrip("/"),
-        username=unquote(parsed.username or ""),
-        password=unquote(parsed.password or ""),
-        provider=provider,
-        uri=uri,
-    )
+    return ConnectionInfo.from_url(get_settings().postgres_url)

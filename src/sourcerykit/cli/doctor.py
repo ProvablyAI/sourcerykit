@@ -39,31 +39,25 @@ def _check_database(settings: Settings) -> tuple[bool, str]:
     if not settings.postgres_url:
         return False, "SOURCERYKIT_POSTGRES_URL is missing — run 'sourcerykit init'"
 
-    # Check database connectivity
     db_ok = run_connectivity_check(settings.postgres_url, quiet=True)
 
-    # Try to get sandbox status
-    sandbox = None
     try:
-        sandbox = asyncio.run(service.get_sandbox())
+        sandbox, is_sandbox = asyncio.run(service.get_sandbox_status(settings.postgres_url))
     except Exception:
-        pass  # Ignore sandbox check errors
+        sandbox, is_sandbox = None, False
 
-    # If database connection works, report success with sandbox info
-    if db_ok:
-        if sandbox:
-            status = sandbox.get("status", "").lower()
-            if status in ("active", "provisioning"):
-                return True, f"Sandbox active ({mask_postgres_url(settings.postgres_url)})"
-        return True, f"Personal database ({mask_postgres_url(settings.postgres_url)})"
+    if not is_sandbox:
+        if db_ok:
+            return True, f"Personal database ({mask_postgres_url(settings.postgres_url)})"
+        return False, "Database connection failed — check SOURCERYKIT_POSTGRES_URL"
 
-    # Connection failed — check if sandbox is expired
-    if sandbox:
-        status = sandbox.get("status", "").lower()
-        if status not in ("active", "provisioning"):
-            return False, f"Sandbox {status} — run 'sourcerykit sandbox create'"
+    status = (sandbox or {}).get("status", "").lower()
+    if status in ("active", "provisioning"):
+        if db_ok:
+            return True, f"Sandbox database ({mask_postgres_url(settings.postgres_url)})"
+        return False, "Sandbox database connection failed"
 
-    return False, "Database connection failed — check SOURCERYKIT_POSTGRES_URL"
+    return False, f"Sandbox {status} — run 'sourcerykit sandbox create'"
 
 
 def _check_project_name(settings: Settings) -> tuple[bool, str]:

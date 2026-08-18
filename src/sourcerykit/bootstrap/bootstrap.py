@@ -1,5 +1,5 @@
 from sourcerykit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
-from sourcerykit.config import Settings, get_settings, save_local_env
+from sourcerykit.config import get_settings, save_local_env
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._schema import ensure_schema
 from sourcerykit.errors import (
@@ -13,29 +13,6 @@ from sourcerykit.provably.service import service as provably_service
 _log = get_logger(__name__)
 
 
-async def _check_sandbox(settings: Settings) -> str | None:
-    """Check sandbox status and recreate if expired. Returns updated URI or None."""
-    sandbox = await provably_service.get_sandbox()
-    if not sandbox:
-        return None
-
-    status = sandbox.get("status", "").lower()
-    if status in ("active", "provisioning"):
-        return sandbox.get("connection_uri")
-
-    # Sandbox is expired/deleted — recreate
-    _log.warning("sandbox_expired", status=status)
-    org_id = settings.org_id
-    if not org_id:
-        _log.warning("sandbox_recreate_skipped_no_org")
-        return None
-
-    _log.info("sandbox_recreating")
-    new_uri = await provably_service.create_sandbox(org_id)
-    save_local_env(SOURCERYKIT_POSTGRES_URL=new_uri)
-    return new_uri
-
-
 async def bootstrap_system() -> None:
     """System entry point called exactly once during container/server startup."""
     _log.info("system_bootstrap_started")
@@ -47,17 +24,28 @@ async def bootstrap_system() -> None:
         raise SourceryKitConfigError("SOURCERYKIT_POSTGRES_URL is required. Run 'sourcerykit init' first.")
 
     # Check sandbox health — recreate if expired
-    new_uri = await _check_sandbox(settings)
-    if new_uri and new_uri != settings.postgres_url:
-        _log.info("sandbox_recreated_reloading")
-        settings = get_settings()
+    sandbox, is_sandbox = await provably_service.get_sandbox_status(settings.postgres_url)
+    if is_sandbox and sandbox:
+        status = sandbox.get("status", "").lower()
+        if status not in ("active", "provisioning"):
+            _log.warning("sandbox_expired", status=status)
+            org_id = settings.org_id
+            if org_id:
+                _log.info("sandbox_recreating")
+                new_uri = await provably_service.create_sandbox(org_id)
+                save_local_env(SOURCERYKIT_POSTGRES_URL=new_uri)
+                _log.info("sandbox_recreated_reloading")
+                settings = get_settings()
+            else:
+                _log.warning("sandbox_recreate_skipped_no_org")
 
-    # Initialize database schemas
-    try:
-        await ensure_schema(get_engine())
-    except Exception as e:
-        _log.error("bootstrap_db_schema_failed", error=str(e))
-        raise SourceryKitStorageError("Failed to create database schema during bootstrap") from e
+    # Initialize database schemas (skip for sandbox — backend manages tables)
+    if not is_sandbox:
+        try:
+            await ensure_schema(get_engine())
+        except Exception as e:
+            _log.error("bootstrap_db_schema_failed", error=str(e))
+            raise SourceryKitStorageError("Failed to create database schema during bootstrap") from e
 
     # Populate from cached settings or run handshake
     if settings.has_bootstrap_ids:
