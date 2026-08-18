@@ -10,7 +10,7 @@ from sourcerykit.db._engine import ConnectionInfo
 from sourcerykit.db._schema import INTERCEPTS_TABLE
 from sourcerykit.logger import get_logger
 from sourcerykit.provably._api import get_api
-from sourcerykit.provably._errors import provably_error_handler
+from sourcerykit.provably._errors import ProvablyNotFoundError, provably_error_handler
 
 _log = get_logger(__name__)
 
@@ -33,6 +33,87 @@ class ProvablyService:
 
         async with provably_error_handler("create_feedback"):
             return await get_api().create_feedback(feedback_body, files=file_payload)
+
+    # ------------------------------------------------------------------
+    # Sandboxes
+    # ------------------------------------------------------------------
+
+    async def create_sandbox(self, org_id: uuid.UUID, *, token: str | None = None) -> str:
+        """Create a hosted sandbox database for the given organisation.
+
+        Args:
+            org_id: The ID of the organisation that owns the sandbox.
+            token: Optional JWT token for authentication (used during init).
+
+        Returns:
+            str: The connection URI for the new sandbox.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+            ProvablyDataError: If the response is malformed.
+        """
+        async with provably_error_handler("create_sandbox"):
+            result = await get_api().create_sandbox(org_id, token=token)
+            uri = result.get("connection_uri")
+            if not uri:
+                raise ValueError("create_sandbox response missing 'connection_uri'")
+            return str(uri)
+
+    async def get_sandbox(self, *, token: str | None = None) -> dict[str, Any] | None:
+        """Retrieve the current sandbox for the authenticated user.
+
+        Args:
+            token: Optional JWT token for authentication (used during init).
+
+        Returns:
+            dict[str, Any] | None: Sandbox dict with ``status`` and
+            ``connection_uri`` keys, or ``None`` if no sandbox exists.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        try:
+            async with provably_error_handler("get_sandbox"):
+                return await get_api().get_sandbox(token=token)
+        except ProvablyNotFoundError:
+            return None
+
+    async def get_sandbox_connection_uri(self, *, token: str | None = None) -> str | None:
+        """Return the connection URI of an active sandbox, or ``None``.
+
+        Args:
+            token: Optional JWT token for authentication (used during init).
+
+        Returns:
+            str | None: The connection URI if a sandbox exists and is
+            active, ``None`` otherwise.
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        sandbox = await self.get_sandbox(token=token)
+        if not sandbox:
+            return None
+        status = sandbox.get("status", "").lower()
+        if status in ("active", "provisioning"):
+            return sandbox.get("connection_uri")
+        return None
+
+    async def delete_sandbox(self, *, token: str | None = None) -> None:
+        """Delete the sandbox for the authenticated user.
+
+        Args:
+            token: Optional JWT token for authentication (used during init).
+
+        Raises:
+            ProvablyAPIError: If the server rejects the request.
+            ProvablyConnectionError: If the network is unreachable.
+        """
+        async with provably_error_handler("delete_sandbox"):
+            await get_api().delete_sandbox(token=token)
 
     # ------------------------------------------------------------------
     # Middleware

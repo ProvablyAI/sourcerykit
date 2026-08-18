@@ -163,6 +163,15 @@ class ProvablyHTTPClient:
             processed_payload.update(files)
         return await self._fetch("POST", path, api_key=api_key, token=token, files=processed_payload)
 
+    async def delete(
+        self,
+        path: str,
+        *,
+        api_key: str | None = None,
+        token: str | None = None,
+    ) -> Any:
+        return await self._fetch("DELETE", path, api_key=api_key, token=token)
+
 
 @functools.lru_cache(maxsize=1)
 def get_http() -> ProvablyHTTPClient:

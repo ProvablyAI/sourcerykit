@@ -58,6 +58,49 @@ class ProvablyAPI:
         return result
 
     # ------------------------------------------------------------------
+    # Sandboxes
+    # ------------------------------------------------------------------
+
+    async def create_sandbox(self, org_id: uuid.UUID, *, token: str | None = None) -> dict[str, Any]:
+        """
+        Create a hosted sandbox database for the given organisation.
+
+        Args:
+            org_id: The ID of the organisation that owns the sandbox.
+            token: Optional JWT token for authentication (used during init).
+
+        Returns:
+            dict[str, Any]: Sandbox record with ``status`` and ``connection_uri``.
+        """
+        path = "/api/v1/sandboxes"
+        result: dict[str, Any] = await get_http().post(path, {"org_id": str(org_id)}, token=token)
+        return result
+
+    async def get_sandbox(self, *, token: str | None = None) -> dict[str, Any]:
+        """
+        Retrieve the current sandbox for the authenticated user.
+
+        Args:
+            token: Optional JWT token for authentication (used during init).
+
+        Returns:
+            dict[str, Any]: Sandbox record with ``status`` and ``connection_uri``.
+        """
+        path = "/api/v1/sandboxes"
+        result: dict[str, Any] = await get_http().get(path, token=token)
+        return result
+
+    async def delete_sandbox(self, *, token: str | None = None) -> None:
+        """
+        Delete the sandbox for the authenticated user.
+
+        Args:
+            token: Optional JWT token for authentication (used during init).
+        """
+        path = "/api/v1/sandboxes"
+        await get_http().delete(path, token=token)
+
+    # ------------------------------------------------------------------
     # Middlewares
     # ------------------------------------------------------------------
 
