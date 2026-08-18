@@ -54,9 +54,7 @@ def delete(
     require_settings()
 
     if not yes:
-        confirm = questionary.confirm(
-            "Delete sandbox? All data will be lost.", default=False
-        ).ask()
+        confirm = questionary.confirm("Delete sandbox? All data will be lost.", default=False).ask()
         if not confirm:
             console.print("[yellow]Cancelled.[/yellow]")
             return

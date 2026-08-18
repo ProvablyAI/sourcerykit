@@ -132,4 +132,3 @@ class TestGetBootstrap:
 
         result = get_bootstrap()
         assert isinstance(result, ProvablyBootstrapCache)
-
