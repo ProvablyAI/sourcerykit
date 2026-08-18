@@ -5,7 +5,7 @@ import dataclasses
 from collections.abc import Callable
 
 from sourcerykit.cli.init import run_full_bootstrap
-from sourcerykit.cli.utils import console, run_connectivity_check
+from sourcerykit.cli.utils import console, mask_postgres_url, run_connectivity_check
 from sourcerykit.config import Settings, get_settings
 from sourcerykit.db._engine import get_connection_info
 from sourcerykit.provably._errors import ProvablyConnectionError, ProvablyUnauthorizedError
@@ -34,14 +34,36 @@ def _check_api_key_and_org(settings: Settings) -> tuple[bool, str]:
     return True, f"API key valid, org found ({len(orgs)} org(s))"
 
 
-def _check_postgres(settings: Settings) -> tuple[bool, str]:
-    """Validate postgres_url connectivity."""
+def _check_database(settings: Settings) -> tuple[bool, str]:
+    """Validate database connectivity and sandbox status if applicable."""
     if not settings.postgres_url:
         return False, "SOURCERYKIT_POSTGRES_URL is missing — run 'sourcerykit init'"
 
-    if run_connectivity_check(settings.postgres_url, quiet=True):
-        return True, "PostgreSQL connection successful"
-    return False, "PostgreSQL connection failed — check your SOURCERYKIT_POSTGRES_URL"
+    # Check database connectivity
+    db_ok = run_connectivity_check(settings.postgres_url, quiet=True)
+
+    # Try to get sandbox status
+    sandbox = None
+    try:
+        sandbox = asyncio.run(service.get_sandbox())
+    except Exception:
+        pass  # Ignore sandbox check errors
+
+    # If database connection works, report success with sandbox info
+    if db_ok:
+        if sandbox:
+            status = sandbox.get("status", "").lower()
+            if status in ("active", "provisioning"):
+                return True, f"Sandbox active ({mask_postgres_url(settings.postgres_url)})"
+        return True, f"Personal database ({mask_postgres_url(settings.postgres_url)})"
+
+    # Connection failed — check if sandbox is expired
+    if sandbox:
+        status = sandbox.get("status", "").lower()
+        if status not in ("active", "provisioning"):
+            return False, f"Sandbox {status} — run 'sourcerykit sandbox create'"
+
+    return False, "Database connection failed — check SOURCERYKIT_POSTGRES_URL"
 
 
 def _check_project_name(settings: Settings) -> tuple[bool, str]:
@@ -138,7 +160,7 @@ def run_doctor(fix: bool = False) -> None:
 
     checks: list[tuple[str, Callable[[], tuple[bool, str]]]] = [
         ("API key + org", lambda: _check_api_key_and_org(settings)),
-        ("PostgreSQL", lambda: _check_postgres(settings)),
+        ("Database", lambda: _check_database(settings)),
         ("Project name", lambda: _check_project_name(settings)),
         ("Bootstrap IDs", lambda: _check_bootstrap_ids(settings)),
         ("Collection + IDs", lambda: _run_deep_check_collection_and_ids(settings)),
