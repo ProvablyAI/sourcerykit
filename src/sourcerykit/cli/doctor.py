@@ -13,6 +13,19 @@ from sourcerykit.provably.auth_service import auth_service
 from sourcerykit.provably.service import service
 
 
+def _check_provably_reachability(settings: Settings) -> tuple[bool, str]:
+    """Ensure Provably API is reachable before any other checks."""
+    if not settings.api_key:
+        return False, "PROVABLY_API_KEY is missing — run 'sourcerykit init'"
+    try:
+        asyncio.run(auth_service.list_organizations())
+        return True, "Provably API reachable"
+    except ProvablyConnectionError:
+        return False, "Cannot reach Provably API — check your connection"
+    except Exception as e:
+        return False, f"Provably API check failed: {e}"
+
+
 def _check_api_key_and_org(settings: Settings) -> tuple[bool, str]:
     """Validate API key and org_id in one call (list_organizations uses API key)."""
     if not settings.api_key:
@@ -153,6 +166,7 @@ def run_doctor(fix: bool = False) -> None:
         return
 
     checks: list[tuple[str, Callable[[], tuple[bool, str]]]] = [
+        ("Provably API", lambda: _check_provably_reachability(settings)),
         ("API key + org", lambda: _check_api_key_and_org(settings)),
         ("Database", lambda: _check_database(settings)),
         ("Project name", lambda: _check_project_name(settings)),

@@ -24,7 +24,12 @@ async def bootstrap_system() -> None:
         raise SourceryKitConfigError("SOURCERYKIT_POSTGRES_URL is required. Run 'sourcerykit init' first.")
 
     # Check sandbox health — recreate if expired
-    sandbox, is_sandbox = await provably_service.get_sandbox_status(settings.postgres_url)
+    try:
+        sandbox, is_sandbox = await provably_service.get_sandbox_status(settings.postgres_url)
+    except Exception as e:
+        _log.error("sandbox_status_check_failed", error=str(e))
+        raise SourceryKitConfigError("Cannot reach Provably API. Check your connection and try again.") from e
+
     if is_sandbox and sandbox:
         status = sandbox.get("status", "").lower()
         if status not in ("active", "provisioning"):

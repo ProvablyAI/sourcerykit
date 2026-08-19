@@ -330,6 +330,7 @@ def _execute_post_auth_phases(
             if db_choice == "sandbox":
                 try:
                     postgres_url = asyncio.run(provably_service.create_sandbox(uuid.UUID(org_id), token=token))
+                    sandbox = True
                     console.print("  ✅ Sandbox created")
                 except Exception as e:
                     console.print(f"[red]❌ Failed to create sandbox: {e}[/red]")
