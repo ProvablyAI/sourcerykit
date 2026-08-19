@@ -1,31 +1,17 @@
 /**
- * Page chrome for the local trace dashboard.
+ * Page chrome for the local trace dashboard. Each horizontal band is
+ * margin | column | margin totalling 1440, and the grid lines are the grey
+ * field showing through 1px gutters.
  *
- * The page is a grey field (#e9e9e9) covered by panels. Every horizontal band
- * splits into three containers that total exactly 1440: a 168 margin, the 1104
- * column, another 168 margin. The grid you see is the field showing through a
- * 1px inset on the rails, plus a 1px band foot.
- *
- * The insets are transparent borders rather than margins, so they take their
- * width from inside the container and the line still sums to 1440; as margins
- * they pushed it to 1441 and every rule landed off-pixel. They sit whole on the
- * rails rather than split half-and-half with the column (which is how the
- * design draws the first three bands) because a 0.5px border does not survive
- * rasterising: the rail's half paints and the column's collapses, leaving every
- * rule at half strength. The footer band uses this same
- * integer gutter, and it is the one that renders crisp.
- *
- * The nav rails are white. Every other band's rails are #fafafa. The footer
- * is the one band that puts the whole gutter on its rails and runs a flush
- * 1104 column.
+ * The gutters are transparent borders carried whole by one rail: as margins
+ * they pushed the line to 1441, and split 0.5px per side they rasterise at
+ * half strength.
  */
 
 /*
- * Self-hosted latin subsets, taken from Google Fonts. The dashboard runs on
- * localhost and often offline, where a render-blocking stylesheet from
- * fonts.googleapis.com leaves a blank window until the request times out. It
- * also stopped the tool sending a request to Google every time a developer
- * opened a trace. 80 kB for the three families.
+ * Self-hosted latin subsets. The dashboard often runs offline, where a
+ * stylesheet from fonts.googleapis.com blocks rendering until it times out,
+ * and self-hosting keeps trace views from pinging Google.
  */
 @font-face {
     font-family: 'Geist';
@@ -62,12 +48,10 @@ body {
     margin: 0;
 }
 
-/**
- * The page itself does not scroll: the chrome stays put and the activity trail
- * inside sk-trace-view is the only scroller. Below 640px tall there is no room
- * for that, so the page goes back to scrolling as a whole.
+/*
+ * The page itself does not scroll: the activity trail is the only scroller.
+ * The media query further down releases this when the fixed frame cannot fit.
  */
-/* Clipping here too, so a scripted scroll cannot strand the frame off-screen. */
 html {
     overflow: hidden;
 }
@@ -83,7 +67,6 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* One horizontal band: margin | column | margin. */
 .band {
     display: flex;
     align-items: stretch;
@@ -119,7 +102,6 @@ body {
     max-width: 1104px;
 }
 
-/* Below the full grid width the margins collapse and the column takes over. */
 @media (max-width: 1103px) {
     .band > .margin {
         display: none;
@@ -206,7 +188,6 @@ body {
     overflow: hidden;
 }
 
-/* The glyph strokes #fafafa while the label stays white. */
 .btn-primary svg {
     stroke: var(--sk-status-on-solid, #fafafa);
 }
@@ -240,7 +221,6 @@ body {
     min-height: 0;
 }
 
-/* 48px of the grey field between the card and the footer. */
 .gap-band {
     flex: 0 0 auto;
     min-height: 48px;
@@ -251,10 +231,9 @@ body {
 }
 
 /*
- * Too short, or too narrow to hold the three-panel layout: the whole page
- * scrolls again. This must cover the same conditions the component uses to
- * release its inner scroller, or content lands in a gap where nothing scrolls
- * and the card silently clips it.
+ * Too short or too narrow for the fixed frame: the whole page scrolls again.
+ * Must match the conditions trace.css uses to release its inner scroller, or
+ * content lands in a gap where nothing scrolls.
  */
 @media (max-height: 640px), (max-width: 1103px) {
     html {
@@ -268,10 +247,6 @@ body {
     }
 }
 
-/*
- * The gap band is a pinstripe, not a fill: a 1px rule every 8px along the
- * gradient axis, over white.
- */
 .gap-band .column {
     background-color: var(--sk-card, #ffffff);
     background-image: repeating-linear-gradient(
@@ -282,7 +257,6 @@ body {
     border-radius: 4px;
 }
 
-/* The rails carry the whole gutter and the column runs flush. */
 .sitefooter .band {
     padding-bottom: 0;
 }
@@ -307,7 +281,6 @@ body {
     border-radius: 4px 4px 0 0;
     font-size: var(--sk-text-xs, 12px);
     line-height: var(--sk-text-xs-leading-none, 1);
-    /* A literal, not --sk-muted-foreground. */
     color: #373739;
 }
 

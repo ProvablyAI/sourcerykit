@@ -1,9 +1,4 @@
-/**
- * Design tokens for the trace dashboard.
- *
- * These live on :root so they inherit into every shadow root. Overriding any
- * of them rebrands the components. This is the only supported customisation.
- */
+/* Design tokens for the trace dashboard. */
 
 :root {
   /* Trace status */
@@ -43,12 +38,10 @@
   /* Type */
   --sk-font-sans: Geist, ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sk-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  /* The trace title is the one place the design uses a display face */
   --sk-font-display: 'Space Grotesk', Geist, ui-sans-serif, system-ui, sans-serif;
 
   --sk-text-xs: 12px;
   --sk-text-xs-leading: 16px;
-  /* text-xs/leading-none, used on proof dates and the trace title */
   --sk-text-xs-leading-none: 1;
   --sk-text-sm: 14px;
   --sk-text-sm-leading: 20px;

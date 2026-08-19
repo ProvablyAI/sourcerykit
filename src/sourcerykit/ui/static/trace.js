@@ -109,7 +109,6 @@ function verdictSubtitle(disagreed, unverified, total) {
   return `${unverified} of ${total} ${noun} could not be verified`
 }
 
-/** The tool-call body: URL, then the recorded exchange. */
 function interceptBlocks(ic) {
   const blocks = [{ caption: 'URL', value: ic.source_url }]
   if (ic.actual_value !== undefined && ic.actual_value !== null) {
@@ -118,7 +117,6 @@ function interceptBlocks(ic) {
   return blocks
 }
 
-/** The proof body: where the ground truth came from, and the comparison. */
 function proofBlocks(ic) {
   const blocks = []
   if (ic.query_id) blocks.push({ caption: 'Query record', value: ic.query_id })
@@ -131,7 +129,6 @@ function proofBlocks(ic) {
   return blocks
 }
 
-/** A step is expandable when it has anything to show. */
 function hasBody(step) {
   return step.blocks.length > 0 || step.prose.length > 0 || step.claims.length > 0
 }
@@ -143,7 +140,6 @@ function proofStatusOf(outcome) {
 
 // --------------------------------------------------------------------- pieces
 
-/** The trace status pill. */
 function statusBadge(status) {
   return el(
     'span.sk-status',
@@ -158,7 +154,6 @@ function statusBadge(status) {
   )
 }
 
-/** The dot-and-word pill on the right of an activity card. */
 function activityBadge(status) {
   const showDot = ['verified', 'caught', 'error', 'healed'].includes(status)
   return el(
@@ -175,7 +170,6 @@ function activityBadge(status) {
   )
 }
 
-/** A detail block: a bare caption line, then a boxed value. */
 function detailBlock({ caption, tag, value, tone = 'default' }) {
   const copyButton = el('button.icon-button.copy', {
     'aria-label': `Copy ${caption}`,
@@ -206,7 +200,6 @@ function detailBlock({ caption, tag, value, tone = 'default' }) {
   )
 }
 
-/** A claim row inside the summary card. */
 function claimCard(claim) {
   const tone = claim.agrees ? 'default' : claim.outcome === 'ERROR' ? 'error' : 'caught'
   const label = claim.agrees
@@ -300,7 +293,7 @@ function summaryCard(counts) {
           row('badgeCheck', 'Proofs', String(counts.proofs)),
           row('quote', 'Claims', String(counts.claims)),
           row('triangleAlert', 'Caught', String(counts.caught)),
-          // The SDK records no timings, so the row stays hidden. See NOTES.md.
+          // The SDK records no timings, so the row stays hidden.
           counts.durationSeconds === null
             ? null
             : row('clock4', 'Duration', `${counts.durationSeconds.toFixed(1)}s`),
@@ -422,7 +415,6 @@ function proofList(proofs) {
   return host
 }
 
-/** One row of the trail: the rail glyph, then the card. */
 function activityStep(step, index, total, isOpen, onToggle) {
   const bodied = hasBody(step)
   const glyphName =
@@ -590,7 +582,6 @@ function buildSteps(data) {
   })
 
   if (proofs.length > 0) {
-    // A bare divider row between the proofs and the verdict.
     steps.push({
       kind: 'handover',
       label: 'Claims handed over to agent',

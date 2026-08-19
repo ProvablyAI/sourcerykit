@@ -1,10 +1,7 @@
 /**
- * Pure trace logic for the static UI: outcome roll-up, field claims, the
- * markdown sliver and the status marks.
- *
- * Ported from the Lit build. Everything that used to return a `TemplateResult`
- * now returns real DOM, built node by node, so text stays escaped by
- * construction and nothing here ever touches innerHTML.
+ * Pure trace logic: outcome roll-up, field claims, the markdown sliver and
+ * the status marks. Everything returns real DOM built node by node, so text
+ * stays escaped by construction and nothing here touches innerHTML.
  */
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -214,15 +211,10 @@ export function markdown(text) {
 /* ------------------------------------------------------------------- marks */
 
 /**
- * SourceryKit status marks.
- *
- * Each mark is a 3x3 grid of 5x5 cells on a 20x20 box, with a per-status
- * opacity pattern. The exported SVGs hardcode the status hex; here the fill is
- * `currentColor` so the same geometry works on a tinted and an on-colour
- * surface, and the opacity pattern is reproduced cell for cell.
- *
- * Cell order below is row-major: top-left, top-centre, top-right, then middle,
- * then bottom. A value of 0 means the cell is absent from the export.
+ * SourceryKit status marks: a 3x3 grid of 5x5 cells on a 20x20 box, with a
+ * per-status opacity pattern. The fill is `currentColor` so the same geometry
+ * works on tinted and on-colour surfaces. Cell order is row-major; 0 means
+ * the cell is not drawn.
  */
 
 /** Verified: a solid plus, corners dimmed. */
@@ -237,7 +229,7 @@ const CAUGHT = [1, 1, 1, 1, 0.2, 1, 1, 1, 1]
 /** Healed: a frame with the top and bottom centres dimmed. */
 const HEALED = [1, 0.2, 1, 1, 1, 1, 1, 0.2, 1]
 
-/** Loading: the export's ramp, kept as the still frame under reduced motion. */
+/** Loading: the ramp kept as the still frame under reduced motion. */
 const LOADING = [0.6, 0.8, 1, 0.4, 0, 0, 0.2, 0.1, 0]
 
 const PATTERNS = {
