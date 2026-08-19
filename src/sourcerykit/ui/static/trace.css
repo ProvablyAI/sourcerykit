@@ -236,7 +236,7 @@
   display: grid;
   /*
    * The column splits as main, a 1px band gap, then a
-   * sidebar (236:11527 and 236:11624). Its halves land on .5, so the
+   * sidebar. Its halves land on .5, so the
    * sidebar is rounded up to keep the divider on an integer
    * boundary, x=927 to 928 at 1440, where it rasterises crisp.
    */
@@ -1375,7 +1375,7 @@
   color: #ffffff;
 }
 
-/* 272:7328 boxes the 12px mark inside a 16px slot with 2px around it. */
+/* The badge boxes the 12px mark inside a 16px slot with 2px around it. */
 .sk-status .bare {
   display: flex;
   align-items: center;

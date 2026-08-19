@@ -10,14 +10,14 @@
  * width from inside the container and the line still sums to 1440; as margins
  * they pushed it to 1441 and every rule landed off-pixel. They sit whole on the
  * rails rather than split half-and-half with the column (which is how the
- * draws the first three bands) because a 0.5px border does not survive
+ * design draws the first three bands) because a 0.5px border does not survive
  * rasterising: the rail's half paints and the column's collapses, leaving every
  * rule at half strength. The footer band uses this same
  * integer gutter, and it is the one that renders crisp.
  *
- * The nav rails are white (236:11512). Every other band's rails are #fafafa
- * (236:11526, 246:8724, 246:8708). The footer is the one band that puts the
- * whole gutter on its rails and runs a flush 1104 column (246:8706).
+ * The nav rails are white. Every other band's rails are #fafafa. The footer
+ * is the one band that puts the whole gutter on its rails and runs a flush
+ * 1104 column.
  */
 
 /*
