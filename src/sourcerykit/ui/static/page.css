@@ -1,0 +1,300 @@
+/**
+ * Page chrome for the local trace dashboard. Each horizontal band is
+ * margin | column | margin totalling 1440, and the grid lines are the grey
+ * field showing through 1px gutters.
+ *
+ * The gutters are transparent borders carried whole by one rail: as margins
+ * they pushed the line to 1441, and split 0.5px per side they rasterise at
+ * half strength.
+ */
+
+/*
+ * Self-hosted latin subsets. The dashboard often runs offline, where a
+ * stylesheet from fonts.googleapis.com blocks rendering until it times out,
+ * and self-hosting keeps trace views from pinging Google.
+ */
+@font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/static/fonts/geist-latin.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Geist Mono';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/static/fonts/geist-mono-latin.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url('/static/fonts/space-grotesk-latin.woff2') format('woff2');
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+}
+
+/*
+ * The page itself does not scroll: the activity trail is the only scroller.
+ * The media query further down releases this when the fixed frame cannot fit.
+ */
+html {
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: #e9e9e9;
+    color: var(--sk-foreground, #0a0a0a);
+    font-family: var(--sk-font-sans, Geist, ui-sans-serif, system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+}
+
+.band {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding-bottom: 1px;
+}
+
+.band > .margin {
+    flex: 1 1 168px;
+    min-width: 0;
+    border: 0 solid transparent;
+    background-color: var(--sk-sidebar, #fafafa);
+    background-clip: padding-box;
+}
+
+.topbar .margin {
+    background-color: var(--sk-card, #ffffff);
+}
+
+.band > .margin.left {
+    border-right-width: 1px;
+    border-radius: 0 4px 4px 0;
+}
+
+.band > .margin.right {
+    border-left-width: 1px;
+    border-radius: 4px 0 0 4px;
+}
+
+.band > .column {
+    flex: 0 1 1104px;
+    min-width: 0;
+    max-width: 1104px;
+}
+
+@media (max-width: 1103px) {
+    .band > .margin {
+        display: none;
+    }
+
+    .band > .column {
+        flex: 1 1 auto;
+    }
+}
+
+.topbar {
+    flex: 0 0 auto;
+    background: #e9e9e9;
+}
+
+.topbar .column {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 60px;
+    padding: 0 16px;
+    background: var(--sk-card, #ffffff);
+    border-radius: 4px;
+}
+
+.topbar-logo {
+    display: flex;
+    align-items: center;
+}
+
+.topbar-logo img {
+    display: block;
+    height: 24px;
+    width: 141px;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    border-radius: var(--sk-radius-md, 8px);
+    font-size: var(--sk-text-xs, 12px);
+    line-height: var(--sk-text-xs-leading, 16px);
+    font-weight: var(--sk-weight-medium, 500);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.btn-outline {
+    padding: 6px 12px;
+    border: 1px solid var(--sk-input, #e5e5e5);
+    background: var(--sk-card, #ffffff);
+    color: var(--sk-foreground, #0a0a0a);
+    box-shadow: var(--sk-shadow-xs, 0 1px 2px 0 #0000000d);
+}
+
+.btn-outline:hover {
+    background: var(--sk-muted, #f5f5f5);
+}
+
+.btn-outline:active {
+    background: var(--sk-input, #e5e5e5);
+}
+
+.btn-primary {
+    padding: 8px 12px;
+    border: 1px solid rgb(255 255 255 / 0.25);
+    background: var(--sk-status-healed, #3944ea);
+    color: #ffffff;
+    overflow: hidden;
+}
+
+.btn-primary svg {
+    stroke: var(--sk-status-on-solid, #fafafa);
+}
+
+.btn-primary:hover {
+    filter: brightness(0.94);
+}
+
+.btn-primary:active {
+    filter: brightness(0.88);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--sk-status-healed, #3944ea);
+    outline-offset: 2px;
+}
+
+.page {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.page .column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.sk-view {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.gap-band {
+    flex: 0 0 auto;
+    min-height: 48px;
+}
+
+.sitefooter {
+    flex: 0 0 auto;
+}
+
+/*
+ * Too short or too narrow for the fixed frame: the whole page scrolls again.
+ * Must match the conditions trace.css uses to release its inner scroller, or
+ * content lands in a gap where nothing scrolls.
+ */
+@media (max-height: 640px), (max-width: 1103px) {
+    html {
+        overflow: visible;
+    }
+
+    body {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+}
+
+.gap-band .column {
+    background-color: var(--sk-card, #ffffff);
+    background-image: repeating-linear-gradient(
+        -45deg,
+        #eeeeee 0 1px,
+        transparent 1px 8px
+    );
+    border-radius: 4px;
+}
+
+.sitefooter .band {
+    padding-bottom: 0;
+}
+
+.sitefooter .margin.left {
+    border-radius: 0 4px 0 0;
+}
+
+.sitefooter .margin.right {
+    border-radius: 4px 0 0 0;
+}
+
+.sitefooter .column {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    min-height: 44px;
+    padding: 16px 32px;
+    background: var(--sk-card, #ffffff);
+    border-radius: 4px 4px 0 0;
+    font-size: var(--sk-text-xs, 12px);
+    line-height: var(--sk-text-xs-leading-none, 1);
+    color: #373739;
+}
+
+.sitefooter nav {
+    display: flex;
+    gap: 24px;
+}
+
+.sitefooter a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.sitefooter a:hover {
+    color: var(--sk-foreground, #0a0a0a);
+    text-decoration: underline;
+}

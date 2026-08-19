@@ -1,0 +1,81 @@
+/* Design tokens for the trace dashboard. */
+
+:root {
+  /* Trace status */
+  --sk-status-verified: #16a34a;
+  --sk-status-verifying: #9ca3af;
+  --sk-status-caught: #f59e0b;
+  --sk-status-error: #ef4444;
+  --sk-status-healed: #3944ea;
+
+  /* Label colour when a status colour is the background */
+  --sk-status-on-solid: #fafafa;
+  /* The white chip behind a glyph on a solid badge */
+  --sk-status-on-solid-chip: #ffffff;
+
+  /*
+   * Text on a white surface uses the 600 step; the 500s above are fills and
+   * dots. amber/500 on white is 2.1:1 and fails contrast.
+   */
+  --sk-status-caught-text: #d97706;
+
+  /* Surfaces */
+  --sk-background: #ffffff;
+  --sk-card: #ffffff;
+  --sk-sidebar: #fafafa;
+  --sk-muted: #f5f5f5;
+  --sk-input: #e5e5e5;
+  --sk-border: #e5e5e5;
+
+  /* Text */
+  --sk-foreground: #0a0a0a;
+  --sk-muted-foreground: #737373;
+  --sk-primary: #171717;
+  --sk-primary-foreground: #fafafa;
+  /* Stroke colour on the exported step and file glyphs */
+  --sk-glyph: #4b5563;
+
+  /* Type */
+  --sk-font-sans: Geist, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sk-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sk-font-display: 'Space Grotesk', Geist, ui-sans-serif, system-ui, sans-serif;
+
+  --sk-text-xs: 12px;
+  --sk-text-xs-leading: 16px;
+  --sk-text-xs-leading-none: 1;
+  --sk-text-sm: 14px;
+  --sk-text-sm-leading: 20px;
+  --sk-text-lg: 18px;
+  --sk-text-lg-leading-none: 1;
+
+  --sk-weight-normal: 400;
+  --sk-weight-medium: 500;
+  --sk-weight-bold: 700;
+
+  /* Spacing */
+  --sk-space-0: 0px;
+  --sk-space-0-5: 2px;
+  --sk-space-1: 4px;
+  --sk-space-1-5: 6px;
+  --sk-space-2: 8px;
+  --sk-space-3: 12px;
+  --sk-space-4: 16px;
+  --sk-space-8: 32px;
+
+  /* Shape */
+  --sk-radius-sm: 3px;
+  --sk-radius-md: 8px;
+  --sk-radius-lg: 10px;
+  --sk-radius-full: 9999px;
+  --sk-border-width: 1px;
+
+  /* Elevation */
+  --sk-shadow-xs: 0 1px 2px 0 #0000000d;
+  --sk-shadow-lg: 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;
+
+  /* Interaction states */
+  --sk-overlay-hover: #ffffff1a;
+  --sk-overlay-pressed: #ffffff4d;
+  --sk-opacity-disabled: 0.5;
+  --sk-opacity-disabled-strong: 0.6;
+}

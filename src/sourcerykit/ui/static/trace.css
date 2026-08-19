@@ -1,0 +1,1482 @@
+/*
+ * Trace page component styles. Each component is a block class on its root
+ * element (.sk-view, .sk-step, .sk-abadge, .sk-claim, .sk-detail, .sk-proofs,
+ * .sk-status, .sk-summary) with every rule scoped by descendant to its block.
+ * The attribute selectors match attributes trace.js sets.
+ */
+
+/* ------------------------------------------------------------------ *
+ * Shared fragments
+ * ------------------------------------------------------------------ */
+
+.sk-view,
+.sk-step,
+.sk-abadge,
+.sk-claim,
+.sk-detail,
+.sk-proofs,
+.sk-status,
+.sk-summary {
+  box-sizing: border-box;
+  font-family: var(--sk-font-sans, Geist, ui-sans-serif, system-ui, sans-serif);
+  color: var(--sk-foreground, #0a0a0a);
+}
+
+.sk-view *,
+.sk-view *::before,
+.sk-view *::after,
+.sk-step *,
+.sk-step *::before,
+.sk-step *::after,
+.sk-abadge *,
+.sk-abadge *::before,
+.sk-abadge *::after,
+.sk-claim *,
+.sk-claim *::before,
+.sk-claim *::after,
+.sk-detail *,
+.sk-detail *::before,
+.sk-detail *::after,
+.sk-proofs *,
+.sk-proofs *::before,
+.sk-proofs *::after,
+.sk-status *,
+.sk-status *::before,
+.sk-status *::after,
+.sk-summary *,
+.sk-summary *::before,
+.sk-summary *::after {
+  box-sizing: inherit;
+}
+
+/* :where() holds these element resets at their original specificity. Scoping
+   them by descendant instead would let them outrank .outline-button and strip
+   its background. */
+:where(
+    .sk-view,
+    .sk-step,
+    .sk-abadge,
+    .sk-claim,
+    .sk-detail,
+    .sk-proofs,
+    .sk-status,
+    .sk-summary
+  )
+  button {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:where(
+    .sk-view,
+    .sk-step,
+    .sk-abadge,
+    .sk-claim,
+    .sk-detail,
+    .sk-proofs,
+    .sk-status,
+    .sk-summary
+  )
+  button:disabled {
+  cursor: default;
+  opacity: var(--sk-opacity-disabled, 0.5);
+}
+
+:where(
+    .sk-view,
+    .sk-step,
+    .sk-abadge,
+    .sk-claim,
+    .sk-detail,
+    .sk-proofs,
+    .sk-status,
+    .sk-summary
+  )
+  p {
+  margin: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sk-radius-md, 8px);
+  background: transparent;
+  color: var(--sk-foreground, #0a0a0a);
+  flex-shrink: 0;
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--sk-muted, #f5f5f5);
+}
+
+.icon-button:active:not(:disabled) {
+  background: var(--sk-input, #e5e5e5);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--sk-status-healed, #3944ea);
+  outline-offset: 1px;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.icon-button.tight {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--sk-radius-sm, 3px);
+}
+
+.icon-button.tight svg {
+  width: 16px;
+  height: 16px;
+}
+
+.outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-2, 8px);
+  height: 32px;
+  padding: var(--sk-space-2, 8px) var(--sk-space-3, 12px);
+  border: var(--sk-border-width, 1px) solid var(--sk-input, #e5e5e5);
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-card, #ffffff);
+  box-shadow: var(--sk-shadow-xs, 0 1px 2px 0 #0000000d);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.outline-button:hover:not(:disabled) {
+  background: var(--sk-muted, #f5f5f5);
+}
+
+.outline-button:active:not(:disabled) {
+  background: var(--sk-input, #e5e5e5);
+}
+
+.outline-button:focus-visible {
+  outline: 2px solid var(--sk-status-healed, #3944ea);
+  outline-offset: 1px;
+}
+
+.outline-button svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Drives the verifying chase. Cells carry `--i`, their position around the
+   ring, and each starts its fade one eighth of a cycle after the one before,
+   so a bright head with a fading tail travels around the mark. */
+.chase {
+  animation: sk-chase 1s linear infinite;
+  animation-delay: calc(var(--i) * -0.125s);
+}
+
+@keyframes sk-chase {
+  0% {
+    fill-opacity: 1;
+  }
+  70%,
+  100% {
+    fill-opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chase {
+    animation: none;
+    fill-opacity: 0.6;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-view
+ * ------------------------------------------------------------------ */
+
+.sk-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #e9e9e9;
+}
+
+.sk-view .layout {
+  display: grid;
+  /* The sidebar is sized so the 1px divider lands on an integer x, where it
+     rasterises crisp. */
+  grid-template-columns: minmax(0, 1fr) 1px 344px;
+  align-items: stretch;
+  width: 100%;
+  max-width: 1104px;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.sk-view .main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--sk-card, #ffffff);
+  border-radius: 4px 0 0 4px;
+  overflow: hidden;
+}
+
+.sk-view .divider {
+  background: transparent;
+}
+
+/* No overflow clip here: it would cancel the sticky sidebar. */
+.sk-view .aside {
+  border-radius: 0 4px 4px 0;
+}
+
+.sk-view .title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-4, 16px);
+  padding: 24px;
+  box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
+}
+
+.sk-view h1 {
+  margin: 0;
+  font-family: var(--sk-font-display, 'Space Grotesk', Geist, sans-serif);
+  font-size: var(--sk-text-lg, 18px);
+  line-height: var(--sk-text-lg-leading-none, 1);
+  font-weight: var(--sk-weight-bold, 700);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-view .title-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  flex-shrink: 0;
+}
+
+.sk-view .trace-id {
+  max-width: 224px;
+  min-width: 0;
+}
+
+.sk-view .trace-id .muted {
+  color: rgb(115 115 115 / 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sk-view .trace-id .value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-view .trail-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-2, 8px);
+  padding: var(--sk-space-4, 16px) 24px;
+  box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
+}
+
+.sk-view .trail-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-view h2 {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.sk-view .steps-pill {
+  padding: var(--sk-space-0-5, 2px) var(--sk-space-2, 8px);
+  border-radius: 6px;
+  background: rgb(57 68 234 / 0.1);
+  color: var(--sk-status-healed, #3944ea);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+}
+
+.sk-view .timestamp {
+  font-family: var(--sk-font-mono, ui-monospace, monospace);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  color: var(--sk-muted-foreground, #737373);
+  opacity: 0.5;
+}
+
+/* The page chrome stays put; this is the only thing that scrolls. */
+.sk-view .trail-skeleton,
+.sk-view ol.trail {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--sk-space-4, 16px) 24px;
+  list-style: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--sk-sidebar, #fafafa);
+}
+
+.sk-view ol.trail > li {
+  display: flex;
+}
+
+/* Both scrollers take focus for the keyboard, so only draw the ring when
+   the keyboard is what put it there. */
+.sk-view ol.trail:focus,
+.sk-view .aside:focus {
+  outline: none;
+}
+
+.sk-view ol.trail:focus-visible,
+.sk-view .aside:focus-visible {
+  outline: 2px solid var(--sk-status-healed, #3944ea);
+  outline-offset: -2px;
+}
+
+.sk-view .aside {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sk-space-4, 16px);
+  background: var(--sk-sidebar, #fafafa);
+}
+
+.sk-view .aside-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4, 16px);
+}
+
+/* A long trail pushes the Final Answer step off the bottom, so the
+   answer is repeated here where it stays in view. */
+.sk-view .answer-card {
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-card, #ffffff);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+}
+
+.sk-view .answer-head {
+  display: flex;
+  align-items: center;
+  padding: var(--sk-space-2, 8px) var(--sk-space-2, 8px)
+    var(--sk-space-2, 8px) var(--sk-space-4, 16px);
+  min-height: 48px;
+  box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
+}
+
+.sk-view .answer-head h2 {
+  margin: 0;
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-view .answer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2, 8px);
+  padding: var(--sk-space-4, 16px);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+}
+
+.sk-view .answer-body .prose {
+  margin: 0;
+}
+
+.sk-view .muted {
+  color: var(--sk-muted-foreground, #737373);
+}
+
+.sk-view .prose {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sk-view .prose strong {
+  font-weight: var(--sk-weight-semibold, 600);
+}
+
+.sk-view .prose code,
+.sk-view li code {
+  font-family: var(--sk-font-mono, ui-monospace, monospace);
+  font-size: 0.9em;
+  padding: 1px var(--sk-space-1, 4px);
+  border-radius: var(--sk-radius-sm, 3px);
+  background: var(--sk-muted, #f5f5f5);
+}
+
+.sk-view ul {
+  margin: 0;
+  padding-left: var(--sk-space-5, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-1, 4px);
+}
+
+.sk-view li strong {
+  font-weight: var(--sk-weight-semibold, 600);
+}
+
+.sk-view .blocks,
+.sk-view .claim-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4, 16px);
+}
+
+/* The skeleton mirrors the real trail so the swap is not a jump. */
+.sk-view .skeleton-bar {
+  display: block;
+  border-radius: var(--sk-radius-md, 8px);
+  background: linear-gradient(
+    90deg,
+    var(--sk-muted, #f5f5f5) 25%,
+    #ececec 37%,
+    var(--sk-muted, #f5f5f5) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.sk-view .skeleton-row {
+  display: flex;
+  gap: var(--sk-space-4, 16px);
+  padding-bottom: var(--sk-space-4, 16px);
+}
+
+.sk-view .skeleton-row .glyph {
+  width: 36px;
+  height: 36px;
+  margin-top: 7px;
+  border-radius: var(--sk-radius-full, 9999px);
+  flex-shrink: 0;
+}
+
+.sk-view .skeleton-row .card {
+  flex: 1 0 0;
+  height: 48px;
+}
+
+.sk-view .skeleton-title {
+  height: 32px;
+  width: 320px;
+}
+
+.sk-view .skeleton-trail {
+  height: 32px;
+  width: 220px;
+}
+
+.sk-view .skeleton-side {
+  height: 192px;
+}
+
+.sk-view .skeleton-side + .skeleton-side {
+  height: 204px;
+}
+
+.sk-view .state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--sk-muted-foreground, #737373);
+  font-size: var(--sk-text-sm, 14px);
+}
+
+.sk-view .state.error {
+  color: var(--sk-status-error, #ef4444);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-view .skeleton-bar {
+    animation: none;
+  }
+}
+
+@media (max-width: 1103px) {
+  .sk-view .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sk-view .divider {
+    display: none;
+  }
+  .sk-view .main,
+  .sk-view .aside {
+    border-radius: 4px;
+  }
+}
+
+/*
+ * Stacked or too short for the fixed frame: the page scrolls as a whole and
+ * nothing here may clip. page.css releases the frame on the same two
+ * conditions; if the pair drifts apart, the trail overflows a clipped .main
+ * with no scroller anywhere.
+ */
+@media (max-width: 1103px), (max-height: 640px) {
+  .sk-view .main {
+    overflow: visible;
+  }
+
+  .sk-view .trail-skeleton,
+  .sk-view ol.trail,
+  .sk-view .aside {
+    overflow: visible;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-step
+ * ------------------------------------------------------------------ */
+
+.sk-step {
+  display: flex;
+  gap: var(--sk-space-4, 16px);
+  align-items: stretch;
+  width: 100%;
+}
+
+.sk-step .rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.sk-step .rail .line {
+  width: 1px;
+  background: var(--sk-border, #e5e5e5);
+}
+
+.sk-step .rail .line.top {
+  height: 6px;
+}
+
+.sk-step .rail .line.rest {
+  flex: 1 0 0;
+  min-height: 0;
+}
+
+.sk-step[first] .rail .line.top {
+  opacity: 0;
+}
+
+.sk-step[last] .rail .line.rest {
+  opacity: 0;
+}
+
+.sk-step .glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: rgb(156 163 175 / 0.1);
+  color: var(--sk-glyph, #4b5563);
+  flex-shrink: 0;
+}
+
+.sk-step .glyph svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.sk-step[kind='tool_call'] .glyph {
+  background: rgb(57 68 234 / 0.1);
+  color: var(--sk-status-healed, #3944ea);
+}
+
+.sk-step[tone='caught'] .glyph {
+  background: rgb(245 158 11 / 0.1);
+  color: var(--sk-status-caught, #f59e0b);
+}
+
+.sk-step[tone='error'] .glyph {
+  background: rgb(239 68 68 / 0.1);
+  color: var(--sk-status-error, #ef4444);
+}
+
+.sk-step > .body {
+  display: flex;
+  flex: 1 0 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  padding-bottom: var(--sk-space-4, 16px);
+}
+
+.sk-step > .body > .card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-card, #ffffff);
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+}
+
+.sk-step[tone='caught'] > .body > .card {
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-status-caught, #f59e0b);
+}
+
+.sk-step[tone='error'] > .body > .card {
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-status-error, #ef4444);
+}
+
+.sk-step[separator] > .body > .card {
+  box-shadow: none;
+  background: transparent;
+}
+
+.sk-step[separator] > .body > .card > .header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sk-step > .body > .card > .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-2, 8px);
+  padding: var(--sk-space-2, 8px) var(--sk-space-2, 8px)
+    var(--sk-space-2, 8px) var(--sk-space-4, 16px);
+  width: 100%;
+  text-align: left;
+  min-height: 48px;
+}
+
+.sk-step > .body > .card > button.header:hover {
+  background: var(--sk-muted, #f5f5f5);
+}
+
+.sk-step > .body > .card > button.header:focus-visible {
+  outline: 2px solid var(--sk-status-healed, #3944ea);
+  outline-offset: -2px;
+}
+
+.sk-step .title {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  min-width: 0;
+  /* Long tool names must yield to the status and chevron beside them
+     rather than run underneath. */
+  flex: 0 1 auto;
+  overflow: hidden;
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-step .title > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.sk-step .subtitle {
+  color: var(--sk-muted-foreground, #737373);
+  font-weight: var(--sk-weight-normal, 400);
+  white-space: nowrap;
+}
+
+.sk-step .trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-1, 4px);
+  flex-shrink: 0;
+}
+
+/* Matches the ghost icon-sm footprint without being a nested control. */
+.sk-step .chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--sk-foreground, #0a0a0a);
+  flex-shrink: 0;
+}
+
+.sk-step .chevron svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  transition: transform 150ms ease;
+}
+
+.sk-step[open] .chevron svg {
+  transform: rotate(180deg);
+}
+
+.sk-step > .body > .card > .content {
+  padding: var(--sk-space-4, 16px);
+  border-top: var(--sk-border-width, 1px) solid var(--sk-border, #e5e5e5);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-step .chevron svg {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-abadge
+ * ------------------------------------------------------------------ */
+
+.sk-abadge {
+  display: inline-flex;
+}
+
+.sk-abadge .badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-2, 8px);
+  padding: var(--sk-space-0-5, 2px) var(--sk-space-2, 8px);
+  border-radius: var(--sk-radius-full, 9999px);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  white-space: nowrap;
+  color: var(--pill-color, var(--sk-status-verifying, #9ca3af));
+}
+
+.sk-abadge .badge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.sk-abadge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.sk-abadge[status='intercepted'] .badge {
+  --pill-color: var(--sk-status-healed, #3944ea);
+}
+.sk-abadge[status='verified'] .badge {
+  --pill-color: var(--sk-status-verified, #16a34a);
+}
+.sk-abadge[status='caught'] .badge {
+  --pill-color: var(--sk-status-caught, #f59e0b);
+}
+.sk-abadge[status='error'] .badge {
+  --pill-color: var(--sk-status-error, #ef4444);
+}
+.sk-abadge[status='healed'] .badge {
+  --pill-color: var(--sk-status-healed, #3944ea);
+}
+.sk-abadge[status='pending'] .badge {
+  --pill-color: var(--sk-status-verifying, #9ca3af);
+}
+
+.sk-abadge[status='pending'] svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-abadge[status='pending'] svg {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-claim
+ * ------------------------------------------------------------------ */
+
+.sk-claim {
+  display: block;
+}
+
+.sk-claim .card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4, 16px);
+  border-radius: var(--sk-radius-md, 8px);
+  padding: var(--sk-space-4, 16px);
+  background: var(--sk-card, #ffffff);
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+}
+
+.sk-claim[tone='caught'] .card {
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-status-caught, #f59e0b);
+}
+
+.sk-claim[tone='error'] .card {
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-status-error, #ef4444);
+}
+
+.sk-claim .head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sk-claim .path {
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-claim .chip {
+  padding: var(--sk-space-0-5, 2px) var(--sk-space-2, 8px);
+  border-radius: 6px;
+  background: rgb(75 85 99 / 0.1);
+  color: var(--sk-glyph, #4b5563);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sk-claim .action {
+  color: var(--sk-muted-foreground, #737373);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  white-space: nowrap;
+}
+
+.sk-claim .mark {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sk-space-0-5, 2px) var(--sk-space-2, 8px);
+  border-radius: var(--sk-radius-full, 9999px);
+  flex-shrink: 0;
+  color: var(--sk-status-verified, #16a34a);
+}
+
+.sk-claim[tone='caught'] .mark {
+  color: var(--sk-status-caught, #f59e0b);
+}
+
+.sk-claim[tone='error'] .mark {
+  color: var(--sk-status-error, #ef4444);
+}
+
+.sk-claim .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.sk-claim .rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-3, 12px);
+}
+
+.sk-claim .row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sk-space-2, 8px);
+  min-width: 0;
+}
+
+.sk-claim .label {
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  color: var(--sk-muted-foreground, #737373);
+  flex-shrink: 0;
+}
+
+.sk-claim .value {
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  word-break: break-word;
+  min-width: 0;
+}
+
+.sk-claim[tone='caught'] .value {
+  color: var(--sk-status-caught-text, #d97706);
+}
+
+.sk-claim[tone='error'] .value {
+  color: var(--sk-status-error, #ef4444);
+}
+
+.sk-claim .missing {
+  color: var(--sk-muted-foreground, #737373);
+}
+
+.sk-claim .details {
+  margin: var(--sk-space-4, 16px) calc(-1 * var(--sk-space-4, 16px))
+    calc(-1 * var(--sk-space-4, 16px));
+  padding: var(--sk-space-4, 16px);
+  border-top: var(--sk-border-width, 1px) solid var(--sk-border, #e5e5e5);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  color: var(--sk-status-caught-text, #d97706);
+}
+
+.sk-claim[tone='error'] .details {
+  color: var(--sk-status-error, #ef4444);
+}
+
+.sk-claim[tone='caught'] .details {
+  border-top-color: var(--sk-status-caught, #f59e0b);
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-detail
+ * ------------------------------------------------------------------ */
+
+.sk-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-2, 8px);
+}
+
+.sk-detail .caption {
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  color: var(--sk-muted-foreground, #737373);
+}
+
+.sk-detail .box {
+  position: relative;
+  border-radius: var(--sk-radius-lg, 10px);
+  background: var(--sk-card, #ffffff);
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+  padding: var(--sk-space-4, 16px);
+}
+
+.sk-detail .tag {
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  color: var(--sk-muted-foreground, #737373);
+  margin-bottom: var(--sk-space-2, 8px);
+}
+
+.sk-detail .value {
+  margin: 0;
+  padding-right: 40px;
+  font-family: var(--sk-font-mono, ui-monospace, monospace);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.sk-detail .copy {
+  position: absolute;
+  right: 9px;
+  top: 9px;
+}
+
+.sk-detail[tone='caught'] .value {
+  color: var(--sk-status-caught-text, #d97706);
+}
+
+.sk-detail[tone='error'] .value {
+  color: var(--sk-status-error, #ef4444);
+}
+
+.sk-detail[tone='verified'] .value {
+  color: var(--sk-status-verified, #16a34a);
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-proofs
+ * ------------------------------------------------------------------ */
+
+.sk-proofs {
+  display: block;
+}
+
+.sk-proofs .card {
+  position: relative;
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-card, #ffffff);
+  overflow: hidden;
+}
+
+/* Rows fill the card edge to edge, so an inset ring on .card itself gets
+   painted over. Drawing it above them keeps the outline closed. */
+.sk-proofs .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+  pointer-events: none;
+}
+
+.sk-proofs .head {
+  display: flex;
+  align-items: center;
+  padding: var(--sk-space-2, 8px) var(--sk-space-2, 8px)
+    var(--sk-space-2, 8px) var(--sk-space-4, 16px);
+  box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-proofs h2 {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.sk-proofs .head .count {
+  color: var(--sk-muted-foreground, #737373);
+  font-weight: var(--sk-weight-normal, 400);
+  margin-left: var(--sk-space-2, 8px);
+}
+
+.sk-proofs .head .actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  margin-left: auto;
+}
+
+.sk-proofs[collapsed] .head {
+  box-shadow: none;
+}
+
+/* Rows paint over the card ring, so they carry the side rules themselves. */
+.sk-proofs .item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4, 16px);
+  padding: var(--sk-space-4, 16px);
+  box-shadow:
+    inset 0 -1px 0 0 var(--sk-border, #e5e5e5),
+    inset 1px 0 0 0 var(--sk-border, #e5e5e5),
+    inset -1px 0 0 0 var(--sk-border, #e5e5e5);
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.5)),
+    var(--sk-sidebar, #fafafa);
+}
+
+.sk-proofs .item.last {
+  box-shadow:
+    inset 1px 0 0 0 var(--sk-border, #e5e5e5),
+    inset -1px 0 0 0 var(--sk-border, #e5e5e5);
+}
+
+.sk-proofs .item-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  min-width: 0;
+}
+
+.sk-proofs .file-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--sk-radius-md, 8px);
+  background: rgb(156 163 175 / 0.1);
+  color: var(--sk-glyph, #4b5563);
+  flex-shrink: 0;
+}
+
+.sk-proofs .file-glyph svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.sk-proofs .meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 0 0;
+}
+
+.sk-proofs .name {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-2, 8px);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+  min-width: 0;
+}
+
+.sk-proofs .name .text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sk-proofs .status {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-1, 4px);
+  flex-shrink: 0;
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  color: var(--dot-color, var(--sk-status-verifying, #9ca3af));
+}
+
+.sk-proofs .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--sk-radius-full, 9999px);
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+.sk-proofs .status[data-status='verified'] {
+  --dot-color: var(--sk-status-verified, #16a34a);
+}
+.sk-proofs .status[data-status='caught'] {
+  --dot-color: var(--sk-status-caught, #f59e0b);
+}
+.sk-proofs .status[data-status='error'] {
+  --dot-color: var(--sk-status-error, #ef4444);
+}
+.sk-proofs .status[data-status='healed'] {
+  --dot-color: var(--sk-status-healed, #3944ea);
+}
+
+.sk-proofs .date {
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading-none, 1);
+  color: var(--sk-muted-foreground, #737373);
+  opacity: 0.5;
+  margin-top: var(--sk-space-1, 4px);
+}
+
+.sk-proofs .item-actions {
+  display: flex;
+  gap: var(--sk-space-2, 8px);
+}
+
+.sk-proofs .item-actions .outline-button:first-child {
+  flex: 1 0 0;
+}
+
+.sk-proofs .item-actions .outline-button.square,
+.sk-proofs .footer .outline-button.square {
+  width: 32px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.sk-proofs .footer {
+  display: flex;
+  gap: var(--sk-space-2, 8px);
+  padding: var(--sk-space-4, 16px);
+  background: var(--sk-card, #ffffff);
+  box-shadow:
+    inset 0 1px 0 0 var(--sk-border, #e5e5e5),
+    inset 1px 0 0 0 var(--sk-border, #e5e5e5),
+    inset -1px 0 0 0 var(--sk-border, #e5e5e5);
+}
+
+.sk-proofs .footer .outline-button:first-child {
+  flex: 1 0 0;
+}
+
+.sk-proofs .footer .outline-button:last-child {
+  flex: 0 0 auto;
+}
+
+.sk-proofs .empty {
+  padding: var(--sk-space-4, 16px);
+  font-size: var(--sk-text-sm, 14px);
+  color: var(--sk-muted-foreground, #737373);
+}
+
+.sk-proofs a.icon-button {
+  text-decoration: none;
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-status
+ * ------------------------------------------------------------------ */
+
+.sk-status {
+  display: inline-flex;
+}
+
+.sk-status .badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-1-5, 6px);
+  height: var(--badge-size, 32px);
+  padding: var(--sk-space-2, 8px) var(--sk-space-3, 12px);
+  border-radius: var(--sk-radius-md, 8px);
+  overflow: hidden;
+  position: relative;
+  background: var(--badge-color);
+  color: var(--sk-status-on-solid, #fafafa);
+  font-size: var(--badge-text, var(--sk-text-xs, 12px));
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+  white-space: nowrap;
+}
+
+.sk-status[interactive] .badge:hover::after,
+.sk-status[interactive] .badge:active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sk-status[interactive] .badge:hover::after {
+  background: var(--sk-overlay-hover, #ffffff1a);
+}
+
+.sk-status[interactive] .badge:active::after {
+  background: var(--sk-overlay-pressed, #ffffff4d);
+}
+
+.sk-status[disabled] {
+  opacity: var(--sk-opacity-disabled, 0.5);
+  pointer-events: none;
+}
+
+.sk-status .chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chip-size, 16px);
+  height: var(--chip-size, 16px);
+  padding: 3px;
+  border-radius: var(--sk-radius-full, 9999px);
+  background: var(--sk-status-on-solid-chip, #ffffff);
+  color: var(--badge-color);
+  flex-shrink: 0;
+}
+
+.sk-status .chip svg,
+.sk-status .bare svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sk-status[variant='mark'] .badge {
+  color: #ffffff;
+}
+
+.sk-status .bare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chip-size, 16px);
+  height: var(--chip-size, 16px);
+  padding: 2px;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.sk-status[size='small'] .badge {
+  --badge-size: 26px;
+  --chip-size: 14px;
+  padding: var(--sk-space-1, 4px) var(--sk-space-2, 8px);
+}
+
+.sk-status[size='x-small'] .badge {
+  --badge-size: 20px;
+  --chip-size: 12px;
+  padding: var(--sk-space-0-5, 2px) var(--sk-space-1-5, 6px);
+}
+
+.sk-status[status='verified'] .badge {
+  --badge-color: var(--sk-status-verified, #16a34a);
+}
+.sk-status[status='verifying'] .badge {
+  --badge-color: var(--sk-status-verifying, #9ca3af);
+}
+.sk-status[status='caught'] .badge {
+  --badge-color: var(--sk-status-caught, #f59e0b);
+}
+.sk-status[status='error'] .badge {
+  --badge-color: var(--sk-status-error, #ef4444);
+}
+.sk-status[status='healed'] .badge {
+  --badge-color: var(--sk-status-healed, #3944ea);
+}
+
+/* The mark runs the shared .chase; the single-glyph chip has nothing to
+   chase, so it spins. */
+.sk-status[status='verifying'] .chip svg {
+  animation: spin 1s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-status[status='verifying'] .chip svg {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * .sk-summary
+ * ------------------------------------------------------------------ */
+
+.sk-summary {
+  display: block;
+}
+
+.sk-summary .card {
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-card, #ffffff);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 var(--sk-border-width, 1px)
+    var(--sk-border, #e5e5e5);
+}
+
+.sk-summary .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sk-space-2, 8px) var(--sk-space-2, 8px)
+    var(--sk-space-2, 8px) var(--sk-space-4, 16px);
+  box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
+  font-size: var(--sk-text-sm, 14px);
+  line-height: var(--sk-text-sm-leading, 20px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-summary h2 {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.sk-summary[collapsed] .head {
+  box-shadow: none;
+}
+
+.sk-summary .rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-4, 16px);
+  padding: var(--sk-space-4, 16px);
+}
+
+.sk-summary .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-2, 8px);
+  font-size: var(--sk-text-xs, 12px);
+  line-height: var(--sk-text-xs-leading, 16px);
+  font-weight: var(--sk-weight-medium, 500);
+}
+
+.sk-summary .row .name {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-1-5, 6px);
+  color: var(--sk-muted-foreground, #737373);
+}
+
+.sk-summary .row .name svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  display: block;
+  opacity: 0.5;
+}
+
+.sk-summary .row .value {
+  font-variant-numeric: tabular-nums;
+}
