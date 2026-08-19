@@ -1,12 +1,12 @@
 /**
- * Design tokens, pulled from Figma file fTva4HH4oJKdVHnK8RYdFV.
+ * Design tokens for the trace dashboard.
  *
  * These live on :root so they inherit into every shadow root. Overriding any
  * of them rebrands the components. This is the only supported customisation.
  */
 
 :root {
-  /* Trace status — Figma collection "5. Trace Status" */
+  /* Trace status */
   --sk-status-verified: #16a34a;
   --sk-status-verifying: #9ca3af;
   --sk-status-caught: #f59e0b;
@@ -43,7 +43,7 @@
   /* Type */
   --sk-font-sans: Geist, ui-sans-serif, system-ui, -apple-system, sans-serif;
   --sk-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  /* The trace title is the one place Figma uses a display face */
+  /* The trace title is the one place the design uses a display face */
   --sk-font-display: 'Space Grotesk', Geist, ui-sans-serif, system-ui, sans-serif;
 
   --sk-text-xs: 12px;
@@ -80,7 +80,7 @@
   --sk-shadow-xs: 0 1px 2px 0 #0000000d;
   --sk-shadow-lg: 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a;
 
-  /* Interaction states — Figma alpha/opacity tokens */
+  /* Interaction states */
   --sk-overlay-hover: #ffffff1a;
   --sk-overlay-pressed: #ffffff4d;
   --sk-opacity-disabled: 0.5;

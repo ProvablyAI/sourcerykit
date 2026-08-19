@@ -109,7 +109,7 @@ function verdictSubtitle(disagreed, unverified, total) {
   return `${unverified} of ${total} ${noun} could not be verified`
 }
 
-/** Figma's tool-call body: URL, then the recorded exchange. */
+/** The tool-call body: URL, then the recorded exchange. */
 function interceptBlocks(ic) {
   const blocks = [{ caption: 'URL', value: ic.source_url }]
   if (ic.actual_value !== undefined && ic.actual_value !== null) {
@@ -118,7 +118,7 @@ function interceptBlocks(ic) {
   return blocks
 }
 
-/** Figma's proof body: where the ground truth came from, and the comparison. */
+/** The proof body: where the ground truth came from, and the comparison. */
 function proofBlocks(ic) {
   const blocks = []
   if (ic.query_id) blocks.push({ caption: 'Query record', value: ic.query_id })
@@ -143,7 +143,7 @@ function proofStatusOf(outcome) {
 
 // --------------------------------------------------------------------- pieces
 
-/** Figma `Trace Trigger / Badge`, Style=Pill (272:7328). */
+/** The trace status pill. */
 function statusBadge(status) {
   return el(
     'span.sk-status',
@@ -175,7 +175,7 @@ function activityBadge(status) {
   )
 }
 
-/** Figma `Detail` 151:6777: a bare caption line, then a boxed value. */
+/** A detail block: a bare caption line, then a boxed value. */
 function detailBlock({ caption, tag, value, tone = 'default' }) {
   const copyButton = el('button.icon-button.copy', {
     'aria-label': `Copy ${caption}`,
@@ -206,7 +206,7 @@ function detailBlock({ caption, tag, value, tone = 'default' }) {
   )
 }
 
-/** Figma `Claim` 203:8780, used by 223:5730. */
+/** A claim row inside the summary card. */
 function claimCard(claim) {
   const tone = claim.agrees ? 'default' : claim.outcome === 'ERROR' ? 'error' : 'caught'
   const label = claim.agrees
@@ -590,7 +590,7 @@ function buildSteps(data) {
   })
 
   if (proofs.length > 0) {
-    // Figma 259:6179: a bare divider row between the proofs and the verdict.
+    // A bare divider row between the proofs and the verdict.
     steps.push({
       kind: 'handover',
       label: 'Claims handed over to agent',
@@ -614,7 +614,7 @@ function buildSteps(data) {
     steps.push({
       kind: 'evaluation',
       label: disagreed.length > 0 ? 'Drift caught' : 'Verification error',
-      // Figma 223:5730 shows every claim, passing ones included, so the
+      // The summary shows every claim, passing ones included, so the
       // denominator is visible rather than asserted.
       subtitle: verdictSubtitle(disagreed.length, unverified.length, cards.length),
       blocks: [],

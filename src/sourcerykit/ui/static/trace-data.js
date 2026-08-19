@@ -214,7 +214,7 @@ export function markdown(text) {
 /* ------------------------------------------------------------------- marks */
 
 /**
- * SourceryKit status marks, from Figma "States icons" (node 272:6837).
+ * SourceryKit status marks.
  *
  * Each mark is a 3x3 grid of 5x5 cells on a 20x20 box, with a per-status
  * opacity pattern. The exported SVGs hardcode the status hex; here the fill is

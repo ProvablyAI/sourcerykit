@@ -1,5 +1,5 @@
 /**
- * Page chrome for the local trace dashboard. Figma node 236:11508.
+ * Page chrome for the local trace dashboard.
  *
  * The page is a grey field (#e9e9e9) covered by panels. Every horizontal band
  * splits into three containers that total exactly 1440: a 168 margin, the 1104
@@ -9,10 +9,10 @@
  * The insets are transparent borders rather than margins, so they take their
  * width from inside the container and the line still sums to 1440; as margins
  * they pushed it to 1441 and every rule landed off-pixel. They sit whole on the
- * rails rather than split half-and-half with the column (which is how Figma
+ * rails rather than split half-and-half with the column (which is how the
  * draws the first three bands) because a 0.5px border does not survive
  * rasterising: the rail's half paints and the column's collapses, leaving every
- * rule at half strength. Figma's own footer band, 246:8706, uses this same
+ * rule at half strength. The footer band uses this same
  * integer gutter, and it is the one that renders crisp.
  *
  * The nav rails are white (236:11512). Every other band's rails are #fafafa
@@ -206,7 +206,7 @@ body {
     overflow: hidden;
 }
 
-/* Figma 236:11522 strokes the glyph #fafafa while the label stays white. */
+/* The glyph strokes #fafafa while the label stays white. */
 .btn-primary svg {
     stroke: var(--sk-status-on-solid, #fafafa);
 }
@@ -240,7 +240,7 @@ body {
     min-height: 0;
 }
 
-/* Figma 246:8721: 48px of the grey field between the card and the footer. */
+/* 48px of the grey field between the card and the footer. */
 .gap-band {
     flex: 0 0 auto;
     min-height: 48px;
@@ -269,7 +269,7 @@ body {
 }
 
 /*
- * Figma 246:8726 is a pinstripe, not a fill: a 1px rule every 8px along the
+ * The gap band is a pinstripe, not a fill: a 1px rule every 8px along the
  * gradient axis, over white.
  */
 .gap-band .column {
@@ -282,7 +282,7 @@ body {
     border-radius: 4px;
 }
 
-/* Figma 246:8706: the rails carry the whole gutter and the column runs flush. */
+/* The rails carry the whole gutter and the column runs flush. */
 .sitefooter .band {
     padding-bottom: 0;
 }
@@ -307,7 +307,7 @@ body {
     border-radius: 4px 4px 0 0;
     font-size: var(--sk-text-xs, 12px);
     line-height: var(--sk-text-xs-leading-none, 1);
-    /* Figma 246:8712/8715/8717: a literal, not --sk-muted-foreground. */
+    /* A literal, not --sk-muted-foreground. */
     color: #373739;
 }
 

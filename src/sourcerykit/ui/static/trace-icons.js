@@ -1,8 +1,8 @@
 /**
- * Lucide glyphs, matching the icons Figma names (Icon / Check, Icon / X, ...).
+ * Lucide glyphs used by the dashboard (check, x, chevron, ...).
  *
  * Every path is drawn on a 24x24 box with stroke-width 2, then scaled by the
- * consuming rule. Figma's stroke-[1-33] token is 1.33 at 16px, which is 2 at 24.
+ * consuming rule. The design's stroke is 1.33 at 16px, which is 2 at 24.
  *
  * `icon()` returns a fresh element each call, so the same glyph can appear in
  * several places without one move stealing it from another.
@@ -43,7 +43,7 @@ const PATHS = {
     '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />' +
     '<line x1="4" x2="4" y1="22" y2="15" />',
   loaderCircle: '<path d="M21 12a9 9 0 1 1-6.219-8.56" />',
-  // Figma uses TriangleAlert for caught, not a scan glyph.
+  // Caught uses TriangleAlert, not a scan glyph.
   triangleAlert:
     '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />' +
     '<path d="M12 9v4" /><path d="M12 17h.01" />',
@@ -54,10 +54,10 @@ const PATHS = {
   file:
     '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />' +
     '<path d="M14 2v4a2 2 0 0 0 2 2h4" />',
-  // Figma's eval_error / Proof_error glyph.
+  // The eval/proof error glyph.
   circleX:
     '<circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" />',
-  // The handover separator glyph, Figma 259:6205.
+  // The handover separator glyph.
   bot:
     '<path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" />' +
     '<path d="M2 14h2" /><path d="M20 14h2" />' +

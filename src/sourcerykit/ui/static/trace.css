@@ -114,7 +114,7 @@
   white-space: nowrap;
 }
 
-/* Figma: Variant=Ghost, State=Default, Size=icon-sm. 32px square, 16px glyph. */
+/* Ghost icon button: 32px square, 16px glyph. */
 .icon-button {
   display: flex;
   align-items: center;
@@ -146,7 +146,7 @@
   display: block;
 }
 
-/* Figma uses a 24px square with a 3px radius inside card headers. */
+/* A 24px square with a 3px radius inside card headers. */
 .icon-button.tight {
   width: 24px;
   height: 24px;
@@ -158,7 +158,7 @@
   height: 16px;
 }
 
-/* Figma: Variant=Outline, State=Default, Size=sm. */
+/* Outline button, small. */
 .outline-button {
   display: inline-flex;
   align-items: center;
@@ -235,9 +235,9 @@
 .sk-view .layout {
   display: grid;
   /*
-   * Figma 236:11525 splits the column as main, a 1px band gap, then a
+   * The column splits as main, a 1px band gap, then a
    * sidebar (236:11527 and 236:11624). Its halves land on .5, so the
-   * sidebar is rounded up to keep the divider on Figma's own integer
+   * sidebar is rounded up to keep the divider on an integer
    * boundary, x=927 to 928 at 1440, where it rasterises crisp.
    */
   grid-template-columns: minmax(0, 1fr) 1px 344px;
@@ -274,7 +274,7 @@
   justify-content: space-between;
   gap: var(--sk-space-4, 16px);
   padding: 24px;
-  /* Inset so the 80px Figma frame is the height that renders. */
+  /* Inset so the 80px frame is the height that renders. */
   box-shadow: inset 0 -1px 0 0 var(--sk-border, #e5e5e5);
 }
 
@@ -937,7 +937,7 @@
   white-space: nowrap;
 }
 
-/* Figma 203:8690: a px-8 py-2 pill carrying only the dot. */
+/* A px-8 py-2 pill carrying only the dot. */
 .sk-claim .mark {
   margin-left: auto;
   display: flex;
@@ -1005,7 +1005,7 @@
   color: var(--sk-muted-foreground, #737373);
 }
 
-/* Figma I223:5736;203:8729: a bordered band under a failing comparison. */
+/* A bordered band under a failing comparison. */
 .sk-claim .details {
   margin: var(--sk-space-4, 16px) calc(-1 * var(--sk-space-4, 16px))
     calc(-1 * var(--sk-space-4, 16px));
@@ -1158,7 +1158,7 @@
     inset 0 -1px 0 0 var(--sk-border, #e5e5e5),
     inset 1px 0 0 0 var(--sk-border, #e5e5e5),
     inset -1px 0 0 0 var(--sk-border, #e5e5e5);
-  /* Figma 256:5905: white at 50% over the sidebar surface. */
+  /* White at 50% over the sidebar surface. */
   background:
     linear-gradient(90deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.5)),
     var(--sk-sidebar, #fafafa);
@@ -1328,7 +1328,7 @@
   white-space: nowrap;
 }
 
-/* Figma layers hover and pressed as white overlays over the fill. */
+/* Hover and pressed layer as white overlays over the fill. */
 .sk-status[interactive] .badge:hover::after,
 .sk-status[interactive] .badge:active::after {
   content: '';
@@ -1370,7 +1370,7 @@
   display: block;
 }
 
-/* Figma 272:7329: the Trace Trigger pill is pure white, not #fafafa. */
+/* The trace status pill is pure white, not #fafafa. */
 .sk-status[variant='mark'] .badge {
   color: #ffffff;
 }
@@ -1387,7 +1387,7 @@
   flex-shrink: 0;
 }
 
-/* Figma sizes: Default 32, Small 26, X-Small 20. */
+/* Badge sizes: Default 32, Small 26, X-Small 20. */
 .sk-status[size='small'] .badge {
   --badge-size: 26px;
   --chip-size: 14px;
