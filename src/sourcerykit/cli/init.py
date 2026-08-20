@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+import uuid
 from typing import Any
 
 import questionary
@@ -28,6 +29,7 @@ from sourcerykit.provably._errors import (
 )
 from sourcerykit.provably._http import get_http
 from sourcerykit.provably.auth_service import ProvablyAuthService
+from sourcerykit.provably.service import service as provably_service
 
 service = ProvablyAuthService()
 
@@ -107,6 +109,7 @@ def _run_login(
     password: str | None = None,
     postgres_url: str | None = None,
     project_name: str | None = None,
+    sandbox: bool = False,
 ) -> None:
     """Handles authentication.
 
@@ -149,7 +152,9 @@ def _run_login(
         return
 
     save_app_dir_config(token=token, email=login_email)
-    if _execute_post_auth_phases(token, email=login_email, postgres_url=postgres_url, project_name=project_name):
+    if _execute_post_auth_phases(
+        token, email=login_email, postgres_url=postgres_url, project_name=project_name, sandbox=sandbox
+    ):
         console.print("\n👋 Setup closed. Happy coding!")
         raise typer.Exit()
 
@@ -183,21 +188,22 @@ def save_bootstrap_ids() -> None:
     )
 
 
-def run_full_bootstrap(project_name: str) -> bool:
+def run_full_bootstrap(project_name: str, *, sandbox: bool = False) -> bool:
     """Run the full bootstrap: clear caches, create tables, handshake, save IDs.
 
     Returns True on success, False on failure (errors are printed).
     """
     clear_auth_caches()
 
-    console.print(" Creating database tables...", end=" ")
-    sys.stdout.flush()
-    try:
-        create_db_tables()
-        console.print("DONE ✅")
-    except Exception as e:
-        console.print(f"[red]FAILED ❌[/red]\n   {e}")
-        return False
+    if not sandbox:
+        console.print(" Creating database tables...", end=" ")
+        sys.stdout.flush()
+        try:
+            create_db_tables()
+            console.print("DONE ✅")
+        except Exception as e:
+            console.print(f"[red]FAILED ❌[/red]\n   {e}")
+            return False
 
     console.print(" Running Provably handshake...", end=" ")
     sys.stdout.flush()
@@ -221,6 +227,7 @@ def _execute_post_auth_phases(
     email: str,
     postgres_url: str | None = None,
     project_name: str | None = None,
+    sandbox: bool = False,
 ) -> bool:
     """Executes organisation, database, project, bootstrap, and saving steps."""
 
@@ -289,20 +296,55 @@ def _execute_post_auth_phases(
         return False
 
     # --- database ---
-    console.print("\n[bold]🛠️  Link your Postgres database[/bold]")
-    console.print(" SourceryKit requires access to a dedicated PostgreSQL database to")
-    console.print(" automatically maintain your 'Intercepts Table'. This table acts")
-    console.print(" as an append-only transaction ledger, logging every request and")
-    console.print(" response for secure historical tracking and system auditing.\n")
-    console.print(" [bold]⚠️  DATABASE REQUIREMENTS:[/bold]")
-    console.print(" • Only PostgreSQL databases are supported.")
-    console.print(" • The database MUST be hosted and publicly accessible over the web.")
-    console.print(" • Local databases (localhost / 127.0.0.1) will NOT work.")
+    if sandbox:
+        console.print("\n[bold]🗄️  Creating hosted sandbox database...[/bold]")
+        try:
+            postgres_url = asyncio.run(provably_service.create_sandbox(uuid.UUID(org_id), token=token))
+            console.print("  ✅ Sandbox created")
+        except Exception as e:
+            console.print(f"[red]❌ Failed to create sandbox: {e}[/red]")
+            return False
+    else:
+        console.print("\n[bold]🗄️  Database setup[/bold]")
+        console.print(" SourceryKit requires access to a dedicated PostgreSQL database to")
+        console.print(" automatically maintain your 'Intercepts Table'. This table acts")
+        console.print(" as an append-only transaction ledger, logging every request and")
+        console.print(" response for secure historical tracking and system auditing.\n")
 
-    postgres_url = prompt_postgres_url_with_retry(postgres_url)
-    if not postgres_url:
-        console.print("[yellow]⚠️ Database setup cancelled.[/yellow]")
-        return False
+        if postgres_url:
+            # Non-interactive: use provided URL
+            postgres_url = prompt_postgres_url_with_retry(postgres_url)
+        else:
+            db_choice = questionary.select(
+                message="How would you like to set up your database?",
+                choices=[
+                    {"name": "Hosted sandbox (recommended)", "value": "sandbox"},
+                    {"name": "Use my own PostgreSQL database", "value": "own"},
+                ],
+            ).ask()
+
+            if not db_choice:
+                console.print("[yellow]⚠️ Database setup cancelled.[/yellow]")
+                return False
+
+            if db_choice == "sandbox":
+                try:
+                    postgres_url = asyncio.run(provably_service.create_sandbox(uuid.UUID(org_id), token=token))
+                    sandbox = True
+                    console.print("  ✅ Sandbox created")
+                except Exception as e:
+                    console.print(f"[red]❌ Failed to create sandbox: {e}[/red]")
+                    return False
+            else:
+                console.print(" [bold]⚠️  DATABASE REQUIREMENTS:[/bold]")
+                console.print(" • Only PostgreSQL databases are supported.")
+                console.print(" • The database MUST be hosted and publicly accessible over the web.")
+                console.print(" • Local databases (localhost / 127.0.0.1) will NOT work.")
+                postgres_url = prompt_postgres_url_with_retry(postgres_url)
+
+        if not postgres_url:
+            console.print("[yellow]⚠️ Database setup cancelled.[/yellow]")
+            return False
 
     # --- project name ---
     console.print("\n[bold]📦 Name your project[/bold]")
@@ -321,7 +363,7 @@ def _execute_post_auth_phases(
         SOURCERYKIT_POSTGRES_URL=postgres_url,
     )
 
-    run_full_bootstrap(project_name)
+    run_full_bootstrap(project_name, sandbox=sandbox)
 
     console.print("\n[bold green]🎉 SOURCERYKIT SETUP COMPLETE[/bold green]\n")
     console.print(" Global config:")
@@ -343,6 +385,7 @@ def config_provably(
     password: str | None = None,
     postgres_url: str | None = None,
     project_name: str | None = None,
+    sandbox: bool = False,
 ) -> None:
     console.print(logo.print_logo(), "\n\n")
 
@@ -361,7 +404,9 @@ def config_provably(
 
     # Non-interactive login when credentials are provided
     if email and password:
-        _run_login(email=email, password=password, postgres_url=postgres_url, project_name=project_name)
+        _run_login(
+            email=email, password=password, postgres_url=postgres_url, project_name=project_name, sandbox=sandbox
+        )
         return
 
     saved_email = ""
@@ -397,6 +442,7 @@ def config_provably(
                     email=stored_email_addr,
                     postgres_url=postgres_url,
                     project_name=project_name,
+                    sandbox=sandbox,
                 ):
                     console.print("\n👋 Setup closed. Happy coding!")
                     raise typer.Exit()
@@ -422,4 +468,4 @@ def config_provably(
             if action == "register":
                 saved_email = _run_register()
             else:
-                _run_login(prefill_email=saved_email)
+                _run_login(prefill_email=saved_email, sandbox=sandbox)

@@ -41,7 +41,7 @@ Requires **Python 3.12+**.
 
 ```bash
 pip install sourcerykit
-sourcerykit init          # one-time setup: account, database, credentials
+sourcerykit init          # one-time setup: account, sandbox, credentials
 ```
 
 Prefer installing from source?
@@ -125,7 +125,7 @@ sourcerykit init
 The wizard will guide you through:
 - **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
 - **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
-- **Database Handshake**: Enter your database details, test the connection, and ensure it's accessible.
+- **Database Provisioning**: Creates a hosted sandbox database automatically. To use your own PostgreSQL instead, pass `--postgres-url`.
 - **Save Config**: Automatically write your credentials and tokens straight to a local .env file.
 
 > ⚠️ **IMPORTANT:** The wizard only configures **SOURCERYKIT_*** variables. It does **not** handle third-party LLM provider infrastructure keys, which must still be exported separately.
@@ -140,6 +140,9 @@ export PROVABLY_API_KEY="..."
 export SOURCERYKIT_ORG_ID="..."
 export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
 ```
+
+> [!NOTE]
+> `SOURCERYKIT_POSTGRES_URL` is set automatically when using a sandbox. Only set it manually if you're using your own database.
 
 For a full list of CLI commands, check out the [CLI Documentation](https://provably.ai/docs/getting_started/cli) file, or simply run:
 ```bash

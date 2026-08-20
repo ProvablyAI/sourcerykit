@@ -8,8 +8,7 @@ Before executing the walkthrough steps, your environment needs to be configured 
 sourcerykit init
 ```
 
-> [!NOTE]
-> Only hosted, publicly accessible Postgres instances are supported. Local databases (localhost or 127.0.0.1) will not work.
+This provisions a hosted sandbox database by default. To use your own PostgreSQL instead, pass `--postgres-url` (must be hosted and publicly reachable — `localhost` will not work).
 
 ## Step-by-Step Implementation
 ### Step 1: Initialization and Policy Seeding

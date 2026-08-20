@@ -1,5 +1,5 @@
 from sourcerykit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
-from sourcerykit.config import get_settings
+from sourcerykit.config import get_settings, save_local_env
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._schema import ensure_schema
 from sourcerykit.errors import (
@@ -8,6 +8,7 @@ from sourcerykit.errors import (
 )
 from sourcerykit.intercept.interceptor import init_interceptor
 from sourcerykit.logger import get_logger
+from sourcerykit.provably.service import service as provably_service
 
 _log = get_logger(__name__)
 
@@ -22,12 +23,34 @@ async def bootstrap_system() -> None:
     if not settings.postgres_url:
         raise SourceryKitConfigError("SOURCERYKIT_POSTGRES_URL is required. Run 'sourcerykit init' first.")
 
-    # Initialize database schemas
+    # Check sandbox health — recreate if expired
     try:
-        await ensure_schema(get_engine())
+        sandbox, is_sandbox = await provably_service.get_sandbox_status(settings.postgres_url)
     except Exception as e:
-        _log.error("bootstrap_db_schema_failed", error=str(e))
-        raise SourceryKitStorageError("Failed to create database schema during bootstrap") from e
+        _log.error("sandbox_status_check_failed", error=str(e))
+        raise SourceryKitConfigError("Cannot reach Provably API. Check your connection and try again.") from e
+
+    if is_sandbox and sandbox:
+        status = sandbox.get("status", "").lower()
+        if status not in ("active", "provisioning"):
+            _log.warning("sandbox_expired", status=status)
+            org_id = settings.org_id
+            if org_id:
+                _log.info("sandbox_recreating")
+                new_uri = await provably_service.create_sandbox(org_id)
+                save_local_env(SOURCERYKIT_POSTGRES_URL=new_uri)
+                _log.info("sandbox_recreated_reloading")
+                settings = get_settings()
+            else:
+                _log.warning("sandbox_recreate_skipped_no_org")
+
+    # Initialize database schemas (skip for sandbox — backend manages tables)
+    if not is_sandbox:
+        try:
+            await ensure_schema(get_engine())
+        except Exception as e:
+            _log.error("bootstrap_db_schema_failed", error=str(e))
+            raise SourceryKitStorageError("Failed to create database schema during bootstrap") from e
 
     # Populate from cached settings or run handshake
     if settings.has_bootstrap_ids:

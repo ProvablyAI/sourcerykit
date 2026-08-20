@@ -7,6 +7,7 @@ from sourcerykit.cli.doctor import run_doctor
 from sourcerykit.cli.endpoints import endpoints
 from sourcerykit.cli.feedback import send_feedback
 from sourcerykit.cli.init import config_provably
+from sourcerykit.cli.sandbox import sandbox
 from sourcerykit.cli.trace import trace
 from sourcerykit.cli.upgrade import run_upgrade
 from sourcerykit.cli.utils import console
@@ -15,6 +16,7 @@ from sourcerykit.cli.utils import logout as logout_session
 app = typer.Typer(no_args_is_help=True)
 app.add_typer(endpoints, name="endpoints")
 app.add_typer(config, name="config")
+app.add_typer(sandbox, name="sandbox")
 app.add_typer(trace, name="trace")
 
 
@@ -25,6 +27,7 @@ def init(
     password: str | None = typer.Option(None, "--password", help="account password"),
     postgres_url: str | None = typer.Option(None, "--postgres-url", help="full postgres:// URL"),
     project_name: str | None = typer.Option(None, "--project-name", help="project name"),
+    sandbox: bool = typer.Option(False, "--sandbox", help="use hosted sandbox database"),
 ) -> None:
     config_provably(
         register=register,
@@ -32,6 +35,7 @@ def init(
         password=password,
         postgres_url=postgres_url,
         project_name=project_name,
+        sandbox=sandbox,
     )
 
 
