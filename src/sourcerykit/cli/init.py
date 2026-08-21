@@ -295,6 +295,9 @@ def _execute_post_auth_phases(
         console.print(f"[red]❌ Key exchange failed: {e}[/red]")
         return False
 
+    save_app_dir_config(api_key=api_key, org_id=org_id)
+    clear_auth_caches()
+
     # --- database ---
     if sandbox:
         console.print("\n[bold]🗄️  Creating hosted sandbox database...[/bold]")
@@ -356,8 +359,6 @@ def _execute_post_auth_phases(
     # --- save all ---
     console.print("\n[bold]🔧 Bootstrapping Provably resources...[/bold]")
 
-    # Save credentials first so API client can authenticate
-    save_app_dir_config(api_key=api_key, org_id=org_id)
     save_local_env(
         SOURCERYKIT_PROJECT_NAME=project_name,
         SOURCERYKIT_POSTGRES_URL=postgres_url,
