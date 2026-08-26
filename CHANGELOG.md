@@ -2,24 +2,27 @@
 
 ## Unreleased
 
+## 1.1.0
+
 ### Breaking changes
 - **`SourceryKitAgentResponse.reasoning` renamed to `.answer`** — the field, database column, `HandoffPayload`, and all related APIs now use `answer`. Update your agent code, structured output bindings, and any queries against the `traces` table.
 
 ### Features
+- **Sandbox database integration** — hosted sandbox databases managed from the CLI via `sandbox create`, `sandbox status`, and `sandbox delete`. The doctor reports the database type (sandbox vs personal), and bootstrap automatically recreates an expired sandbox.
 - **Answer field on traces** — `SourceryKitAgentResponse.answer` is stored in the `traces` table (migration `005`) and displayed in both the CLI and UI dashboard.
 - **CLI `trace show --ui/--no-ui`** — default opens the interactive dashboard in the browser; `--no-ui` prints the CLI panel output. Trace ID prefixes are accepted (unambiguous prefix resolution).
 - **Dashboard activity section** — trace activity log with outcome counts.
 - **CLI `upgrade` command** — `sourcerykit upgrade` checks for a newer package version on PyPI, offers to install it, and runs pending database migrations.
 
 ### Refactoring
+- **Trace dashboard redesign** — rewritten dashboard UI with self-hosted fonts (works offline); status filter and query-record deep links removed.
 - **CLI `trace show` presentation** — header and summary wrapped in a styled Rich panel.
-
-### Maintenance
-- **Alembic migrations shipped with package** — migration scripts are now included in the pip wheel via `force-include`, enabling `sourcerykit upgrade` for non-repo installs.
+- **Multi-agent cookbook** — specialist agents converted from factory functions + wrapper tools to the `as_tool()` pattern with `custom_output_extractor` for automatic payload construction.
 
 ### Documentation
 - Updated CLI docs with `--ui/--no-ui` option.
 - Added migration guides (`docs/migrations/`) with README index, expanded v1.0 guide, and updated README migration links.
+- Docs consolidated to the Provably website with an automated sync workflow; Sphinx build steps and dependencies removed. Added an end-to-end SDK walkthrough.
 
 ## 1.0.1
 
