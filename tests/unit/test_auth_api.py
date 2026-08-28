@@ -1,18 +1,15 @@
 """Tests for sourcerykit.provably._auth_api.ProvablyAuthAPI."""
 
 import uuid
-from dataclasses import asdict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from sourcerykit.provably._auth_api import (
     Organization,
     OrganizationType,
     ProvablyAuthAPI,
-    User,
 )
 
 _TOKEN = "test-jwt-token"
-_USER = User(email="user@example.com", password="secret")
 _ORG = Organization(handle="my-org", name="My Org", organization_type=OrganizationType.EDUCATION)
 
 
@@ -24,31 +21,6 @@ def _make_api() -> tuple[ProvablyAuthAPI, MagicMock]:
     mock_http = MagicMock()
     api._http = mock_http
     return api, mock_http
-
-
-class TestProvablyAuthAPIAccount:
-    async def test_create_account_calls_post_register(self) -> None:
-        api, mock_http = _make_api()
-        mock_http.post = AsyncMock(return_value={})
-
-        await api.create_account(_USER)
-
-        mock_http.post.assert_called_once_with(
-            "/api/v1/auth/register",
-            asdict(_USER),
-        )
-
-    async def test_login_calls_post_login_and_returns_dict(self) -> None:
-        api, mock_http = _make_api()
-        mock_http.post = AsyncMock(return_value={"token": "abc123"})
-
-        result = await api.login(_USER)
-
-        mock_http.post.assert_called_once_with(
-            "/api/v1/auth/login",
-            asdict(_USER),
-        )
-        assert result == {"token": "abc123"}
 
 
 class TestProvablyAuthAPIApiKey:

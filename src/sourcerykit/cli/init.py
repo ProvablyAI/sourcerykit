@@ -3,7 +3,6 @@
 import asyncio
 import sys
 import uuid
-from typing import Any
 
 import questionary
 import typer
@@ -22,138 +21,48 @@ from sourcerykit.config import load_app_dir_config, save_app_dir_config, save_lo
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._schema import ensure_schema
 from sourcerykit.provably._api import get_api as get_main_api
-from sourcerykit.provably._auth_api import Organization, OrganizationType, User
+from sourcerykit.provably._auth_api import Organization, OrganizationType
 from sourcerykit.provably._errors import (
     ProvablyConnectionError,
     ProvablyUnauthorizedError,
 )
 from sourcerykit.provably._http import get_http
 from sourcerykit.provably.auth_service import ProvablyAuthService
+from sourcerykit.provably.oauth_login import browser_login, fetch_user_email
 from sourcerykit.provably.service import service as provably_service
 
 service = ProvablyAuthService()
 
 
-def _collect_register_inputs() -> dict[str, Any]:
-    console.print("\n[bold]🔑 Create your account[/bold]")
-    questions = [
-        {
-            "type": "text",
-            "name": "email",
-            "message": "Email address:",
-            "validate": lambda text: True if len(text.strip()) > 0 else "Email cannot be empty.",
-        },
-        {
-            "type": "password",
-            "name": "password",
-            "message": "Password:",
-            "validate": lambda text: True if len(text.strip()) > 0 else "Password cannot be empty.",
-        },
-    ]
-    return questionary.prompt(questions) or {}
-
-
-# --- Credential collection and account setup ---
-def _run_register(email: str | None = None, password: str | None = None) -> str:
-    """Handles the user registration setup path.
-
-    When *email* and *password* are provided, skips interactive prompts and
-    exits after printing verification instructions (non-interactive mode).
-    """
-    if email and password:
-        register_email = email.strip()
-        user = User(email=register_email, password=password)
-    else:
-        inputs = _collect_register_inputs()
-        if not inputs:
-            return ""
-        register_email = inputs.get("email", "").strip()
-        user = User(email=register_email, password=inputs["password"])
-
-    # --- Create account ---
-    try:
-        console.print("\nCreating your account...")
-        asyncio.run(service.create_account(user))
-        console.print("\n[bold]📧 Verification email sent[/bold]")
-        console.print(" We've sent a verification link to your email inbox.")
-        console.print(" Please check your mail and verify your account to continue.")
-
-        if email and password:
-            console.print("\n[bold]📌 NEXT STEPS:[/bold]")
-            console.print(" 1. Click the link in your email to verify your account.")
-            console.print(" 2. Then run:\n")
-            console.print(f"   sourcerykit init --email {email} --password ******\n")
-            raise typer.Exit()
-
-        console.print("\n[bold]📌 NEXT STEPS:[/bold]")
-        console.print(" 1. Click the link in your email to verify your account.")
-        console.print(" 2. Return here, choose 'Log in', and link your database.\n")
-
-        questionary.press_any_key_to_continue("Press any key to return to the main menu...").ask()
-        return register_email
-
-    except ProvablyUnauthorizedError:
-        console.print(
-            "\n[red]❌ Registration rejected — the email may already be registered or the request was invalid.[/red]"
-        )
-        return ""
-    except ProvablyConnectionError as e:
-        console.print(f"[red]❌ Network error during registration: {e}[/red]")
-        return ""
-
-
-def _run_login(
+def _run_oauth_browser(
     *,
-    prefill_email: str = "",
-    email: str | None = None,
-    password: str | None = None,
     postgres_url: str | None = None,
     project_name: str | None = None,
     sandbox: bool = False,
 ) -> None:
-    """Handles authentication.
+    """OAuth2 browser login, then run the post-auth setup phases.
 
-    When *email* and *password* are provided, skips interactive prompts.
+    Opens the consent page in the browser, fetches the logged-in user's email
+    from ``/api/v1/user/current``, and continues with the database/project setup.
     """
-    if email and password:
-        login_email = email.strip()
-        login_password = password
-    else:
-        console.print("\n[bold]🔐 Log in to your account[/bold]")
-        login_email = questionary.text(
-            message="Email address:",
-            default=prefill_email,
-            validate=lambda text: True if len(text.strip()) > 0 else "Email cannot be empty.",
-        ).ask()
-        if not login_email:
-            return
-
-        login_password = questionary.password(
-            message="Password:",
-            validate=lambda text: True if len(text.strip()) > 0 else "Password cannot be empty.",
-        ).ask()
-        if not login_password:
-            return
-
     try:
-        console.print("\nLogging in...")
-        result = asyncio.run(service.login(User(email=login_email, password=login_password)))
-    except ProvablyUnauthorizedError:
-        console.print("\n[red]❌ Invalid email/password, or your account isn't verified yet.[/red]")
-        console.print("Please check your verification link or try again.")
-        return
+        console.print("\n[bold]🔐 Browser authentication[/bold]")
+        tokens = asyncio.run(browser_login())
+        email = asyncio.run(fetch_user_email(tokens.access_token))
     except ProvablyConnectionError as e:
         console.print(f"[red]❌ Network error: {e}[/red]")
         return
-
-    token = result.get("token") or result.get("access_token", "")
-    if not token:
-        console.print("[red]❌ Login failed: Token missing from API response.[/red]")
+    except Exception as e:
+        console.print(f"[red]❌ Browser login failed: {e}[/red]")
         return
 
-    save_app_dir_config(token=token, email=login_email)
+    save_app_dir_config(token=tokens.access_token, refresh_token=tokens.refresh_token, email=email)
     if _execute_post_auth_phases(
-        token, email=login_email, postgres_url=postgres_url, project_name=project_name, sandbox=sandbox
+        tokens.access_token,
+        email=email,
+        postgres_url=postgres_url,
+        project_name=project_name,
+        sandbox=sandbox,
     ):
         console.print("\n👋 Setup closed. Happy coding!")
         raise typer.Exit()
@@ -381,36 +290,16 @@ def _execute_post_auth_phases(
 
 def config_provably(
     *,
-    register: bool = False,
-    email: str | None = None,
-    password: str | None = None,
     postgres_url: str | None = None,
     project_name: str | None = None,
     sandbox: bool = False,
 ) -> None:
     console.print(logo.print_logo(), "\n\n")
 
-    # Non-interactive registration
-    if register:
-        if not email or not password:
-            console.print("[red]❌ --register requires --email and --password[/red]")
-            raise typer.Exit(code=1)
-        if postgres_url or project_name:
-            console.print(
-                "[red]❌ --postgres-url and --project-name cannot be used with --register (verify email first)[/red]"
-            )
-            raise typer.Exit(code=1)
-        _run_register(email=email, password=password)
+    # Non-interactive: any flag implies a browser login, then continue with the flags.
+    if postgres_url or project_name or sandbox:
+        _run_oauth_browser(postgres_url=postgres_url, project_name=project_name, sandbox=sandbox)
         return
-
-    # Non-interactive login when credentials are provided
-    if email and password:
-        _run_login(
-            email=email, password=password, postgres_url=postgres_url, project_name=project_name, sandbox=sandbox
-        )
-        return
-
-    saved_email = ""
 
     while True:
         global_cfg = load_app_dir_config()
@@ -449,15 +338,14 @@ def config_provably(
                     raise typer.Exit()
             except ProvablyUnauthorizedError:
                 console.print("[yellow]⚠️  Stored session expired. Please log in again.[/yellow]\n")
-                # Clear expired token so next iteration shows Login/Register
+                # Clear expired token so next iteration shows the browser login
                 logout()
                 continue
         else:
             action = questionary.select(
                 message="Welcome to the SourceryKit Wizard! How would you like to proceed?",
                 choices=[
-                    {"name": "Log in with an existing account", "value": "login"},
-                    {"name": "Create a new account", "value": "register"},
+                    {"name": "Log in with browser (OAuth)", "value": "oauth"},
                     {"name": "Exit", "value": "exit"},
                 ],
             ).ask()
@@ -466,7 +354,4 @@ def config_provably(
                 console.print("\n👋 Setup closed. Happy coding!")
                 return
 
-            if action == "register":
-                saved_email = _run_register()
-            else:
-                _run_login(prefill_email=saved_email, sandbox=sandbox)
+            _run_oauth_browser(sandbox=sandbox)

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from sourcerykit.provably._auth_api import Organization, OrganizationType, User
+from sourcerykit.provably._auth_api import Organization, OrganizationType
 from sourcerykit.provably._errors import (
     ProvablyConnectionError,
     ProvablyResourceAlreadyExistsError,
@@ -15,7 +15,6 @@ from sourcerykit.provably._errors import (
 from sourcerykit.provably.auth_service import ProvablyAuthService
 
 _TOKEN = "test-jwt-token"
-_USER = User(email="user@example.com", password="secret")
 _ORG = Organization(handle="my-org", name="My Org", organization_type=OrganizationType.EDUCATION)
 _ORG_ID = uuid.uuid4()
 
@@ -25,56 +24,6 @@ def _make_service() -> tuple[ProvablyAuthService, MagicMock]:
     service = ProvablyAuthService()
     mock_api = MagicMock()
     return service, mock_api
-
-
-class TestProvablyAuthServiceAccount:
-    async def test_create_account_happy_path(self) -> None:
-        service, mock_api = _make_service()
-        mock_api.create_account = AsyncMock(return_value=None)
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            await service.create_account(_USER)
-
-        mock_api.create_account.assert_called_once_with(_USER)
-
-    async def test_create_account_connection_error(self) -> None:
-        service, mock_api = _make_service()
-        req = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/register")
-        mock_api.create_account = AsyncMock(side_effect=httpx.ConnectError("refused", request=req))
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyConnectionError):
-                await service.create_account(_USER)
-
-    async def test_login_happy_path(self) -> None:
-        service, mock_api = _make_service()
-        mock_api.login = AsyncMock(return_value={"token": "abc123"})
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            result = await service.login(_USER)
-
-        assert result == {"token": "abc123"}
-
-    async def test_login_unauthorized_raises_error(self) -> None:
-        service, mock_api = _make_service()
-        mock_request = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/login")
-        mock_response = httpx.Response(401, request=mock_request, text="Unauthorized")
-        mock_api.login = AsyncMock(
-            side_effect=httpx.HTTPStatusError("401", request=mock_request, response=mock_response)
-        )
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyUnauthorizedError):
-                await service.login(_USER)
-
-    async def test_login_connection_error(self) -> None:
-        service, mock_api = _make_service()
-        req = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/login")
-        mock_api.login = AsyncMock(side_effect=httpx.ConnectError("refused", request=req))
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyConnectionError):
-                await service.login(_USER)
 
 
 class TestProvablyAuthServiceApiKey:

@@ -11,9 +11,10 @@ agent's claims against what those calls actually returned, so a hallucinated val
 **caught** instead of shipped.
 
 > [!IMPORTANT]
-> **Setup is scriptable — prefer the non-interactive `sourcerykit init` CLI over
-> hand-writing config.** Exactly one step needs a human: clicking the email-verification
-> link. Full steps: [docs/onboarding.md](docs/onboarding.md).
+> **Setup is scriptable — prefer the `sourcerykit init` CLI over hand-writing config.**
+> Exactly one step needs a human: completing the browser OAuth login (new accounts are
+> created on the Provably web app during that login). Full steps:
+> [docs/onboarding.md](docs/onboarding.md).
 
 ## Where to go next
 

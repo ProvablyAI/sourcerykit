@@ -6,8 +6,7 @@ import pytest
 import typer
 
 from sourcerykit.cli.init import (
-    _run_login,
-    _run_register,
+    _run_oauth_browser,
 )
 from sourcerykit.cli.utils import (
     _normalize_postgres_url,
@@ -18,7 +17,8 @@ from sourcerykit.cli.utils import (
     require_settings,
     run_connectivity_check,
 )
-from sourcerykit.provably._errors import ProvablyConnectionError, ProvablyUnauthorizedError
+from sourcerykit.provably._errors import ProvablyConnectionError
+from sourcerykit.provably.oauth_login import OAuthTokens
 
 _VALID_POSTGRES_URL = "postgresql://user:pass@1.2.3.4:5432/mydb"
 
@@ -103,184 +103,45 @@ class TestRunConnectivityCheck:
 
 
 # ---------------------------------------------------------------------------
-# _run_register
+# _run_oauth_browser
 # ---------------------------------------------------------------------------
 
 
-class TestRunRegister:
-    def test_returns_email_on_successful_registration(self) -> None:
+class TestRunOauthBrowser:
+    def test_logs_in_and_runs_post_auth_with_flags(self) -> None:
+        tokens = OAuthTokens(access_token="at", refresh_token="rt")
         with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-        ):
-            mock_q.prompt.return_value = {"email": "new@example.com", "password": "pw"}
-            mock_q.press_any_key_to_continue.return_value.ask = MagicMock(return_value=None)
-            mock_service.create_account = AsyncMock(return_value=None)
-
-            result = _run_register()
-
-        assert result == "new@example.com"
-
-    def test_returns_empty_string_on_connection_error(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-        ):
-            mock_q.prompt.return_value = {"email": "new@example.com", "password": "pw"}
-            mock_service.create_account = AsyncMock(side_effect=ProvablyConnectionError("Network unreachable"))
-
-            result = _run_register()
-
-        assert result == ""
-
-    def test_returns_empty_string_when_inputs_cancelled(self) -> None:
-        with patch("sourcerykit.cli.init.questionary") as mock_q:
-            mock_q.prompt.return_value = None
-
-            result = _run_register()
-
-        assert result == ""
-
-
-# ---------------------------------------------------------------------------
-# _run_register (non-interactive)
-# ---------------------------------------------------------------------------
-
-
-class TestRunRegisterNonInteractive:
-    def test_creates_account_and_exits(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init.browser_login", new=AsyncMock(return_value=tokens)),
+            patch("sourcerykit.cli.init.fetch_user_email", new=AsyncMock(return_value="user@example.com")),
+            patch("sourcerykit.cli.init.save_app_dir_config") as mock_save,
+            patch("sourcerykit.cli.init._execute_post_auth_phases", return_value=True) as mock_phases,
             patch("sourcerykit.cli.init.console"),
         ):
-            mock_service.create_account = AsyncMock(return_value=None)
-
             with pytest.raises(typer.Exit):
-                _run_register(email="new@example.com", password="pw")
+                _run_oauth_browser(
+                    postgres_url="postgresql://u:p@h:5432/db",
+                    project_name="proj",
+                    sandbox=True,
+                )
 
-        mock_service.create_account.assert_called_once()
-        mock_q.prompt.assert_not_called()
-        mock_q.press_any_key_to_continue.assert_not_called()
-
-    def test_handles_already_registered_error(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary"),
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.create_account = AsyncMock(side_effect=ProvablyUnauthorizedError("Already registered"))
-
-            result = _run_register(email="new@example.com", password="pw")
-
-        assert result == ""
-
-    def test_handles_connection_error(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary"),
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.create_account = AsyncMock(side_effect=ProvablyConnectionError("Unreachable"))
-
-            result = _run_register(email="new@example.com", password="pw")
-
-        assert result == ""
-
-
-# ---------------------------------------------------------------------------
-# _run_login
-# ---------------------------------------------------------------------------
-
-
-class TestRunLogin:
-    def test_calls_execute_post_auth_phases_on_success(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_q.text.return_value.ask.return_value = "user@example.com"
-            mock_q.password.return_value.ask.return_value = "secret"
-            mock_service.login = AsyncMock(return_value={"token": "jwt-abc"})
-            mock_phases.return_value = True
-
-            with pytest.raises(typer.Exit):
-                _run_login()
-
+        mock_save.assert_called_once_with(token="at", refresh_token="rt", email="user@example.com")
         mock_phases.assert_called_once_with(
-            "jwt-abc",
+            "at",
             email="user@example.com",
-            postgres_url=None,
-            project_name=None,
-            sandbox=False,
+            postgres_url="postgresql://u:p@h:5432/db",
+            project_name="proj",
+            sandbox=True,
         )
 
-    def test_handles_unauthorized_error_without_crash(self) -> None:
+    def test_returns_without_phases_on_connection_error(self) -> None:
         with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
+            patch("sourcerykit.cli.init.browser_login", new=AsyncMock(side_effect=ProvablyConnectionError("down"))),
             patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
             patch("sourcerykit.cli.init.console"),
         ):
-            mock_q.text.return_value.ask.return_value = "user@example.com"
-            mock_q.password.return_value.ask.return_value = "wrong"
-            mock_service.login = AsyncMock(side_effect=ProvablyUnauthorizedError("Bad creds"))
-
-            _run_login()  # must not raise
+            _run_oauth_browser(sandbox=True)  # must not raise
 
         mock_phases.assert_not_called()
-
-    def test_handles_connection_error_without_crash(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_q.text.return_value.ask.return_value = "user@example.com"
-            mock_q.password.return_value.ask.return_value = "pass"
-            mock_service.login = AsyncMock(side_effect=ProvablyConnectionError("Unreachable"))
-
-            _run_login()  # must not raise
-
-        mock_phases.assert_not_called()
-
-    def test_returns_early_when_token_missing_from_response(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_q.text.return_value.ask.return_value = "user@example.com"
-            mock_q.password.return_value.ask.return_value = "pass"
-            mock_service.login = AsyncMock(return_value={})  # no token key
-
-            _run_login()
-
-        mock_phases.assert_not_called()
-
-    def test_prefill_email_passed_to_text_prompt(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases"),
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_q.text.return_value.ask.return_value = None  # user cancels
-            mock_service.login = AsyncMock(return_value={"token": "t"})
-
-            _run_login(prefill_email="pre@example.com")
-
-            _, kwargs = mock_q.text.call_args
-            assert kwargs.get("default") == "pre@example.com"
-
-
-# ---------------------------------------------------------------------------
-# mask_secret
-# ---------------------------------------------------------------------------
 
 
 class TestMaskSecret:
@@ -414,79 +275,3 @@ class TestNormalizePostgresUrl:
         url = "postgresql://host:5432/mydb"
         result = _normalize_postgres_url(url)
         assert result == url
-
-
-# ---------------------------------------------------------------------------
-# _run_login (non-interactive)
-# ---------------------------------------------------------------------------
-
-
-class TestRunLoginNonInteractive:
-    def test_skips_prompts_when_email_and_password_provided(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary") as mock_q,
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.login = AsyncMock(return_value={"token": "jwt-abc"})
-            mock_phases.return_value = True
-
-            with pytest.raises(typer.Exit):
-                _run_login(email="a@b.com", password="pw")
-
-        mock_q.text.assert_not_called()
-        mock_q.password.assert_not_called()
-        mock_service.login.assert_called_once()
-
-    def test_passes_flags_to_post_auth_phases(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary"),
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.login = AsyncMock(return_value={"token": "jwt-abc"})
-            mock_phases.return_value = True
-
-            with pytest.raises(typer.Exit):
-                _run_login(
-                    email="a@b.com",
-                    password="pw",
-                    postgres_url="postgresql://u:p@h:5432/db",
-                    project_name="myproj",
-                )
-
-        mock_phases.assert_called_once_with(
-            "jwt-abc",
-            email="a@b.com",
-            postgres_url="postgresql://u:p@h:5432/db",
-            project_name="myproj",
-            sandbox=False,
-        )
-
-    def test_handles_unauthorized_error(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary"),
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.login = AsyncMock(side_effect=ProvablyUnauthorizedError("Bad"))
-
-            _run_login(email="a@b.com", password="bad")  # must not raise
-
-        mock_phases.assert_not_called()
-
-    def test_handles_connection_error(self) -> None:
-        with (
-            patch("sourcerykit.cli.init.questionary"),
-            patch("sourcerykit.cli.init.service") as mock_service,
-            patch("sourcerykit.cli.init._execute_post_auth_phases") as mock_phases,
-            patch("sourcerykit.cli.init.console"),
-        ):
-            mock_service.login = AsyncMock(side_effect=ProvablyConnectionError("Unreachable"))
-
-            _run_login(email="a@b.com", password="pw")  # must not raise
-
-        mock_phases.assert_not_called()

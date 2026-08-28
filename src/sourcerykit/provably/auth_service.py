@@ -6,42 +6,12 @@ import uuid
 from typing import Any
 
 from sourcerykit.provably._api import get_api as get_main_api
-from sourcerykit.provably._auth_api import Organization, User, get_api
+from sourcerykit.provably._auth_api import Organization, get_api
 from sourcerykit.provably._errors import provably_auth_error_handler
 
 
 class ProvablyAuthService:
     """High-level service for account and organisation management."""
-
-    # ------------------------------------------------------------------
-    # Account
-    # ------------------------------------------------------------------
-
-    async def create_account(self, user: User) -> None:
-        """Register a new account.
-
-        Raises:
-            ProvablyResourceAlreadyExistsError: If an account with that email already exists.
-            ProvablyAuthError: For other 4xx/5xx responses.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_auth_error_handler("create_account"):
-            await get_api().create_account(user)
-
-    async def login(self, user: User) -> dict[str, Any]:
-        """Authenticate with email and password.
-
-        Returns:
-            dict[str, Any]: The raw API response (contains ``token``).
-
-        Raises:
-            ProvablyUnauthorizedError: If credentials are wrong.
-            ProvablyAuthError: For other 4xx/5xx responses.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_auth_error_handler("login"):
-            result = await get_api().login(user)
-            return result
 
     # ------------------------------------------------------------------
     # API Key

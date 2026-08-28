@@ -125,3 +125,46 @@ class TestProvablyHTTPClientPreAuth:
             await client.get("/api/v1/user/key", token="my-jwt-token")
             _, kwargs = mock_req.call_args
             assert kwargs.get("token") == "my-jwt-token"
+
+
+class TestProvablyHTTPClientOAuthRefresh:
+    def _make_401(self) -> MagicMock:
+        resp = MagicMock()
+        resp.status_code = 401
+        resp.text = "expired"
+        req = httpx.Request("GET", "http://x")
+        resp.raise_for_status.side_effect = httpx.HTTPStatusError("401", request=req, response=resp)
+        return resp
+
+    def _make_ok(self) -> MagicMock:
+        resp = MagicMock()
+        resp.content = b'{"ok": true}'
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = {"ok": True}
+        return resp
+
+    async def test_401_refreshes_once_and_retries(self) -> None:
+        client = _make_client()
+        calls = 0
+
+        async def fake_request(method: str, path: str, **kwargs: object) -> MagicMock:
+            nonlocal calls
+            calls += 1
+            return self._make_ok() if calls > 1 else self._make_401()
+
+        client._request = fake_request  # type: ignore[method-assign]
+
+        with patch("sourcerykit.provably._http._refresh_session", AsyncMock(return_value="new-token")) as refresh:
+            result = await client.get("/api/v1/data", token="old-token")
+
+        assert result == {"ok": True}
+        refresh.assert_awaited_once()
+        assert calls == 2
+
+    async def test_401_without_refresh_token_raises(self) -> None:
+        client = _make_client()
+        client._request = AsyncMock(return_value=self._make_401())  # type: ignore[method-assign]
+
+        with patch("sourcerykit.provably._http._refresh_session", AsyncMock(return_value=None)):
+            with pytest.raises(httpx.HTTPStatusError):
+                await client.get("/api/v1/data", token="old-token")

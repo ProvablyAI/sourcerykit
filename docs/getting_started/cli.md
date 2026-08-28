@@ -39,7 +39,7 @@ SourceryKit stores configuration at two levels:
 
 | Config | Location | Scope | Stores |
 |--------|----------|-------|--------|
-| Global | `typer.get_app_dir("sourcerykit")` (OS application directory) | User-level | `api_key`, `org_id`, `token`, `email` |
+| Global | `typer.get_app_dir("sourcerykit")` (OS application directory) | User-level | `api_key`, `org_id`, `token`, `refresh_token`, `email` |
 | Local | `./.env` (project directory) | Project-level | `SOURCERYKIT_POSTGRES_URL`, `SOURCERYKIT_PROJECT_NAME`, bootstrap IDs |
 
 Global config is shared across all projects. Local config is project-specific and should be added to `.gitignore`.
@@ -50,43 +50,36 @@ Global config is shared across all projects. Local config is project-specific an
 
 ### `sourcerykit init`
 
-Setup wizard for account creation/login, database linking, and project initialization.
+Setup wizard for browser login (OAuth), database linking, and project initialization.
 
 ```bash
-sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME] [--sandbox]
+sourcerykit init [--postgres-url URL] [--project-name NAME] [--sandbox]
 ```
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--register` | Create a new account (requires `--email` and `--password`) |
-| `--email` | Account email |
-| `--password` | Account password |
 | `--postgres-url` | Full `postgresql://` URL |
 | `--project-name` | Project name |
 | `--sandbox` | Use a hosted sandbox database instead of your own PostgreSQL |
 
 > [!NOTE]
-> `--email` and `--password` must be used together. Use `--register` to create a new account, or omit it to log in with an existing account. Registration requires email verification before you can log in.
+> Login is **browser-based OAuth** (PKCE). Passing any flag opens the browser login once,
+> then continues non-interactively with the given options.
 
 **What it does:**
-- Account setup (register or login)
+- Account login (browser OAuth)
 - API key retrieval
 - Sandbox database provisioning (or custom PostgreSQL with `--postgres-url`)
 - Project naming
 - Bootstrap resource creation
 
-**Input:** Interactive prompts for email, password, database, and project name.
+**Input:** Browser-based OAuth login; then database and project name prompts (or flags).
 
 ```bash
 Welcome to the SourceryKit Wizard! How would you like to proceed?
-❯ Log in with an existing account
-  Create a new account
+❯ Log in with browser (OAuth)
   Exit
-
-🔐 Log in to your account
-Email address: user@example.com
-Password: ********
 
 🗄️  Database setup
 How would you like to set up your database?
@@ -97,29 +90,17 @@ How would you like to set up your database?
 Project name: my-project
 ```
 
-**Non-interactive registration:**
-```bash
-sourcerykit init --register --email user@example.com --password secret
-# → "📧 Verification email sent"
-# → Verify your account, then run:
-# →   sourcerykit init --email user@example.com --password secret"
-```
-
-**Non-interactive login + setup:**
+**Browser login + sandbox (opens the browser once, then continues):**
 ```bash
 sourcerykit init \
-  --email user@example.com \
-  --password secret \
-  --postgres-url "postgresql://user:pass@host:5432/db" \
+  --sandbox \
   --project-name my-project
 ```
 
-**Non-interactive login + sandbox:**
+**Browser login + own database:**
 ```bash
 sourcerykit init \
-  --email user@example.com \
-  --password secret \
-  --sandbox \
+  --postgres-url "postgresql://user:pass@host:5432/db" \
   --project-name my-project
 ```
 

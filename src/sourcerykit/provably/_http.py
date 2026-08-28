@@ -2,15 +2,49 @@
 
 import asyncio
 import functools
+import json
 from typing import Any
 
 import httpx
 
-from sourcerykit.config import Settings, get_bootstrap_settings, get_settings
+from sourcerykit.config import (
+    CONFIG_FILE,
+    Settings,
+    get_bootstrap_settings,
+    get_settings,
+    load_app_dir_config,
+    save_app_dir_config,
+)
 from sourcerykit.intercept._self_egress import provably_self_egress
 from sourcerykit.logger import get_logger
 
 _log = get_logger(__name__)
+
+
+async def _refresh_session() -> str | None:
+    """Rotate the stored OAuth refresh token once; return the new access token.
+
+    Returns None (and clears the stored refresh token) when no refresh token
+    is configured or rotation fails.
+    """
+    from sourcerykit.provably.oauth_login import refresh_tokens
+
+    refresh = load_app_dir_config().get("refresh_token")
+    if not refresh:
+        return None
+    try:
+        tokens = await refresh_tokens(str(refresh))
+    except Exception:
+        _log.warning("oauth_refresh_failed", detail="dropping stored refresh token")
+        payload = load_app_dir_config()
+        payload.pop("refresh_token", None)
+        CONFIG_FILE.write_text(json.dumps(payload))
+        load_app_dir_config.cache_clear()
+        get_settings.cache_clear()
+        return None
+
+    save_app_dir_config(token=tokens.access_token, refresh_token=tokens.refresh_token)
+    return tokens.access_token
 
 
 class ProvablyHTTPClient:
@@ -77,8 +111,17 @@ class ProvablyHTTPClient:
             )
 
     async def _fetch(
-        self, method: str, path: str, *, api_key: str | None = None, token: str | None = None, **kwargs: Any
+        self,
+        method: str,
+        path: str,
+        *,
+        api_key: str | None = None,
+        token: str | None = None,
+        _oauth_retried: bool = False,
+        **kwargs: Any,
     ) -> Any:
+        # Sentinel kwarg guards the single refresh-retry; never forwarded to httpx.
+        kwargs.pop("_oauth_retried", None)
         _log.debug("provably_api_request", method=method, path=path)
         try:
             response = await self._request(method, path, api_key=api_key, token=token, **kwargs)
@@ -101,6 +144,13 @@ class ProvablyHTTPClient:
                 return {}
 
         except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401 and token is not None and not _oauth_retried:
+                new_token = await _refresh_session()
+                if new_token is not None:
+                    _log.info("provably_api_token_refreshed", method=method, path=path)
+                    return await self._fetch(
+                        method, path, api_key=api_key, token=new_token, _oauth_retried=True, **kwargs
+                    )
             _log.error(
                 "provably_api_rejected",
                 method=method,

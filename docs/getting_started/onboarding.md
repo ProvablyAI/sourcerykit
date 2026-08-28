@@ -5,11 +5,12 @@ This is the **first** step — nothing else works until the credentials below ex
 
 ## ⚠️ One human step
 
-Registration triggers an **email verification link that only a human can click** — that is
-the single step an automated agent cannot do. Everything else (register, login, database
-link, project setup) runs non-interactively. If you are an agent: **prefer the
-`sourcerykit init` CLI over hand-writing config**, run the setup below yourself, and ask a
-human only for the verification click.
+Login is **browser-based OAuth**. The only step an automated agent cannot do is the
+browser sign-in — a human opens the consent page, signs in (or creates an account on
+the Provably web app), and approves. Everything else (database link, project setup)
+runs automatically. If you are an agent: **prefer the `sourcerykit init` CLI over
+hand-writing config**, run the setup below yourself, and ask a human only to complete
+the browser login.
 
 ## Setup
 
@@ -17,19 +18,12 @@ human only for the verification click.
 pip install sourcerykit
 ```
 
-Non-interactive (agents and scripts):
-
 ```bash
-# 1. register (skip if the account exists) — triggers the verification email
-sourcerykit init --register --email you@example.com --password ...
+# Browser OAuth login (one human step). With --sandbox/--project-name the wizard
+# continues automatically after the browser login completes.
+sourcerykit init --sandbox --project-name my-app
 
-# 2. a HUMAN clicks the verification link in the email
-
-# 3. log in + create sandbox + name the project
-sourcerykit init --email you@example.com --password ... \
-  --sandbox --project-name my-app
-
-# 4. verify everything works
+# verify everything works
 sourcerykit doctor
 ```
 
@@ -38,13 +32,13 @@ sourcerykit doctor
 > `--postgres-url postgresql://user:pass@host:5432/db`.
 
 > [!NOTE]
-> A brand-new account has no organization, so step 3 auto-creates one and stays fully
-> non-interactive. If the account already belongs to **multiple** orgs, `init` prompts you
-> to choose — use a single-org account to keep it scriptable.
+> A brand-new account has no organization, so `init` auto-creates one. If the account
+> already belongs to **multiple** orgs, `init` prompts you to choose — use a
+> single-org account to keep it scriptable.
 
-Interactive: run `sourcerykit init` with no flags and follow the wizard — same steps,
-prompted (sign up or log in → verify email → create a hosted sandbox → name the project
-→ credentials stored). You can also choose to link your own PostgreSQL instead.
+Interactive: run `sourcerykit init` with no flags and follow the wizard — the browser
+login opens, then you create a hosted sandbox and name the project. You can also choose
+to link your own PostgreSQL instead.
 
 Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.md](https://provably.ai/docs/getting_started/cli).
 

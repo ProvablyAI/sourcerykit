@@ -123,7 +123,7 @@ sourcerykit init
 ```
 
 The wizard will guide you through:
-- **Account Setup & Authorization**: Create a new account or log into an existing one, and select your organization workspace.
+- **Account Login (OAuth)**: Log in securely with your browser and select your organization workspace.
 - **API Key Generation**: Automatically fetch your SDK API-KEY from your account profile.
 - **Database Provisioning**: Creates a hosted sandbox database automatically. To use your own PostgreSQL instead, pass `--postgres-url`.
 - **Save Config**: Automatically write your credentials and tokens straight to a local .env file.

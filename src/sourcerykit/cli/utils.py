@@ -41,9 +41,9 @@ def require_settings() -> Settings:
 
 
 def logout() -> None:
-    """Clear stored session (token + email) from global config."""
+    """Clear stored session (token + email + refresh token) from global config."""
     payload = load_app_dir_config()
-    for key in ("token", "email"):
+    for key in ("token", "email", "refresh_token"):
         payload.pop(key, None)
     CONFIG_FILE.write_text(json.dumps(payload))
     load_app_dir_config.cache_clear()

@@ -1,23 +1,19 @@
-"""Provably Auth API — account, session and organisation endpoints.
+"""Provably Auth API — API key and organisation endpoints.
 
-:class:`ProvablyAuthAPI` covers three resource groups:
-- **Auth** — register a new account and log in
+:class:`ProvablyAuthAPI` covers two resource groups:
 - **API Key** — retrieve the API key for the authenticated user
 - **Organisations** — create and list organisations
+
+Authentication itself is OAuth browser login; see
+:mod:`sourcerykit.provably.oauth_login`.
 """
 
 import functools
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
 from sourcerykit.provably._http import ProvablyHTTPClient
-
-
-@dataclass(slots=True)
-class User:
-    email: str
-    password: str
 
 
 class OrganizationType(StrEnum):
@@ -51,45 +47,11 @@ class ProvablyAuthAPI:
     def __init__(self) -> None:
         self._http = ProvablyHTTPClient(pre_auth=True)
 
-    def _auth_path(self) -> str:
-        return "/api/v1/auth"
-
     def _user_path(self) -> str:
         return "/api/v1/user"
 
     def _org_path(self) -> str:
         return "/api/v1/organizations"
-
-    # ------------------------------------------------------------------
-    # Auth
-    # ------------------------------------------------------------------
-
-    async def create_account(self, user: User) -> None:
-        """
-        Register a new account.
-
-        Args:
-            user: The user credentials.
-        """
-        path = f"{self._auth_path()}/register"
-
-        await self._http.post(path, asdict(user))
-        return
-
-    async def login(self, user: User) -> dict[str, Any]:
-        """
-        Authenticate with email and password.
-
-        Args:
-            user: The user credentials.
-
-        Returns:
-            dict[str, Any]: The raw JSON response from the API (contains ``token``).
-        """
-        path = f"{self._auth_path()}/login"
-
-        result: dict[str, Any] = await self._http.post(path, asdict(user))
-        return result
 
     # ------------------------------------------------------------------
     # API KEY

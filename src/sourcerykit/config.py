@@ -100,7 +100,11 @@ def load_app_dir_config() -> dict[str, Any]:
 
 # Global config file (user-level config)
 def save_app_dir_config(
-    api_key: str | None = None, org_id: str | None = None, token: str | None = None, email: str | None = None
+    api_key: str | None = None,
+    org_id: str | None = None,
+    token: str | None = None,
+    email: str | None = None,
+    refresh_token: str | None = None,
 ) -> None:
     """Save global configuration (user-level) to the OS app directory."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -114,6 +118,8 @@ def save_app_dir_config(
         payload["token"] = token
     if email is not None:
         payload["email"] = email
+    if refresh_token is not None:
+        payload["refresh_token"] = refresh_token
 
     CONFIG_FILE.write_text(json.dumps(payload))
     os.chmod(CONFIG_FILE, 0o600)

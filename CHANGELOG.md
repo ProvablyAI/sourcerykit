@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Breaking changes
+- **OAuth browser-only login** — `sourcerykit init` no longer accepts `--register`, `--email`, or `--password`; email/password login and account registration were removed. Login is browser-based OAuth (PKCE) only. `--postgres-url`, `--project-name`, and `--sandbox` still work: passing any flag opens the browser login once, then continues non-interactively. New accounts are created on the Provably web app during the browser login.
+
 ## 1.1.0
 
 ### Breaking changes
