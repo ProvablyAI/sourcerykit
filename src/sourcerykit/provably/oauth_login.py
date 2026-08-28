@@ -1,8 +1,12 @@
 """OAuth2 login for the SourceryKit CLI — public client with PKCE (RFC 7636/8252).
 
-browser_login opens {provably_app}/consent?…, the web app drives
-sign-in and consent and redirects to this CLI's loopback listener.
-The client is public: no secret, PKCE S256 is the only proof.
+:func:`browser_login` opens ``{provably_app}/consent?…``; the web app drives
+sign-in and consent and redirects to this CLI's loopback listener
+(``http://127.0.0.1:8910/callback``). The client is public: no secret, PKCE
+S256 is the only proof.
+
+This module is pure OAuth orchestration — the token HTTP calls live in
+:mod:`sourcerykit.provably.auth_service`.
 """
 
 import asyncio
@@ -13,31 +17,20 @@ import secrets
 import threading
 import urllib.parse
 import webbrowser
-from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any
 
-import httpx
-
-from sourcerykit.config import DEFAULT_PROVABLY_APP_URL, get_bootstrap_settings, load_app_dir_config
-from sourcerykit.intercept._self_egress import provably_self_egress
+from sourcerykit.config import DEFAULT_PROVABLY_APP_URL, load_app_dir_config
 from sourcerykit.logger import get_logger
-from sourcerykit.provably._errors import provably_auth_error_handler
+from sourcerykit.provably._auth_api import (
+    LOOPBACK_PORT,
+    OAUTH_CLIENT_ID,
+    OAUTH_SCOPE,
+    REDIRECT_URI,
+    OAuthTokens,
+)
+from sourcerykit.provably.auth_service import auth_service
 
 _log = get_logger(__name__)
-
-OAUTH_CLIENT_ID = "sourcerykit-cli"
-OAUTH_SCOPE = "read write"
-LOOPBACK_PORT = 8910
-REDIRECT_URI = f"http://127.0.0.1:{LOOPBACK_PORT}/callback"
-
-
-@dataclass(slots=True)
-class OAuthTokens:
-    """Tokens issued by the OAuth token endpoint."""
-
-    access_token: str
-    refresh_token: str | None
 
 
 def pkce_pair() -> tuple[str, str]:
@@ -46,10 +39,6 @@ def pkce_pair() -> tuple[str, str]:
     digest = hashlib.sha256(verifier.encode()).digest()
     challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
     return verifier, challenge
-
-
-def _base_url() -> str:
-    return get_bootstrap_settings().rstrip("/")
 
 
 def consent_page_url() -> str:
@@ -64,78 +53,6 @@ def consent_page_url() -> str:
         raw = str(load_app_dir_config().get("provably_app", ""))
     raw = raw.strip().rstrip("/")
     return raw or f"{DEFAULT_PROVABLY_APP_URL}/consent"
-
-
-async def _request(client: httpx.AsyncClient, method: str, url: str, **kwargs: Any) -> httpx.Response:
-    """httpx call marked as SDK-internal egress so it bypasses intercept hooks."""
-    with provably_self_egress():
-        return await client.request(method, url, timeout=30.0, **kwargs)
-
-
-async def _exchange_code(client: httpx.AsyncClient, code: str, verifier: str) -> OAuthTokens:
-    """Exchange an authorization code for tokens (public client, no secret)."""
-    async with provably_auth_error_handler("oauth_token_exchange"):
-        res = await _request(
-            client,
-            "POST",
-            f"{_base_url()}/api/v1/auth/oauth/token",
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": REDIRECT_URI,
-                "client_id": OAUTH_CLIENT_ID,
-                "code_verifier": verifier,
-            },
-        )
-        res.raise_for_status()
-        body = res.json()
-        return OAuthTokens(access_token=body["access_token"], refresh_token=body.get("refresh_token"))
-
-
-async def refresh_tokens(refresh_token: str) -> OAuthTokens:
-    """Rotate tokens: exchange a refresh token for a new access+refresh pair."""
-    async with provably_auth_error_handler("oauth_refresh"):
-        async with httpx.AsyncClient() as client:
-            res = await _request(
-                client,
-                "POST",
-                f"{_base_url()}/api/v1/auth/oauth/refresh",
-                data={
-                    "grant_type": "refresh_token",
-                    "refresh_token": refresh_token,
-                    "client_id": OAUTH_CLIENT_ID,
-                },
-            )
-            res.raise_for_status()
-            body = res.json()
-            return OAuthTokens(access_token=body["access_token"], refresh_token=body.get("refresh_token"))
-
-
-async def fetch_user_email(access_token: str) -> str:
-    """Return the authenticated user's email from the ``/user/current`` endpoint.
-
-    Args:
-        access_token: The OAuth access token (Bearer).
-
-    Returns:
-        str: The user's email (top-level ``email`` field).
-
-    Raises:
-        ValueError: If the response has no email.
-    """
-    async with provably_auth_error_handler("oauth_userinfo"):
-        async with httpx.AsyncClient() as client:
-            res = await _request(
-                client,
-                "GET",
-                f"{_base_url()}/api/v1/user/current",
-                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
-            )
-            res.raise_for_status()
-            email = res.json().get("email", "")
-    if not email:
-        raise ValueError("/api/v1/user/current response did not contain an email")
-    return str(email)
 
 
 # ----------------------------------------------------------------------
@@ -200,8 +117,7 @@ async def browser_login(consent_page: str | None = None) -> OAuthTokens:
         }
     )
 
-    print("Opening browser for authentication...")
-    print(f"  {consent_url}")
+    _log.info("oauth_browser_opening", consent_url=consent_url)
     webbrowser.open(consent_url)
 
     callback = await _wait_for_loopback_code()
@@ -212,5 +128,4 @@ async def browser_login(consent_page: str | None = None) -> OAuthTokens:
         error = callback.get("error", "unknown error")
         raise ValueError(f"authorization denied: {error}")
 
-    async with httpx.AsyncClient() as client:
-        return await _exchange_code(client, code, verifier)
+    return await auth_service.exchange_code(code, verifier)

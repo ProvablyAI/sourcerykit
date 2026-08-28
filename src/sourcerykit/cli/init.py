@@ -28,7 +28,7 @@ from sourcerykit.provably._errors import (
 )
 from sourcerykit.provably._http import get_http
 from sourcerykit.provably.auth_service import ProvablyAuthService
-from sourcerykit.provably.oauth_login import browser_login, fetch_user_email
+from sourcerykit.provably.oauth_login import browser_login
 from sourcerykit.provably.service import service as provably_service
 
 service = ProvablyAuthService()
@@ -47,8 +47,9 @@ def _run_oauth_browser(
     """
     try:
         console.print("\n[bold]🔐 Browser authentication[/bold]")
+        console.print("Opening browser for authentication...")
         tokens = asyncio.run(browser_login())
-        email = asyncio.run(fetch_user_email(tokens.access_token))
+        email = asyncio.run(service.get_user_email(tokens.access_token))
     except ProvablyConnectionError as e:
         console.print(f"[red]❌ Network error: {e}[/red]")
         return

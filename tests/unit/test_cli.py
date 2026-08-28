@@ -17,8 +17,8 @@ from sourcerykit.cli.utils import (
     require_settings,
     run_connectivity_check,
 )
+from sourcerykit.provably._auth_api import OAuthTokens
 from sourcerykit.provably._errors import ProvablyConnectionError
-from sourcerykit.provably.oauth_login import OAuthTokens
 
 _VALID_POSTGRES_URL = "postgresql://user:pass@1.2.3.4:5432/mydb"
 
@@ -112,7 +112,7 @@ class TestRunOauthBrowser:
         tokens = OAuthTokens(access_token="at", refresh_token="rt")
         with (
             patch("sourcerykit.cli.init.browser_login", new=AsyncMock(return_value=tokens)),
-            patch("sourcerykit.cli.init.fetch_user_email", new=AsyncMock(return_value="user@example.com")),
+            patch("sourcerykit.cli.init.service.get_user_email", new=AsyncMock(return_value="user@example.com")),
             patch("sourcerykit.cli.init.save_app_dir_config") as mock_save,
             patch("sourcerykit.cli.init._execute_post_auth_phases", return_value=True) as mock_phases,
             patch("sourcerykit.cli.init.console"),

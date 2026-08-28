@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from sourcerykit.provably._auth_api import Organization, OrganizationType
+from sourcerykit.provably._auth_api import OAuthTokens, Organization, OrganizationType
 from sourcerykit.provably._errors import (
     ProvablyConnectionError,
     ProvablyResourceAlreadyExistsError,
@@ -24,6 +24,50 @@ def _make_service() -> tuple[ProvablyAuthService, MagicMock]:
     service = ProvablyAuthService()
     mock_api = MagicMock()
     return service, mock_api
+
+
+class TestProvablyAuthServiceOAuth:
+    async def test_exchange_code_returns_tokens(self) -> None:
+        service, mock_api = _make_service()
+        mock_api.exchange_code = AsyncMock(return_value={"access_token": "at", "refresh_token": "rt"})
+
+        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
+            result = await service.exchange_code("CODE", "VERIFIER")
+
+        assert isinstance(result, OAuthTokens)
+        assert result.access_token == "at"
+        assert result.refresh_token == "rt"
+
+    async def test_refresh_tokens_rotates(self) -> None:
+        service, mock_api = _make_service()
+        mock_api.refresh_tokens = AsyncMock(return_value={"access_token": "new-at", "refresh_token": "new-rt"})
+
+        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
+            result = await service.refresh_tokens("old-rt")
+
+        assert result.access_token == "new-at"
+        assert result.refresh_token == "new-rt"
+
+
+class TestProvablyAuthServiceUserEmail:
+    async def test_returns_email(self) -> None:
+        service, mock_api = _make_service()
+        mock_api.get_current_user = AsyncMock(return_value={"email": "user@example.com"})
+
+        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
+            result = await service.get_user_email(_TOKEN)
+
+        assert result == "user@example.com"
+
+    async def test_missing_email_raises_data_error(self) -> None:
+        from sourcerykit.provably._errors import ProvablyDataError
+
+        service, mock_api = _make_service()
+        mock_api.get_current_user = AsyncMock(return_value={})
+
+        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
+            with pytest.raises(ProvablyDataError):
+                await service.get_user_email(_TOKEN)
 
 
 class TestProvablyAuthServiceApiKey:

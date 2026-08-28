@@ -27,13 +27,13 @@ async def _refresh_session() -> str | None:
     Returns None (and clears the stored refresh token) when no refresh token
     is configured or rotation fails.
     """
-    from sourcerykit.provably.oauth_login import refresh_tokens
+    from sourcerykit.provably.auth_service import auth_service
 
     refresh = load_app_dir_config().get("refresh_token")
     if not refresh:
         return None
     try:
-        tokens = await refresh_tokens(str(refresh))
+        tokens = await auth_service.refresh_tokens(str(refresh))
     except Exception:
         _log.warning("oauth_refresh_failed", detail="dropping stored refresh token")
         payload = load_app_dir_config()
@@ -95,7 +95,7 @@ class ProvablyHTTPClient:
 
         headers = {**self._headers}
 
-        if "files" in kwargs:
+        if "files" in kwargs or "data" in kwargs:
             headers.pop("Content-Type", None)
 
         if token is not None:
@@ -198,6 +198,16 @@ class ProvablyHTTPClient:
         token: str | None = None,
     ) -> Any:
         return await self._fetch("POST", path, api_key=api_key, token=token, json=json or {})
+
+    async def post_form(
+        self,
+        path: str,
+        data: dict[str, Any],
+        *,
+        token: str | None = None,
+    ) -> Any:
+        """POST with an ``application/x-www-form-urlencoded`` body."""
+        return await self._fetch("POST", path, token=token, data=data)
 
     async def post_multipart(
         self,

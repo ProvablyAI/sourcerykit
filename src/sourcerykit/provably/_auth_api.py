@@ -1,10 +1,12 @@
-"""Provably Auth API — API key and organisation endpoints.
+"""Provably Auth API — OAuth tokens, user, API key and organisation endpoints.
 
-:class:`ProvablyAuthAPI` covers two resource groups:
+:class:`ProvablyAuthAPI` covers four resource groups:
+- **OAuth** — exchange an authorization code and rotate refresh tokens
+- **User** — retrieve the current authenticated user
 - **API Key** — retrieve the API key for the authenticated user
 - **Organisations** — create and list organisations
 
-Authentication itself is OAuth browser login; see
+The browser OAuth flow itself lives in
 :mod:`sourcerykit.provably.oauth_login`.
 """
 
@@ -14,6 +16,19 @@ from enum import StrEnum
 from typing import Any
 
 from sourcerykit.provably._http import ProvablyHTTPClient
+
+OAUTH_CLIENT_ID = "sourcerykit-cli"
+OAUTH_SCOPE = "read write"
+LOOPBACK_PORT = 8910
+REDIRECT_URI = f"http://127.0.0.1:{LOOPBACK_PORT}/callback"
+
+
+@dataclass(slots=True)
+class OAuthTokens:
+    """Tokens issued by the OAuth token endpoint."""
+
+    access_token: str
+    refresh_token: str | None
 
 
 class OrganizationType(StrEnum):
@@ -52,6 +67,78 @@ class ProvablyAuthAPI:
 
     def _org_path(self) -> str:
         return "/api/v1/organizations"
+
+    # ------------------------------------------------------------------
+    # OAuth
+    # ------------------------------------------------------------------
+
+    async def exchange_code(self, code: str, verifier: str) -> dict[str, Any]:
+        """
+        Exchange an authorization code for tokens (public client, no secret).
+
+        Args:
+            code: The authorization code from the redirect.
+            verifier: The PKCE code verifier.
+
+        Returns:
+            dict[str, Any]: The raw JSON response (contains ``access_token``
+            and optionally ``refresh_token``).
+        """
+        path = "/api/v1/auth/oauth/token"
+
+        result: dict[str, Any] = await self._http.post_form(
+            path,
+            {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": REDIRECT_URI,
+                "client_id": OAUTH_CLIENT_ID,
+                "code_verifier": verifier,
+            },
+        )
+        return result
+
+    async def refresh_tokens(self, refresh_token: str) -> dict[str, Any]:
+        """
+        Rotate tokens: exchange a refresh token for a new access+refresh pair.
+
+        Args:
+            refresh_token: The refresh token to redeem.
+
+        Returns:
+            dict[str, Any]: The raw JSON response (contains ``access_token``
+            and optionally ``refresh_token``).
+        """
+        path = "/api/v1/auth/oauth/refresh"
+
+        result: dict[str, Any] = await self._http.post_form(
+            path,
+            {
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": OAUTH_CLIENT_ID,
+            },
+        )
+        return result
+
+    # ------------------------------------------------------------------
+    # User
+    # ------------------------------------------------------------------
+
+    async def get_current_user(self, token: str) -> dict[str, Any]:
+        """
+        Retrieve the current authenticated user.
+
+        Args:
+            token: OAuth access token (Bearer).
+
+        Returns:
+            dict[str, Any]: The raw JSON response from the API (contains ``email``).
+        """
+        path = f"{self._user_path()}/current"
+
+        result: dict[str, Any] = await self._http.get(path, token=token)
+        return result
 
     # ------------------------------------------------------------------
     # API KEY
