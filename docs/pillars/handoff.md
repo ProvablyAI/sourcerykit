@@ -29,7 +29,7 @@ Each `ClaimedValue` in that list has three string fields — nothing else:
 
 
 ## Anatomy of the payload_data
-The `build_handoff_payload` function accepts a structured `payload_data` dictionary. Other runtime fields—such as network intercepts, organization IDs, and API keys—are resolved automatically by the SDK during compilation.
+The `build_handoff_payload` function accepts a structured `payload_data` dictionary. Other runtime fields—such as network intercepts, organization IDs, and the integration key—are resolved automatically by the SDK during compilation.
 
 > [!NOTE]
 > The fields below represent a complete and exhaustive view of the parameters you can manually configure. Any schema fields omitted from these tables are managed entirely by the SDK lifecycle.

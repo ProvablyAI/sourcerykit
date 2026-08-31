@@ -136,7 +136,8 @@ Already have credentials, or need to bypass the wizard (CI, containers, debuggin
 variables override the stored config:
 
 ```bash
-export PROVABLY_API_KEY="..."
+export PROVABLY_ACCESS_TOKEN="..."
+export PROVABLY_REFRESH_TOKEN="..."
 export SOURCERYKIT_ORG_ID="..."
 export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
 ```

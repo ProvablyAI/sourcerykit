@@ -47,7 +47,8 @@ Full command reference (`init`, `doctor`, `endpoints`, `config`, `trace`): [cli.
 `init` stores credentials at two levels (see [cli.md](https://provably.ai/docs/getting_started/cli) for the full table):
 
 - **Global config** (OS application directory, shared across projects): the Provably
-  **API key** and **organisation id** — issued together at login; never hand-write them.
+  OAuth **access/refresh tokens** and the **organisation id** — issued together at
+  login; never hand-write them.
 - **Project `.env`**: `SOURCERYKIT_POSTGRES_URL` (the database SourceryKit records
   intercepts in — set automatically for sandbox users), `SOURCERYKIT_PROJECT_NAME`, and
   the bootstrap resource ids (`SOURCERYKIT_MIDDLEWARE_ID`, `…_DATABASE_ID`, `…_SCHEMA_ID`,
@@ -67,7 +68,8 @@ with `sourcerykit doctor` (add `--fix`).
 Already have credentials? Environment variables override the stored config:
 
 ```bash
-export PROVABLY_API_KEY="..."
+export PROVABLY_ACCESS_TOKEN="..."
+export PROVABLY_REFRESH_TOKEN="..."
 export SOURCERYKIT_ORG_ID="..."
 export SOURCERYKIT_POSTGRES_URL="postgresql://user:password@host:5432/db"
 ```

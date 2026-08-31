@@ -3,7 +3,11 @@
 ## Unreleased
 
 ### Breaking changes
-- **OAuth browser-only login** — `sourcerykit init` no longer accepts `--register`, `--email`, or `--password`; email/password login and account registration were removed. Login is browser-based OAuth (PKCE) only. `--postgres-url`, `--project-name`, and `--sandbox` still work: passing any flag opens the browser login once, then continues non-interactively. New accounts are created on the Provably web app during the browser login.
+- **User API key removed in favor of OAuth tokens** — authentication now uses `PROVABLY_ACCESS_TOKEN` (auto-refreshed via `PROVABLY_REFRESH_TOKEN`); the verify path uses the collection integration key. Existing users must re-run `sourcerykit init`. See the [migration guide](docs/migrations/unreleased/unreleased.md).
+- **OAuth browser-only login** — `--register`, `--email`, and `--password` are removed; login is browser OAuth (PKCE) only. New accounts are created on the Provably web app during login.
+
+### Features
+- **Idempotent integration bootstrap** — re-running `init`/`doctor --fix` reuses the existing integration (exact collection match) instead of minting a duplicate key and shadow user.
 
 ## 1.1.0
 
