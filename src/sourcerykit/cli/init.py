@@ -196,16 +196,7 @@ def _execute_post_auth_phases(
     if not org_id:
         return False
 
-    try:
-        api_key = asyncio.run(service.get_api_key(token))
-    except ProvablyConnectionError as e:
-        console.print(f"[red]❌ Error retrieving API key: {e}[/red]")
-        return False
-    except Exception as e:
-        console.print(f"[red]❌ Key exchange failed: {e}[/red]")
-        return False
-
-    save_app_dir_config(api_key=api_key, org_id=org_id)
+    save_app_dir_config(org_id=org_id)
     clear_auth_caches()
 
     # --- database ---
@@ -278,7 +269,6 @@ def _execute_post_auth_phases(
 
     console.print("\n[bold green]🎉 SOURCERYKIT SETUP COMPLETE[/bold green]\n")
     console.print(" Global config:")
-    console.print(f"   PROVABLY_API_KEY    = {mask_secret(api_key)}")
     console.print(f"   SOURCERYKIT_ORG_ID  = {org_id}\n")
     console.print(" Local config (.env):")
     console.print(f"   SOURCERYKIT_PROJECT_NAME    = {project_name}")

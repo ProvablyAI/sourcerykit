@@ -3,9 +3,11 @@
 import asyncio
 import functools
 import json
+import os
 from typing import Any
 
 import httpx
+from dotenv import set_key
 
 from sourcerykit.config import (
     CONFIG_FILE,
@@ -13,12 +15,51 @@ from sourcerykit.config import (
     get_bootstrap_settings,
     get_settings,
     load_app_dir_config,
+    load_local_env,
     save_app_dir_config,
 )
 from sourcerykit.intercept._self_egress import provably_self_egress
 from sourcerykit.logger import get_logger
 
 _log = get_logger(__name__)
+
+
+def _token_store() -> str | None:
+    """Return the app's token-store path (SOURCERYKIT_TOKEN_STORE) or None for global JSON.
+
+    Resolved per-call so the app can set it at startup regardless of import order.
+    """
+    return os.getenv("SOURCERYKIT_TOKEN_STORE") or None
+
+
+def _persist_tokens(access_token: str, refresh_token: str | None) -> None:
+    """Persist rotated tokens to the configured store (app .env or global JSON)."""
+    store = _token_store()
+    if store:
+        set_key(store, "PROVABLY_ACCESS_TOKEN", access_token)
+        set_key(store, "PROVABLY_REFRESH_TOKEN", refresh_token or "")
+        os.environ["PROVABLY_ACCESS_TOKEN"] = access_token
+        if refresh_token:
+            os.environ["PROVABLY_REFRESH_TOKEN"] = refresh_token
+        load_local_env.cache_clear()
+    else:
+        save_app_dir_config(token=access_token, refresh_token=refresh_token)
+    get_settings.cache_clear()
+
+
+def _clear_refresh_token() -> None:
+    """Drop the stored refresh token from the configured store."""
+    store = _token_store()
+    if store:
+        set_key(store, "PROVABLY_REFRESH_TOKEN", "")
+        os.environ.pop("PROVABLY_REFRESH_TOKEN", None)
+        load_local_env.cache_clear()
+    else:
+        payload = load_app_dir_config()
+        payload.pop("refresh_token", None)
+        CONFIG_FILE.write_text(json.dumps(payload))
+        load_app_dir_config.cache_clear()
+    get_settings.cache_clear()
 
 
 async def _refresh_session() -> str | None:
@@ -29,21 +70,17 @@ async def _refresh_session() -> str | None:
     """
     from sourcerykit.provably.auth_service import auth_service
 
-    refresh = load_app_dir_config().get("refresh_token")
+    refresh = get_settings().refresh_token
     if not refresh:
         return None
     try:
         tokens = await auth_service.refresh_tokens(str(refresh))
     except Exception:
         _log.warning("oauth_refresh_failed", detail="dropping stored refresh token")
-        payload = load_app_dir_config()
-        payload.pop("refresh_token", None)
-        CONFIG_FILE.write_text(json.dumps(payload))
-        load_app_dir_config.cache_clear()
-        get_settings.cache_clear()
+        _clear_refresh_token()
         return None
 
-    save_app_dir_config(token=tokens.access_token, refresh_token=tokens.refresh_token)
+    _persist_tokens(tokens.access_token, tokens.refresh_token)
     return tokens.access_token
 
 
@@ -57,6 +94,7 @@ class ProvablyHTTPClient:
     def __init__(self, settings: Settings | None = None, *, pre_auth: bool = False) -> None:
         self._client: httpx.AsyncClient | None = None
         self._client_loop: asyncio.AbstractEventLoop | None = None
+        self._post_auth = not pre_auth
 
         if pre_auth:
             self.base_url = get_bootstrap_settings()
@@ -65,7 +103,6 @@ class ProvablyHTTPClient:
             s = settings or get_settings()
             self.base_url = s.provably_api.rstrip("/")
             self._headers = {
-                "x-api-key": s.api_key,
                 "Content-Type": "application/json",
             }
 
@@ -123,6 +160,10 @@ class ProvablyHTTPClient:
         # Sentinel kwarg guards the single refresh-retry; never forwarded to httpx.
         kwargs.pop("_oauth_retried", None)
         _log.debug("provably_api_request", method=method, path=path)
+        # Post-auth requests authenticate with the OAuth access token unless an
+        # explicit credential is supplied
+        if token is None and api_key is None and self._post_auth:
+            token = get_settings().access_token
         try:
             response = await self._request(method, path, api_key=api_key, token=token, **kwargs)
             response.raise_for_status()
@@ -185,9 +226,20 @@ class ProvablyHTTPClient:
     ) -> bytes:
         """GET that returns raw response bytes instead of parsed JSON."""
         _log.debug("provably_api_request_raw", method="GET", path=path)
-        response = await self._request("GET", path, api_key=api_key, token=token)
-        response.raise_for_status()
-        return response.content
+        if token is None and api_key is None and self._post_auth:
+            token = get_settings().access_token
+        try:
+            response = await self._request("GET", path, api_key=api_key, token=token)
+            response.raise_for_status()
+            return response.content
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401 and token is not None:
+                new_token = await _refresh_session()
+                if new_token is not None:
+                    response = await self._request("GET", path, api_key=api_key, token=new_token)
+                    response.raise_for_status()
+                    return response.content
+            raise
 
     async def post(
         self,
@@ -215,22 +267,20 @@ class ProvablyHTTPClient:
         data: dict[str, Any],
         *,
         files: dict[str, Any] | None = None,
-        api_key: str | None = None,
         token: str | None = None,
     ) -> Any:
         processed_payload = {key: (None, str(value)) for key, value in data.items()}
         if files:
             processed_payload.update(files)
-        return await self._fetch("POST", path, api_key=api_key, token=token, files=processed_payload)
+        return await self._fetch("POST", path, token=token, files=processed_payload)
 
     async def delete(
         self,
         path: str,
         *,
-        api_key: str | None = None,
         token: str | None = None,
     ) -> Any:
-        return await self._fetch("DELETE", path, api_key=api_key, token=token)
+        return await self._fetch("DELETE", path, token=token)
 
 
 @functools.lru_cache(maxsize=1)

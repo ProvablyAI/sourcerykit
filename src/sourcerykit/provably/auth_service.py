@@ -74,27 +74,6 @@ class ProvablyAuthService:
             return str(result["email"])
 
     # ------------------------------------------------------------------
-    # API Key
-    # ------------------------------------------------------------------
-
-    async def get_api_key(self, token: str) -> str:
-        """Retrieve the API key for the authenticated user.
-
-        Args:
-            token: JWT Bearer token from ``login``.
-
-        Returns:
-            str: The API key string.
-
-        Raises:
-            ProvablyAuthError: On API errors.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_auth_error_handler("get_api_key"):
-            result = await get_api().get_api_key(token)
-            return str(result["api_key"])
-
-    # ------------------------------------------------------------------
     # Organisation
     # ------------------------------------------------------------------
 

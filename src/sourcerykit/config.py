@@ -33,11 +33,14 @@ LOCAL_ENV_FILE = Path(".env")
 class Settings:
     """All environment variables consumed by sourcerykit."""
 
-    api_key: str
-    """PROVABLY_API_KEY — Provably API key."""
+    access_token: str
+    """PROVABLY_ACCESS_TOKEN — OAuth access token for the Provably API."""
 
     org_id: uuid.UUID
     """SOURCERYKIT_ORG_ID — Provably organisation ID."""
+
+    refresh_token: str = ""
+    """PROVABLY_REFRESH_TOKEN — OAuth refresh token, rotated on refresh."""
 
     postgres_url: str = ""
     """SOURCERYKIT_POSTGRES_URL — URL for the agent's Postgres database."""
@@ -65,8 +68,8 @@ class Settings:
     def __post_init__(self) -> None:
         """Validate required fields after initialization."""
         missing = []
-        if not self.api_key:
-            missing.append("PROVABLY_API_KEY")
+        if not self.access_token:
+            missing.append("PROVABLY_ACCESS_TOKEN")
         if not self.org_id or self.org_id == UUID_NIL:
             missing.append("SOURCERYKIT_ORG_ID")
 
@@ -100,7 +103,6 @@ def load_app_dir_config() -> dict[str, Any]:
 
 # Global config file (user-level config)
 def save_app_dir_config(
-    api_key: str | None = None,
     org_id: str | None = None,
     token: str | None = None,
     email: str | None = None,
@@ -110,8 +112,6 @@ def save_app_dir_config(
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     payload = load_app_dir_config()
 
-    if api_key is not None:
-        payload["api_key"] = api_key
     if org_id is not None:
         payload["org_id"] = org_id
     if token is not None:
@@ -192,7 +192,8 @@ def get_settings() -> Settings:
             return None
 
     return Settings(
-        api_key=_url("PROVABLY_API_KEY", "api_key"),
+        access_token=_url("PROVABLY_ACCESS_TOKEN", "token"),
+        refresh_token=_url("PROVABLY_REFRESH_TOKEN", "refresh_token"),
         org_id=_org_id,
         postgres_url=_local_resolve("SOURCERYKIT_POSTGRES_URL", "SOURCERYKIT_POSTGRES_URL"),
         project_name=_local_resolve("SOURCERYKIT_PROJECT_NAME", "SOURCERYKIT_PROJECT_NAME"),
@@ -211,7 +212,7 @@ def get_settings() -> Settings:
 def get_bootstrap_settings() -> str:
     """Return the Provably API URL without requiring full settings validation.
 
-    Safe to call before ``api_key``, ``org_id``, or ``postgres_url`` are configured.
+    Safe to call before ``access_token``, ``org_id``, or ``postgres_url`` are configured.
     """
     raw = (os.getenv("SOURCERYKIT_PROVABLY_API_URL") or "").strip().rstrip("/")
     if not raw:

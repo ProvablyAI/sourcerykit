@@ -1,9 +1,8 @@
 """Provably Auth API — OAuth tokens, user, API key and organisation endpoints.
 
-:class:`ProvablyAuthAPI` covers four resource groups:
+:class:`ProvablyAuthAPI` covers three resource groups:
 - **OAuth** — exchange an authorization code and rotate refresh tokens
 - **User** — retrieve the current authenticated user
-- **API Key** — retrieve the API key for the authenticated user
 - **Organisations** — create and list organisations
 
 The browser OAuth flow itself lives in
@@ -136,25 +135,6 @@ class ProvablyAuthAPI:
             dict[str, Any]: The raw JSON response from the API (contains ``email``).
         """
         path = f"{self._user_path()}/current"
-
-        result: dict[str, Any] = await self._http.get(path, token=token)
-        return result
-
-    # ------------------------------------------------------------------
-    # API KEY
-    # ------------------------------------------------------------------
-
-    async def get_api_key(self, token: str) -> dict[str, Any]:
-        """
-        Retrieve the API key for the authenticated user.
-
-        Args:
-            token: JWT Bearer token obtained from ``login``.
-
-        Returns:
-            dict[str, Any]: The raw JSON response from the API (contains ``api_key``).
-        """
-        path = f"{self._user_path()}/key"
 
         result: dict[str, Any] = await self._http.get(path, token=token)
         return result
