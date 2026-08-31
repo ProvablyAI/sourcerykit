@@ -72,17 +72,6 @@ class TestProvablyAuthAPIUser:
         assert result == {"email": "user@example.com"}
 
 
-class TestProvablyAuthAPIApiKey:
-    async def test_get_api_key_calls_get_with_token(self) -> None:
-        api, mock_http = _make_api()
-        mock_http.get = AsyncMock(return_value={"api_key": "key-xyz"})
-
-        result = await api.get_api_key(_TOKEN)
-
-        mock_http.get.assert_called_once_with("/api/v1/user/key", token=_TOKEN)
-        assert result == {"api_key": "key-xyz"}
-
-
 class TestProvablyAuthAPIOrganization:
     async def test_create_organization_calls_post_multipart_with_token(self) -> None:
         org_id = str(uuid.uuid4())

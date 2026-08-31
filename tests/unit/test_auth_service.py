@@ -70,27 +70,6 @@ class TestProvablyAuthServiceUserEmail:
                 await service.get_user_email(_TOKEN)
 
 
-class TestProvablyAuthServiceApiKey:
-    async def test_get_api_key_returns_string(self) -> None:
-        service, mock_api = _make_service()
-        mock_api.get_api_key = AsyncMock(return_value={"api_key": "my-key-abc"})
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            result = await service.get_api_key(_TOKEN)
-
-        assert result == "my-key-abc"
-
-    async def test_get_api_key_missing_key_raises_data_error(self) -> None:
-        from sourcerykit.provably._errors import ProvablyDataError
-
-        service, mock_api = _make_service()
-        mock_api.get_api_key = AsyncMock(return_value={})
-
-        with patch("sourcerykit.provably.auth_service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyDataError):
-                await service.get_api_key(_TOKEN)
-
-
 class TestProvablyAuthServiceOrganization:
     async def test_create_organization_returns_uuid(self) -> None:
         service, mock_api = _make_service()
