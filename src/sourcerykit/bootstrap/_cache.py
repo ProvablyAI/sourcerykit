@@ -110,7 +110,7 @@ class ProvablyBootstrapCache:
     async def _resolve_integration_key(self) -> str:
         if self.collection_id is None:
             raise SourceryKitBootstrapError("collection_id is not set; _resolve_collection() must succeed first")
-        _, key = await service.create_integration(self.collection_id)
+        _, key = await service.ensure_integration(self.collection_id)
         return key
 
 

@@ -393,14 +393,17 @@ class ProvablyService:
     # Integrations
     # ------------------------------------------------------------------
 
-    async def create_integration(self, collection_id: uuid.UUID) -> tuple[uuid.UUID, str]:
-        """Register a new agent integration for the intercepts collection.
+    async def ensure_integration(self, collection_id: uuid.UUID) -> tuple[uuid.UUID, str]:
+        """Idempotent get-or-create of the intercepts integration for a collection.
+
+        Reuses an existing enabled integration for the collection (returning its
+        current key) instead of minting a duplicate on every bootstrap.
 
         Args:
             collection_id: The ID of the collection to associate with the integration.
 
         Returns:
-            tuple[uuid.UUID, str]: The ID and full API key of the newly created integration.
+            tuple[uuid.UUID, str]: The ID and full API key of the integration.
 
         Raises:
             ProvablyAPIError: If the server rejects the request.
@@ -416,72 +419,12 @@ class ProvablyService:
             "collections": [str(collection_id)],
         }
 
-        async with provably_error_handler("create_integration"):
-            result = await get_api().create_integration(integration)
+        async with provably_error_handler("ensure_integration"):
+            result = await get_api().ensure_integration(integration)
             api_key = result.get("api_key")
             if not api_key:
-                raise ValueError("create_integration response missing 'api_key'")
+                raise ValueError("ensure_integration response missing 'api_key'")
             return uuid.UUID(str(result["id"])), str(api_key)
-
-    async def get_integration_intercepts_api_key(self, collection_id: uuid.UUID) -> str:
-        """Find the intercepts integration, verify collection access, and return its API key.
-
-        Args:
-            collection_id: The collection ID the integration must have access to.
-
-        Returns:
-            str: The API key for the intercepts integration.
-
-        Raises:
-            ValueError: If the integration is not found, does not have access to the
-                collection, or the API key is missing.
-            ProvablyAPIError: If the server rejects the request.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_error_handler("get_integration_intercepts_id"):
-            integrations = await get_api().list_integrations(query=INTERCEPTS_TABLE)
-
-            candidates = [i for i in integrations if i.get("name") == INTERCEPTS_TABLE]
-            if not candidates:
-                raise ValueError(f"No integration named '{INTERCEPTS_TABLE}' was found.")
-
-            # collections and api_key are only present in get_integration_by_id
-            full_records = await asyncio.gather(
-                *(get_api().get_integration_by_id(uuid.UUID(str(c["id"]))) for c in candidates)
-            )
-
-            match = next(
-                (r for r in full_records if str(collection_id) in [str(c) for c in r.get("collections", [])]),
-                None,
-            )
-            if match is None:
-                raise ValueError(
-                    f"No integration named '{INTERCEPTS_TABLE}' with access to collection {collection_id} was found."
-                )
-
-            print("MATCH: ", match)
-
-            api_key = match.get("api_key")
-            if not api_key:
-                raise ValueError(f"Integration '{INTERCEPTS_TABLE}' found, but 'api_key' is missing.")
-
-            return str(api_key)
-
-    async def get_integration_by_id(self, integration_id: uuid.UUID) -> dict[str, Any]:
-        """Return the full integration record by ID.
-
-        Args:
-            integration_id: The ID of the integration to look up.
-
-        Returns:
-            dict[str, Any]: The raw integration record from the API.
-
-        Raises:
-            ProvablyAPIError: If the server rejects the request.
-            ProvablyConnectionError: If the network is unreachable.
-        """
-        async with provably_error_handler("get_integration_by_id"):
-            return await get_api().get_integration_by_id(integration_id)
 
     # ------------------------------------------------------------------
     # Preprocess
