@@ -18,7 +18,7 @@ from sourcerykit.errors import SourceryKitConfigError
 UUID_NIL = getattr(uuid, "NIL", uuid.UUID(int=0))
 
 DEFAULT_PROVABLY_API_URL = "https://api.provably.ai"
-DEFAULT_PROVABLY_APP_URL = "https://app.provably.ai"
+DEFAULT_PROVABLY_APP_URL = "https://api.provably.ai"
 DEFAULT_PROVABLY_MCP_URL = "https://mcp.provably.ai"
 
 
