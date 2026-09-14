@@ -94,28 +94,34 @@ async def _wait_for_loopback_code(timeout: float = 300.0) -> dict[str, str]:
     return _LoopbackCallbackHandler.result
 
 
-async def browser_login(consent_page: str | None = None) -> OAuthTokens:
+async def browser_login(
+    consent_page: str | None = None, *, machine_id: str | None = None
+) -> OAuthTokens:
     """Open the web app's consent page and complete the loopback redirect flow.
 
     Args:
         consent_page: Full URL of the consent page. Defaults to
             :func:`consent_page_url`.
+        machine_id: Opaque, stable id of this machine. When given it rides
+            along in the consent page address, so the page can tell whether
+            the machine is already paired. Never the raw hardware id.
     """
     verifier, challenge = pkce_pair()
     state = secrets.token_urlsafe(16)
 
+    query = {
+        "response_type": "code",
+        "client_id": OAUTH_CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "scope": OAUTH_SCOPE,
+        "state": state,
+        "code_challenge": challenge,
+        "code_challenge_method": "S256",
+    }
+    if machine_id:
+        query["machine_id"] = machine_id
     page = (consent_page or consent_page_url()).split("?", 1)[0]
-    consent_url = f"{page}?" + urllib.parse.urlencode(
-        {
-            "response_type": "code",
-            "client_id": OAUTH_CLIENT_ID,
-            "redirect_uri": REDIRECT_URI,
-            "scope": OAUTH_SCOPE,
-            "state": state,
-            "code_challenge": challenge,
-            "code_challenge_method": "S256",
-        }
-    )
+    consent_url = f"{page}?" + urllib.parse.urlencode(query)
 
     _log.info("oauth_browser_opening", consent_url=consent_url)
     webbrowser.open(consent_url)
