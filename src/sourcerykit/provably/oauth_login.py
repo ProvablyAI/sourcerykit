@@ -122,6 +122,7 @@ async def browser_login(consent_page: str | None = None, *, machine_id: str | No
     consent_url = f"{page}?" + urllib.parse.urlencode(query)
 
     _log.info("oauth_browser_opening", consent_url=consent_url)
+    print(f"Sign-in page: {consent_url}")
     webbrowser.open(consent_url)
 
     callback = await _wait_for_loopback_code()
