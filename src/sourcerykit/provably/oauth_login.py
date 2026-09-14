@@ -94,9 +94,7 @@ async def _wait_for_loopback_code(timeout: float = 300.0) -> dict[str, str]:
     return _LoopbackCallbackHandler.result
 
 
-async def browser_login(
-    consent_page: str | None = None, *, machine_id: str | None = None
-) -> OAuthTokens:
+async def browser_login(consent_page: str | None = None, *, machine_id: str | None = None) -> OAuthTokens:
     """Open the web app's consent page and complete the loopback redirect flow.
 
     Args:

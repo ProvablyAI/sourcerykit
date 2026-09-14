@@ -24,9 +24,7 @@ def test_browser_login_carries_the_machine_id_in_the_consent_url(
     from sourcerykit.provably import oauth_login
 
     opened: list[str] = []
-    monkeypatch.setattr(
-        "sourcerykit.provably.oauth_login.webbrowser.open", lambda url: opened.append(url)
-    )
+    monkeypatch.setattr("sourcerykit.provably.oauth_login.webbrowser.open", lambda url: opened.append(url))
 
     async def no_callback(timeout: float = 300.0) -> dict[str, str]:
         return {}
