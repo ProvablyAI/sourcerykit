@@ -44,7 +44,7 @@ class TestSettings:
             org_id=uuid.UUID(_VALID_ORG),
             postgres_url="postgresql://x",
         )
-        assert s.provably_app == "https://app.provably.ai"
+        assert s.provably_app == "https://api.provably.ai"
         assert s.provably_api == "https://api.provably.ai"
         assert s.provably_mcp == "https://mcp.provably.ai"
 
