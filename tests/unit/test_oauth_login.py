@@ -3,6 +3,8 @@
 import base64
 import hashlib
 
+import pytest
+
 from sourcerykit.provably.oauth_login import pkce_pair
 
 
@@ -13,21 +15,25 @@ def test_pkce_pair_s256_verifiable() -> None:
     assert challenge == expected
 
 
-def test_browser_login_carries_the_machine_id_in_the_consent_url(monkeypatch) -> None:
+def test_browser_login_carries_the_machine_id_in_the_consent_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import asyncio
     import urllib.parse
 
     from sourcerykit.provably import oauth_login
 
     opened: list[str] = []
-    monkeypatch.setattr(oauth_login.webbrowser, "open", lambda url: opened.append(url))
+    monkeypatch.setattr(
+        "sourcerykit.provably.oauth_login.webbrowser.open", lambda url: opened.append(url)
+    )
 
     async def no_callback(timeout: float = 300.0) -> dict[str, str]:
         return {}
 
     monkeypatch.setattr(oauth_login, "_wait_for_loopback_code", no_callback)
 
-    async def run(**kwargs) -> None:
+    async def run(**kwargs: str) -> None:
         try:
             await oauth_login.browser_login("https://app.example/consent", **kwargs)
         except ValueError:
