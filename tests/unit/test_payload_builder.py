@@ -39,7 +39,7 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     get_settings.cache_clear()
     load_app_dir_config.cache_clear()
     load_local_env.cache_clear()
-    monkeypatch.setenv("PROVABLY_API_KEY", "k")
+    monkeypatch.setenv("PROVABLY_ACCESS_TOKEN", "k")
     monkeypatch.setenv("SOURCERYKIT_ORG_ID", str(_ORG))
     monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
     monkeypatch.setenv("SOURCERYKIT_PROVABLY_MCP_URL", "https://mcp.example.com")

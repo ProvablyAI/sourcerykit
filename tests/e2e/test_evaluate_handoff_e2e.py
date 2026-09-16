@@ -73,7 +73,7 @@ def _failed_proof_response() -> dict[str, Any]:
 def _provably_settings(fake_server: FakeHttpServer) -> Settings:
     """Settings object whose provably_api URL points at the loopback fake server."""
     return Settings(
-        api_key="int-test-key",
+        access_token="int-test-token",
         org_id=_ORG,
         postgres_url="postgresql://test/db",
         provably_api=fake_server.base_url,
@@ -93,17 +93,13 @@ def _wired_service(_provably_settings: Settings, monkeypatch: pytest.MonkeyPatch
     We patch:
       - ``sourcerykit.provably._api.get_http`` to return our ProvablyHTTPClient
       - ``sourcerykit.provably.service.get_api`` to return our ProvablyAPI
-      - ``sourcerykit.evaluator.evaluator.get_settings`` to return fake_settings
+      - ``sourcerykit.evaluator.evaluator.update_trace``
     """
     http_client = ProvablyHTTPClient(settings=_provably_settings)
     api = ProvablyAPI(settings=_provably_settings)
 
     monkeypatch.setattr("sourcerykit.provably._api.get_http", lambda: http_client)
     monkeypatch.setattr("sourcerykit.provably.service.get_api", lambda: api)
-    monkeypatch.setattr(
-        "sourcerykit.evaluator.evaluator.get_settings",
-        lambda: _provably_settings,
-    )
     monkeypatch.setattr(
         "sourcerykit.evaluator.evaluator.update_trace",
         AsyncMock(),
@@ -281,7 +277,7 @@ class TestEvaluateHandoffE2E:
         _wired_service: None,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """The x-api-key header on proof verification must come from get_settings().api_key."""
+        """The x-api-key header on proof verification must be the payload's integration key."""
         qid = uuid.uuid4()
         fake_server.respond("POST", f"{_ORG_PATH}/queries/{qid}/verify", status=200, body={})
         fake_server.respond("GET", f"{_ORG_PATH}/queries/{qid}", status=200, body=_verified_response("open"))

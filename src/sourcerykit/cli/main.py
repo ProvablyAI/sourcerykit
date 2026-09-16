@@ -20,23 +20,13 @@ app.add_typer(sandbox, name="sandbox")
 app.add_typer(trace, name="trace")
 
 
-@app.command(help="interactive setup wizard (account, database, project)")
+@app.command(help="interactive setup wizard (browser login, database, project)")
 def init(
-    register: bool = typer.Option(False, "--register", help="create a new account (requires --email and --password)"),
-    email: str | None = typer.Option(None, "--email", help="account email"),
-    password: str | None = typer.Option(None, "--password", help="account password"),
     postgres_url: str | None = typer.Option(None, "--postgres-url", help="full postgres:// URL"),
     project_name: str | None = typer.Option(None, "--project-name", help="project name"),
     sandbox: bool = typer.Option(False, "--sandbox", help="use hosted sandbox database"),
 ) -> None:
-    config_provably(
-        register=register,
-        email=email,
-        password=password,
-        postgres_url=postgres_url,
-        project_name=project_name,
-        sandbox=sandbox,
-    )
+    config_provably(postgres_url=postgres_url, project_name=project_name, sandbox=sandbox)
 
 
 @app.command(help="validate configuration and connectivity")

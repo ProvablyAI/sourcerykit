@@ -1,18 +1,17 @@
 """Tests for sourcerykit.provably._auth_api.ProvablyAuthAPI."""
 
 import uuid
-from dataclasses import asdict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from sourcerykit.provably._auth_api import (
+    OAUTH_CLIENT_ID,
+    REDIRECT_URI,
     Organization,
     OrganizationType,
     ProvablyAuthAPI,
-    User,
 )
 
 _TOKEN = "test-jwt-token"
-_USER = User(email="user@example.com", password="secret")
 _ORG = Organization(handle="my-org", name="My Org", organization_type=OrganizationType.EDUCATION)
 
 
@@ -26,40 +25,51 @@ def _make_api() -> tuple[ProvablyAuthAPI, MagicMock]:
     return api, mock_http
 
 
-class TestProvablyAuthAPIAccount:
-    async def test_create_account_calls_post_register(self) -> None:
+class TestProvablyAuthAPIOAuth:
+    async def test_exchange_code_posts_form(self) -> None:
         api, mock_http = _make_api()
-        mock_http.post = AsyncMock(return_value={})
+        mock_http.post_form = AsyncMock(return_value={"access_token": "at", "refresh_token": "rt"})
 
-        await api.create_account(_USER)
+        result = await api.exchange_code("CODE", "VERIFIER")
 
-        mock_http.post.assert_called_once_with(
-            "/api/v1/auth/register",
-            asdict(_USER),
+        mock_http.post_form.assert_called_once_with(
+            "/api/v1/auth/oauth/token",
+            {
+                "grant_type": "authorization_code",
+                "code": "CODE",
+                "redirect_uri": REDIRECT_URI,
+                "client_id": OAUTH_CLIENT_ID,
+                "code_verifier": "VERIFIER",
+            },
         )
+        assert result == {"access_token": "at", "refresh_token": "rt"}
 
-    async def test_login_calls_post_login_and_returns_dict(self) -> None:
+    async def test_refresh_tokens_posts_form(self) -> None:
         api, mock_http = _make_api()
-        mock_http.post = AsyncMock(return_value={"token": "abc123"})
+        mock_http.post_form = AsyncMock(return_value={"access_token": "new-at", "refresh_token": "new-rt"})
 
-        result = await api.login(_USER)
+        result = await api.refresh_tokens("old-rt")
 
-        mock_http.post.assert_called_once_with(
-            "/api/v1/auth/login",
-            asdict(_USER),
+        mock_http.post_form.assert_called_once_with(
+            "/api/v1/auth/oauth/refresh",
+            {
+                "grant_type": "refresh_token",
+                "refresh_token": "old-rt",
+                "client_id": OAUTH_CLIENT_ID,
+            },
         )
-        assert result == {"token": "abc123"}
+        assert result == {"access_token": "new-at", "refresh_token": "new-rt"}
 
 
-class TestProvablyAuthAPIApiKey:
-    async def test_get_api_key_calls_get_with_token(self) -> None:
+class TestProvablyAuthAPIUser:
+    async def test_get_current_user_calls_get_with_token(self) -> None:
         api, mock_http = _make_api()
-        mock_http.get = AsyncMock(return_value={"api_key": "key-xyz"})
+        mock_http.get = AsyncMock(return_value={"email": "user@example.com"})
 
-        result = await api.get_api_key(_TOKEN)
+        result = await api.get_current_user(_TOKEN)
 
-        mock_http.get.assert_called_once_with("/api/v1/user/key", token=_TOKEN)
-        assert result == {"api_key": "key-xyz"}
+        mock_http.get.assert_called_once_with("/api/v1/user/current", token=_TOKEN)
+        assert result == {"email": "user@example.com"}
 
 
 class TestProvablyAuthAPIOrganization:

@@ -2,7 +2,6 @@ import asyncio
 import uuid
 from typing import Any
 
-from sourcerykit.config import get_settings
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._traces import update_trace_intercept_outcome
 from sourcerykit.errors import SourceryKitError, SourceryKitStorageError
@@ -19,11 +18,7 @@ _log = get_logger(__name__)
 
 async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
     """Validates trusted endpoints and verifies cryptographic proof loops for all payload claims."""
-
-    # TODO: Refactor.
-    # Not a good idea to pass the API key via the payload (api_key = payload.integration_api_key)
-    # Use a new generated integration apikey with limited access
-    api_key = get_settings().api_key
+    integration_api_key = payload.integration_api_key
 
     query_ids = [claim.query_id for claim in payload.claims]
 
@@ -32,7 +27,7 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
             # Overlap the endpoint trust check (DB) with proof verification submission (HTTP)
             await asyncio.gather(
                 verify_claim_endpoints(payload),
-                asyncio.gather(*(service.verify_proof(qid, api_key) for qid in query_ids)),
+                asyncio.gather(*(service.verify_proof(qid, integration_api_key) for qid in query_ids)),
             )
     except (ValueError, SourceryKitError) as e:
         return {"outcome": Outcome.CAUGHT, "per_claim": [], "errors": [f"trust gate: {e}"]}
@@ -43,7 +38,7 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
     with provably_self_egress():
         # Wait for all proof verifications concurrently
         verification_results = await asyncio.gather(
-            *(service.wait_for_proof_verification(qid, api_key) for qid in query_ids),
+            *(service.wait_for_proof_verification(qid, integration_api_key) for qid in query_ids),
             return_exceptions=True,
         )
 

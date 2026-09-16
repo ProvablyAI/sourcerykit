@@ -13,38 +13,25 @@ from sourcerykit.provably.auth_service import auth_service
 from sourcerykit.provably.service import service
 
 
-def _check_provably_reachability(settings: Settings) -> tuple[bool, str]:
-    """Ensure Provably API is reachable before any other checks."""
-    if not settings.api_key:
-        return False, "PROVABLY_API_KEY is missing — run 'sourcerykit init'"
-    try:
-        asyncio.run(auth_service.list_organizations())
-        return True, "Provably API reachable"
-    except ProvablyConnectionError:
-        return False, "Cannot reach Provably API — check your connection"
-    except Exception as e:
-        return False, f"Provably API check failed: {e}"
-
-
-def _check_api_key_and_org(settings: Settings) -> tuple[bool, str]:
-    """Validate API key and org_id in one call (list_organizations uses API key)."""
-    if not settings.api_key:
-        return False, "PROVABLY_API_KEY is missing — run 'sourcerykit init'"
+def _check_token_and_org(settings: Settings) -> tuple[bool, str]:
+    """Validate access token and org_id in one call (list_organizations uses the token)."""
+    if not settings.access_token:
+        return False, "Access token is missing — run 'sourcerykit init'"
 
     try:
         orgs = asyncio.run(auth_service.list_organizations())
     except ProvablyUnauthorizedError:
-        return False, "API key is invalid or expired — run 'sourcerykit init'"
+        return False, "Session expired — run 'sourcerykit init'"
     except ProvablyConnectionError:
         return False, "Cannot reach Provably API (network error)"
     except Exception as e:
-        return False, f"API key check failed: {e}"
+        return False, f"Session check failed: {e}"
 
     org_ids = [str(o.get("id", "")) for o in orgs]
     if str(settings.org_id) not in org_ids:
         return False, f"Org ID {settings.org_id} not found — run 'sourcerykit init'"
 
-    return True, f"API key valid, org found ({len(orgs)} org(s))"
+    return True, f"Session valid, org found ({len(orgs)} org(s))"
 
 
 def _check_database(settings: Settings) -> tuple[bool, str]:
@@ -136,7 +123,7 @@ def _run_deep_check_collection_and_ids(settings: Settings) -> tuple[bool, str]:
     try:
         return asyncio.run(_deep_check_collection_and_ids(settings))
     except ProvablyUnauthorizedError:
-        return False, "API key expired — run 'sourcerykit init'"
+        return False, "Session expired — run 'sourcerykit init'"
     except ProvablyConnectionError:
         return False, "Cannot reach Provably API (network error)"
     except Exception as e:
@@ -147,7 +134,7 @@ def _run_deep_check_integration(settings: Settings) -> tuple[bool, str]:
     try:
         return asyncio.run(_deep_check_integration(settings))
     except ProvablyUnauthorizedError:
-        return False, "API key expired — run 'sourcerykit init'"
+        return False, "Session expired — run 'sourcerykit init'"
     except ProvablyConnectionError:
         return False, "Cannot reach Provably API (network error)"
     except Exception as e:
@@ -166,8 +153,7 @@ def run_doctor(fix: bool = False) -> None:
         return
 
     checks: list[tuple[str, Callable[[], tuple[bool, str]]]] = [
-        ("Provably API", lambda: _check_provably_reachability(settings)),
-        ("API key + org", lambda: _check_api_key_and_org(settings)),
+        ("Session + org", lambda: _check_token_and_org(settings)),
         ("Database", lambda: _check_database(settings)),
         ("Project name", lambda: _check_project_name(settings)),
         ("Bootstrap IDs", lambda: _check_bootstrap_ids(settings)),

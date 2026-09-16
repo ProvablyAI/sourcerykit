@@ -39,7 +39,7 @@ SourceryKit stores configuration at two levels:
 
 | Config | Location | Scope | Stores |
 |--------|----------|-------|--------|
-| Global | `typer.get_app_dir("sourcerykit")` (OS application directory) | User-level | `api_key`, `org_id`, `token`, `email` |
+| Global | `typer.get_app_dir("sourcerykit")` (OS application directory) | User-level | `token`, `refresh_token`, `email`, `org_id` |
 | Local | `./.env` (project directory) | Project-level | `SOURCERYKIT_POSTGRES_URL`, `SOURCERYKIT_PROJECT_NAME`, bootstrap IDs |
 
 Global config is shared across all projects. Local config is project-specific and should be added to `.gitignore`.
@@ -50,43 +50,35 @@ Global config is shared across all projects. Local config is project-specific an
 
 ### `sourcerykit init`
 
-Setup wizard for account creation/login, database linking, and project initialization.
+Setup wizard for browser login (OAuth), database linking, and project initialization.
 
 ```bash
-sourcerykit init [--register] [--email EMAIL] [--password PASSWORD] [--postgres-url URL] [--project-name NAME] [--sandbox]
+sourcerykit init [--postgres-url URL] [--project-name NAME] [--sandbox]
 ```
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--register` | Create a new account (requires `--email` and `--password`) |
-| `--email` | Account email |
-| `--password` | Account password |
 | `--postgres-url` | Full `postgresql://` URL |
 | `--project-name` | Project name |
 | `--sandbox` | Use a hosted sandbox database instead of your own PostgreSQL |
 
 > [!NOTE]
-> `--email` and `--password` must be used together. Use `--register` to create a new account, or omit it to log in with an existing account. Registration requires email verification before you can log in.
+> Login is **browser-based OAuth** (PKCE). Passing any flag opens the browser login once,
+> then continues non-interactively with the given options.
 
 **What it does:**
-- Account setup (register or login)
-- API key retrieval
+- Account login (browser OAuth)
 - Sandbox database provisioning (or custom PostgreSQL with `--postgres-url`)
 - Project naming
 - Bootstrap resource creation
 
-**Input:** Interactive prompts for email, password, database, and project name.
+**Input:** Browser-based OAuth login; then database and project name prompts (or flags).
 
 ```bash
 Welcome to the SourceryKit Wizard! How would you like to proceed?
-❯ Log in with an existing account
-  Create a new account
+❯ Log in with browser (OAuth)
   Exit
-
-🔐 Log in to your account
-Email address: user@example.com
-Password: ********
 
 🗄️  Database setup
 How would you like to set up your database?
@@ -97,29 +89,17 @@ How would you like to set up your database?
 Project name: my-project
 ```
 
-**Non-interactive registration:**
-```bash
-sourcerykit init --register --email user@example.com --password secret
-# → "📧 Verification email sent"
-# → Verify your account, then run:
-# →   sourcerykit init --email user@example.com --password secret"
-```
-
-**Non-interactive login + setup:**
+**Browser login + sandbox (opens the browser once, then continues):**
 ```bash
 sourcerykit init \
-  --email user@example.com \
-  --password secret \
-  --postgres-url "postgresql://user:pass@host:5432/db" \
+  --sandbox \
   --project-name my-project
 ```
 
-**Non-interactive login + sandbox:**
+**Browser login + own database:**
 ```bash
 sourcerykit init \
-  --email user@example.com \
-  --password secret \
-  --sandbox \
+  --postgres-url "postgresql://user:pass@host:5432/db" \
   --project-name my-project
 ```
 
@@ -129,7 +109,6 @@ sourcerykit init \
 🎉 SOURCERYKIT SETUP COMPLETE
 
  Global config:
-   PROVABLY_API_KEY    = ***********************************1234
    SOURCERYKIT_ORG_ID  = abc123
 
  Local config (.env):
@@ -158,7 +137,7 @@ sourcerykit doctor [--fix]
 > Run `sourcerykit doctor --fix` to automatically re-create missing bootstrap IDs without going through the full `init` wizard again.
 
 **Checks performed:**
-1. API key validity
+1. Session validity and org membership
 2. Database connectivity (detects sandbox vs personal)
 3. Project name presence
 4. Bootstrap IDs presence
@@ -169,7 +148,7 @@ sourcerykit doctor [--fix]
 ```bash
 🩺 SourceryKit Doctor
 
-  ✅ API key + org: API key valid, org found (1 org(s))
+  ✅ Session + org: Session valid, org found (1 org(s))
   ✅ Database: Sandbox database (postgresql://user:***@host:5432/db)
   ✅ Project name: 'my-project'
   ✅ Bootstrap IDs: All bootstrap IDs present
@@ -183,7 +162,7 @@ All 6 checks passed!
 ```bash
 🩺 SourceryKit Doctor
 
-  ❌ API key + org: API key is invalid or expired — run 'sourcerykit init'
+  ❌ Session + org: Session expired — run 'sourcerykit init'
   ❌ Database: Database connection failed — check SOURCERYKIT_POSTGRES_URL
   ✅ Project name: 'my-project'
   ❌ Bootstrap IDs: Missing: middleware_id, database_id — run 'sourcerykit doctor --fix'
@@ -462,13 +441,13 @@ sourcerykit config list [--show-key]
 | `--show-key` | Show secrets in clear text (default: masked) |
 
 > [!WARNING]
-> `--show-key` prints your API key and database password in clear text. Avoid using it in shared terminals or CI logs.
+> `--show-key` prints your database password in clear text. Avoid using it in shared terminals or CI logs.
 
 **Example output:**
 ```bash
 📋 Global Config
 
-PROVABLY_API_KEY       = ***********************************1234
+SOURCERYKIT_ORG_ID  = abc123
 
 📋 Local Config (.env)
 
@@ -483,18 +462,16 @@ SOURCERYKIT_PROJECT_NAME  = 'my-project'
 Update configuration variables.
 
 ```bash
-sourcerykit config set [--api-key KEY] [--postgres-url URL] [--project-name NAME]
+sourcerykit config set [--postgres-url URL] [--project-name NAME]
 ```
 
 **Options:**
 | Option | Description |
 |--------|-------------|
-| `--api-key` | Set `PROVABLY_API_KEY` |
 | `--postgres-url` | Set `SOURCERYKIT_POSTGRES_URL` |
 | `--project-name` | Set `SOURCERYKIT_PROJECT_NAME` |
 
 **Input:** Interactive checkbox to select variables to update:
-- `PROVABLY_API_KEY` (global)
 - `SOURCERYKIT_POSTGRES_URL` (local)
 - `SOURCERYKIT_PROJECT_NAME` (local)
 
@@ -617,7 +594,7 @@ No trace found matching prefix "abc123".
 | Cannot reach Provably API | Network or firewall issue | Check connectivity; verify `SOURCERYKIT_PROVABLY_API_URL` if using a custom endpoint |
 | Missing bootstrap IDs | Incomplete init or corrupted `.env` | Run `sourcerykit doctor --fix` |
 | PostgreSQL connection failed | Wrong URL or DB not reachable | Check `SOURCERYKIT_POSTGRES_URL` in `.env`; ensure the database is publicly accessible |
-| API key invalid | Wrong key or expired | Run `sourcerykit init` to re-authenticate and fetch a new key |
+| Session expired | Access/refresh token expired or revoked | Run `sourcerykit init` to re-authenticate |
 | Config not loading | Missing global or local config | Run `sourcerykit doctor` to identify which values are missing |
 | Sandbox expired | Sandbox TTL exceeded | Auto-recreated on next bootstrap; or run `sourcerykit sandbox create` |
 | Sandbox not found | No sandbox created for this org | Run `sourcerykit init --sandbox` or `sourcerykit sandbox create` |

@@ -242,9 +242,13 @@ class ProvablyAPI:
     # Integrations
     # ------------------------------------------------------------------
 
-    async def create_integration(self, body: dict[str, Any]) -> dict[str, Any]:
+    async def ensure_integration(self, body: dict[str, Any]) -> dict[str, Any]:
         """
-        Register a new external integration for the configured org.
+        Idempotent get-or-create an integration for the configured org.
+
+        Reuses an existing enabled integration with the same name linked to the
+        exact requested collections, returning its full key instead of minting a
+        duplicate.
 
         Args:
             body: The integration registration payload.
@@ -252,7 +256,7 @@ class ProvablyAPI:
         Returns:
             dict[str, Any]: The raw JSON response from the API.
         """
-        path = f"{self._org_path()}/integrations"
+        path = f"{self._org_path()}/integrations/ensure"
 
         result: dict[str, Any] = await get_http().post(path, body)
         return result
@@ -270,17 +274,6 @@ class ProvablyAPI:
         path = f"{self._org_path()}/integrations"
         params = {"query": query} if query is not None else None
         result: list[dict[str, Any]] = await get_http().get(path, params=params)
-        return result
-
-    async def get_integration_by_id(self, integration_id: uuid.UUID) -> dict[str, Any]:
-        """
-        Get integration by id.
-
-        Returns:
-            dict[str, Any]: The raw JSON response from the API.
-        """
-        path = f"{self._org_path()}/integrations/{integration_id}"
-        result: dict[str, Any] = await get_http().get(path)
         return result
 
     # ------------------------------------------------------------------

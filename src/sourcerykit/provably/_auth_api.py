@@ -1,23 +1,33 @@
-"""Provably Auth API — account, session and organisation endpoints.
+"""Provably Auth API — OAuth tokens, user, API key and organisation endpoints.
 
 :class:`ProvablyAuthAPI` covers three resource groups:
-- **Auth** — register a new account and log in
-- **API Key** — retrieve the API key for the authenticated user
+- **OAuth** — exchange an authorization code and rotate refresh tokens
+- **User** — retrieve the current authenticated user
 - **Organisations** — create and list organisations
+
+The browser OAuth flow itself lives in
+:mod:`sourcerykit.provably.oauth_login`.
 """
 
 import functools
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
 from sourcerykit.provably._http import ProvablyHTTPClient
 
+OAUTH_CLIENT_ID = "sourcerykit-cli"
+OAUTH_SCOPE = "read write"
+LOOPBACK_PORT = 8910
+REDIRECT_URI = f"http://127.0.0.1:{LOOPBACK_PORT}/callback"
+
 
 @dataclass(slots=True)
-class User:
-    email: str
-    password: str
+class OAuthTokens:
+    """Tokens issued by the OAuth token endpoint."""
+
+    access_token: str
+    refresh_token: str | None
 
 
 class OrganizationType(StrEnum):
@@ -51,9 +61,6 @@ class ProvablyAuthAPI:
     def __init__(self) -> None:
         self._http = ProvablyHTTPClient(pre_auth=True)
 
-    def _auth_path(self) -> str:
-        return "/api/v1/auth"
-
     def _user_path(self) -> str:
         return "/api/v1/user"
 
@@ -61,51 +68,73 @@ class ProvablyAuthAPI:
         return "/api/v1/organizations"
 
     # ------------------------------------------------------------------
-    # Auth
+    # OAuth
     # ------------------------------------------------------------------
 
-    async def create_account(self, user: User) -> None:
+    async def exchange_code(self, code: str, verifier: str) -> dict[str, Any]:
         """
-        Register a new account.
+        Exchange an authorization code for tokens (public client, no secret).
 
         Args:
-            user: The user credentials.
-        """
-        path = f"{self._auth_path()}/register"
-
-        await self._http.post(path, asdict(user))
-        return
-
-    async def login(self, user: User) -> dict[str, Any]:
-        """
-        Authenticate with email and password.
-
-        Args:
-            user: The user credentials.
+            code: The authorization code from the redirect.
+            verifier: The PKCE code verifier.
 
         Returns:
-            dict[str, Any]: The raw JSON response from the API (contains ``token``).
+            dict[str, Any]: The raw JSON response (contains ``access_token``
+            and optionally ``refresh_token``).
         """
-        path = f"{self._auth_path()}/login"
+        path = "/api/v1/auth/oauth/token"
 
-        result: dict[str, Any] = await self._http.post(path, asdict(user))
+        result: dict[str, Any] = await self._http.post_form(
+            path,
+            {
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": REDIRECT_URI,
+                "client_id": OAUTH_CLIENT_ID,
+                "code_verifier": verifier,
+            },
+        )
+        return result
+
+    async def refresh_tokens(self, refresh_token: str) -> dict[str, Any]:
+        """
+        Rotate tokens: exchange a refresh token for a new access+refresh pair.
+
+        Args:
+            refresh_token: The refresh token to redeem.
+
+        Returns:
+            dict[str, Any]: The raw JSON response (contains ``access_token``
+            and optionally ``refresh_token``).
+        """
+        path = "/api/v1/auth/oauth/refresh"
+
+        result: dict[str, Any] = await self._http.post_form(
+            path,
+            {
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": OAUTH_CLIENT_ID,
+            },
+        )
         return result
 
     # ------------------------------------------------------------------
-    # API KEY
+    # User
     # ------------------------------------------------------------------
 
-    async def get_api_key(self, token: str) -> dict[str, Any]:
+    async def get_current_user(self, token: str) -> dict[str, Any]:
         """
-        Retrieve the API key for the authenticated user.
+        Retrieve the current authenticated user.
 
         Args:
-            token: JWT Bearer token obtained from ``login``.
+            token: OAuth access token (Bearer).
 
         Returns:
-            dict[str, Any]: The raw JSON response from the API (contains ``api_key``).
+            dict[str, Any]: The raw JSON response from the API (contains ``email``).
         """
-        path = f"{self._user_path()}/key"
+        path = f"{self._user_path()}/current"
 
         result: dict[str, Any] = await self._http.get(path, token=token)
         return result

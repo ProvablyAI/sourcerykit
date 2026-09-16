@@ -4,10 +4,10 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from sourcerykit.cli.doctor import (
-    _check_api_key_and_org,
     _check_bootstrap_ids,
     _check_database,
     _check_project_name,
+    _check_token_and_org,
     _deep_check_collection_and_ids,
     _deep_check_integration,
     _run_deep_check_collection_and_ids,
@@ -18,12 +18,12 @@ from sourcerykit.config import Settings
 from sourcerykit.provably._errors import ProvablyConnectionError, ProvablyUnauthorizedError
 
 _ORG_ID = uuid.uuid4()
-_API_KEY = "zk-12345678-1234-1234-1234-123456789abc"
+_TOKEN = "some-access-token"
 
 
 def _make_settings(
     *,
-    api_key: str = _API_KEY,
+    access_token: str = _TOKEN,
     org_id: uuid.UUID = _ORG_ID,
     postgres_url: str = "postgresql://u:p@host/db",
     project_name: str = "my-project",
@@ -36,7 +36,7 @@ def _make_settings(
 ) -> Settings:
     """Build a real Settings with sensible defaults."""
     return Settings(
-        api_key=api_key,
+        access_token=access_token,
         org_id=org_id,
         postgres_url=postgres_url,
         project_name=project_name,
@@ -62,40 +62,40 @@ def _make_full_settings(**overrides: object) -> Settings:
 
 
 # ---------------------------------------------------------------------------
-# _check_api_key_and_org
+# _check_token_and_org
 # ---------------------------------------------------------------------------
 
 
-class TestCheckApiKeyAndOrg:
-    def test_missing_api_key(self) -> None:
+class TestCheckTokenAndOrg:
+    def test_missing_token(self) -> None:
         s = MagicMock()
-        s.api_key = ""
-        ok, msg = _check_api_key_and_org(s)
+        s.access_token = ""
+        ok, msg = _check_token_and_org(s)
         assert ok is False
-        assert "PROVABLY_API_KEY is missing" in msg
+        assert "Access token is missing" in msg
 
-    def test_valid_key_and_org(self) -> None:
+    def test_valid_token_and_org(self) -> None:
         s = _make_settings()
         orgs = [{"id": str(s.org_id), "name": "My Org"}]
         with patch("sourcerykit.cli.doctor.auth_service") as mock_auth:
             mock_auth.list_organizations = AsyncMock(return_value=orgs)
-            ok, msg = _check_api_key_and_org(s)
+            ok, msg = _check_token_and_org(s)
         assert ok is True
-        assert "API key valid" in msg
+        assert "Session valid" in msg
 
     def test_unauthorized(self) -> None:
         s = _make_settings()
         with patch("sourcerykit.cli.doctor.auth_service") as mock_auth:
             mock_auth.list_organizations = AsyncMock(side_effect=ProvablyUnauthorizedError("bad"))
-            ok, msg = _check_api_key_and_org(s)
+            ok, msg = _check_token_and_org(s)
         assert ok is False
-        assert "invalid or expired" in msg
+        assert "Session expired" in msg
 
     def test_connection_error(self) -> None:
         s = _make_settings()
         with patch("sourcerykit.cli.doctor.auth_service") as mock_auth:
             mock_auth.list_organizations = AsyncMock(side_effect=ProvablyConnectionError("unreachable"))
-            ok, msg = _check_api_key_and_org(s)
+            ok, msg = _check_token_and_org(s)
         assert ok is False
         assert "Cannot reach Provably API" in msg
 
@@ -104,7 +104,7 @@ class TestCheckApiKeyAndOrg:
         orgs = [{"id": str(uuid.uuid4()), "name": "Other Org"}]
         with patch("sourcerykit.cli.doctor.auth_service") as mock_auth:
             mock_auth.list_organizations = AsyncMock(return_value=orgs)
-            ok, msg = _check_api_key_and_org(s)
+            ok, msg = _check_token_and_org(s)
         assert ok is False
         assert "not found" in msg
 
@@ -355,7 +355,7 @@ class TestRunDoctor:
         s = _make_settings()
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
-            patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(True, "ok")),
+            patch("sourcerykit.cli.doctor._check_token_and_org", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(True, "ok")),
@@ -369,7 +369,7 @@ class TestRunDoctor:
         s = _make_settings()
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
-            patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(False, "bad key")),
+            patch("sourcerykit.cli.doctor._check_token_and_org", return_value=(False, "bad key")),
             patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(True, "ok")),
@@ -383,7 +383,7 @@ class TestRunDoctor:
         s = _make_settings()
         with (
             patch("sourcerykit.cli.doctor.get_settings", return_value=s),
-            patch("sourcerykit.cli.doctor._check_api_key_and_org", return_value=(True, "ok")),
+            patch("sourcerykit.cli.doctor._check_token_and_org", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_database", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_project_name", return_value=(True, "ok")),
             patch("sourcerykit.cli.doctor._check_bootstrap_ids", return_value=(False, "missing")),

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 import pytest
 
-from sourcerykit.provably._errors import ProvablyAPIError, ProvablyConnectionError
+from sourcerykit.provably._errors import ProvablyAPIError, ProvablyDataError
 from sourcerykit.provably.service import ProvablyService
 
 
@@ -100,42 +100,30 @@ class TestProvablyServiceListCollections:
 
 
 # ---------------------------------------------------------------------------
-# get_integration_by_id
+# ensure_integration
 # ---------------------------------------------------------------------------
 
 
-class TestProvablyServiceGetIntegrationById:
-    async def test_returns_record(self) -> None:
+class TestProvablyServiceEnsureIntegration:
+    async def test_returns_id_and_key(self) -> None:
         service, mock_api = _make_service()
+        collection_id = uuid.uuid4()
         integration_id = uuid.uuid4()
-        record = {"id": str(integration_id), "name": "my-integration", "api_key": "key-123"}
-        mock_api.get_integration_by_id = AsyncMock(return_value=record)
-
-        with patch("sourcerykit.provably.service.get_api", return_value=mock_api):
-            result = await service.get_integration_by_id(integration_id)
-
-        assert result == record
-        mock_api.get_integration_by_id.assert_called_once_with(integration_id)
-
-    async def test_api_error(self) -> None:
-        service, mock_api = _make_service()
-        integration_id = uuid.uuid4()
-        mock_request = httpx.Request("GET", f"https://api.provably.ai/api/v1/integrations/{integration_id}")
-        mock_response = httpx.Response(404, request=mock_request, text="Not Found")
-        mock_api.get_integration_by_id = AsyncMock(
-            side_effect=httpx.HTTPStatusError("404", request=mock_request, response=mock_response)
+        mock_api.ensure_integration = AsyncMock(
+            return_value={"id": str(integration_id), "api_key": "i-zk-key-123", "collections": [str(collection_id)]}
         )
 
         with patch("sourcerykit.provably.service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyAPIError):
-                await service.get_integration_by_id(integration_id)
+            result = await service.ensure_integration(collection_id)
 
-    async def test_connection_error(self) -> None:
+        assert result == (integration_id, "i-zk-key-123")
+        call_body = mock_api.ensure_integration.call_args.args[0]
+        assert call_body["collections"] == [str(collection_id)]
+
+    async def test_missing_key_raises_data_error(self) -> None:
         service, mock_api = _make_service()
-        integration_id = uuid.uuid4()
-        mock_request = httpx.Request("GET", f"https://api.provably.ai/api/v1/integrations/{integration_id}")
-        mock_api.get_integration_by_id = AsyncMock(side_effect=httpx.ConnectError("unreachable", request=mock_request))
+        mock_api.ensure_integration = AsyncMock(return_value={"id": str(uuid.uuid4())})
 
         with patch("sourcerykit.provably.service.get_api", return_value=mock_api):
-            with pytest.raises(ProvablyConnectionError):
-                await service.get_integration_by_id(integration_id)
+            with pytest.raises(ProvablyDataError):
+                await service.ensure_integration(uuid.uuid4())

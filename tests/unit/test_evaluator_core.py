@@ -1,7 +1,7 @@
 """Tests for sourcerykit.evaluator.evaluator."""
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -152,10 +152,6 @@ class TestEvaluateHandoff:
             AsyncMock(return_value=verify_result),
         )
         monkeypatch.setattr(
-            "sourcerykit.evaluator.evaluator.get_settings",
-            MagicMock(return_value=MagicMock(api_key="test-key")),
-        )
-        monkeypatch.setattr(
             "sourcerykit.evaluator.evaluator.update_trace",
             AsyncMock(),
         )
@@ -175,10 +171,6 @@ class TestEvaluateHandoff:
         monkeypatch.setattr(
             "sourcerykit.evaluator.evaluator.service.verify_proof",
             AsyncMock(return_value=None),
-        )
-        monkeypatch.setattr(
-            "sourcerykit.evaluator.evaluator.get_settings",
-            MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
         result = await evaluate_handoff(payload=payload)
@@ -201,10 +193,6 @@ class TestEvaluateHandoff:
             AsyncMock(side_effect=RuntimeError("proof failed")),
         )
         monkeypatch.setattr(
-            "sourcerykit.evaluator.evaluator.get_settings",
-            MagicMock(return_value=MagicMock(api_key="test-key")),
-        )
-        monkeypatch.setattr(
             "sourcerykit.evaluator.evaluator.update_trace",
             AsyncMock(),
         )
@@ -219,10 +207,6 @@ class TestEvaluateHandoff:
         monkeypatch.setattr(
             "sourcerykit.evaluator.evaluator.verify_claim_endpoints",
             AsyncMock(return_value=None),
-        )
-        monkeypatch.setattr(
-            "sourcerykit.evaluator.evaluator.get_settings",
-            MagicMock(return_value=MagicMock(api_key="test-key")),
         )
 
         result = await evaluate_handoff(payload=payload)

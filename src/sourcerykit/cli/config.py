@@ -1,5 +1,3 @@
-import re
-
 import questionary
 import typer
 
@@ -7,12 +5,11 @@ from sourcerykit.cli.init import clear_auth_caches, create_db_tables, run_provab
 from sourcerykit.cli.utils import (
     console,
     mask_postgres_url,
-    mask_secret,
     prompt_postgres_url_with_retry,
     prompt_project_name,
     require_settings,
 )
-from sourcerykit.config import get_settings, load_local_env, save_app_dir_config, save_local_env
+from sourcerykit.config import get_settings, load_local_env, save_local_env
 
 config = typer.Typer(no_args_is_help=True)
 
@@ -22,9 +19,8 @@ def list(show_key: bool = typer.Option(False, "--show-key", help="show secrets i
     """Pretty print the active configuration (global + local)."""
     settings = require_settings()
 
-    api_key_display = settings.api_key if show_key else mask_secret(settings.api_key)
     console.print("\n📋 [bold]Global Config[/bold] \n")
-    console.print(f"[cyan]PROVABLY_API_KEY[/cyan]       = [yellow]'{api_key_display}'[/yellow]")
+    console.print(f"[cyan]SOURCERYKIT_ORG_ID[/cyan]       = [yellow]'{settings.org_id}'[/yellow]")
 
     pg_display = settings.postgres_url if show_key else mask_postgres_url(settings.postgres_url)
 
@@ -37,18 +33,15 @@ def list(show_key: bool = typer.Option(False, "--show-key", help="show secrets i
 
 @config.command()
 def set(
-    api_key: str | None = typer.Option(None, "--api-key", help="set PROVABLY_API_KEY"),
     postgres_url: str | None = typer.Option(None, "--postgres-url", help="set SOURCERYKIT_POSTGRES_URL"),
     project_name: str | None = typer.Option(None, "--project-name", help="set SOURCERYKIT_PROJECT_NAME"),
 ) -> None:
     """Interactively set or update configuration variables."""
-    has_flags = api_key is not None or postgres_url is not None or project_name is not None
+    has_flags = postgres_url is not None or project_name is not None
     console.print("\n⚙️  [bold]SourceryKit Configuration Setup[/bold]\n")
 
     if has_flags:
         choices = []
-        if api_key is not None:
-            choices.append("PROVABLY_API_KEY (global)")
         if postgres_url is not None:
             choices.append("SOURCERYKIT_POSTGRES_URL (local)")
         if project_name is not None:
@@ -57,7 +50,6 @@ def set(
         choices = questionary.checkbox(
             "Which configuration variables would you like to update?",
             choices=[
-                questionary.Choice("PROVABLY_API_KEY (global)", checked=False),
                 questionary.Choice("SOURCERYKIT_POSTGRES_URL (local)", checked=False),
                 questionary.Choice("SOURCERYKIT_PROJECT_NAME (local)", checked=False),
             ],
@@ -68,23 +60,6 @@ def set(
             return
 
     # --- Collect inputs ---
-
-    api_key_val = None
-    if "PROVABLY_API_KEY (global)" in choices:
-        if api_key is not None:
-            api_key_val = api_key.strip()
-        else:
-            api_key_val = questionary.password("Enter your PROVABLY_API_KEY:").ask()
-            if api_key_val is not None:
-                api_key_val = api_key_val.strip()
-
-        if api_key_val is not None:
-            if not api_key_val:
-                console.print("[red]❌ API key cannot be empty.[/red]")
-                api_key_val = None
-            elif not re.fullmatch(r"zk-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", api_key_val):
-                console.print("[red]❌ API key must match format zk-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx[/red]")
-                api_key_val = None
 
     postgres_url_val = None
     postgres_changed = False
@@ -111,9 +86,6 @@ def set(
             console.print("[yellow]Same name — no change.[/yellow]")
 
     # --- Save config ---
-
-    if api_key_val:
-        save_app_dir_config(api_key=api_key_val)
 
     local_updates: dict[str, str] = {}
     if postgres_url_val:

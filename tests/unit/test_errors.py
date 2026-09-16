@@ -146,35 +146,35 @@ class TestProvablyAuthErrorHandler:
             pass  # must not raise
 
     async def test_http_401_raises_unauthorized_error(self) -> None:
-        mock_request = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/login")
+        mock_request = httpx.Request("GET", "https://api.provably.ai/api/v1/user/current")
         mock_response = httpx.Response(401, request=mock_request, text="Unauthorized")
         http_err = httpx.HTTPStatusError("401", request=mock_request, response=mock_response)
 
         with pytest.raises(ProvablyUnauthorizedError) as exc_info:
-            async with provably_auth_error_handler("login"):
+            async with provably_auth_error_handler("oauth_userinfo"):
                 raise http_err
 
         assert exc_info.value.status_code == 401
-        assert "login" in str(exc_info.value).lower()
+        assert "userinfo" in str(exc_info.value).lower()
 
     async def test_http_400_raises_auth_error(self) -> None:
-        mock_request = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/register")
-        mock_response = httpx.Response(400, request=mock_request, json={"description": "Email already registered"})
+        mock_request = httpx.Request("POST", "https://api.provably.ai/api/v1/organizations")
+        mock_response = httpx.Response(400, request=mock_request, json={"description": "Invalid request"})
         http_err = httpx.HTTPStatusError("400", request=mock_request, response=mock_response)
 
         with pytest.raises(ProvablyAuthError) as exc_info:
-            async with provably_auth_error_handler("create_account"):
+            async with provably_auth_error_handler("create_organization"):
                 raise http_err
 
         assert exc_info.value.status_code == 400
 
     async def test_http_500_raises_auth_error(self) -> None:
-        mock_request = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/login")
+        mock_request = httpx.Request("GET", "https://api.provably.ai/api/v1/user/current")
         mock_response = httpx.Response(500, request=mock_request, text="Internal Server Error")
         http_err = httpx.HTTPStatusError("500", request=mock_request, response=mock_response)
 
         with pytest.raises(ProvablyAuthError) as exc_info:
-            async with provably_auth_error_handler("login"):
+            async with provably_auth_error_handler("oauth_userinfo"):
                 raise http_err
 
         assert exc_info.value.status_code == 500
@@ -206,7 +206,7 @@ class TestProvablyAuthErrorHandler:
                 raise TypeError("cannot convert")
 
     async def test_request_error_raises_connection_error(self) -> None:
-        req = httpx.Request("POST", "https://api.provably.ai/api/v1/auth/login")
+        req = httpx.Request("GET", "https://api.provably.ai/api/v1/user/current")
         with pytest.raises(ProvablyConnectionError):
-            async with provably_auth_error_handler("login"):
+            async with provably_auth_error_handler("oauth_userinfo"):
                 raise httpx.ConnectError("connection refused", request=req)

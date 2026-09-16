@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Breaking changes
+- **User API key removed in favor of OAuth tokens** — authentication now uses `PROVABLY_ACCESS_TOKEN` (auto-refreshed via `PROVABLY_REFRESH_TOKEN`); the verify path uses the collection integration key. Existing users must re-run `sourcerykit init`. See the [migration guide](docs/migrations/unreleased/unreleased.md).
+- **OAuth browser-only login** — `--register`, `--email`, and `--password` are removed; login is browser OAuth (PKCE) only. New accounts are created on the Provably web app during login.
+
+### Features
+- **Idempotent integration bootstrap** — re-running `init`/`doctor --fix` reuses the existing integration (exact collection match) instead of minting a duplicate key and shadow user.
+
 ## 1.1.0
 
 ### Breaking changes
