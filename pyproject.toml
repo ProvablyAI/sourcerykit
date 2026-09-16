@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sourcerykit"
-version = "1.1.0"
+version = "1.2.0b1"
 description = "Counterspell for hallucinating agents. Python SDK that breaks the illusion on every tool call, API response, and MCP handoff before bad outputs propagate."
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.12"
