@@ -36,6 +36,45 @@ def test_pkce_pair_s256_verifiable() -> None:
     assert challenge == expected
 
 
+def test_consent_page_url_uses_its_own_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sourcerykit.provably import oauth_login
+
+    monkeypatch.setattr(oauth_login, "load_app_dir_config", dict)
+    monkeypatch.delenv("SOURCERYKIT_PROVABLY_APP_URL", raising=False)
+    monkeypatch.setenv("SOURCERYKIT_PROVABLY_CONSENT_URL", "http://localhost:3000/consent")
+    assert oauth_login.consent_page_url() == "http://localhost:3000/consent"
+
+
+def test_consent_page_url_sits_under_the_app_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sourcerykit.provably import oauth_login
+
+    monkeypatch.setattr(oauth_login, "load_app_dir_config", dict)
+    monkeypatch.delenv("SOURCERYKIT_PROVABLY_CONSENT_URL", raising=False)
+    monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "https://app.example.com")
+    assert oauth_login.consent_page_url() == "https://app.example.com/consent"
+
+
+def test_consent_page_url_accepts_an_app_url_left_pointing_at_a_consent_page(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The old advice was to put the consent page in the app URL. Those setups keep working."""
+    from sourcerykit.provably import oauth_login
+
+    monkeypatch.setattr(oauth_login, "load_app_dir_config", dict)
+    monkeypatch.delenv("SOURCERYKIT_PROVABLY_CONSENT_URL", raising=False)
+    monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "http://localhost:3000/consent")
+    assert oauth_login.consent_page_url() == "http://localhost:3000/consent"
+
+
+def test_consent_page_url_falls_back_to_the_production_app(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sourcerykit.provably import oauth_login
+
+    monkeypatch.setattr(oauth_login, "load_app_dir_config", dict)
+    monkeypatch.delenv("SOURCERYKIT_PROVABLY_APP_URL", raising=False)
+    monkeypatch.delenv("SOURCERYKIT_PROVABLY_CONSENT_URL", raising=False)
+    assert oauth_login.consent_page_url() == "https://app.provably.ai/consent"
+
+
 def test_browser_login_carries_the_machine_id_in_the_consent_url(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -1,6 +1,6 @@
 """OAuth2 login for the SourceryKit CLI — public client with PKCE (RFC 7636/8252).
 
-:func:`browser_login` opens ``{provably_app}/consent?…``; the web app drives
+:func:`browser_login` opens ``{provably_consent}?…``; the web app drives
 sign-in and consent and redirects to this CLI's loopback listener
 (``http://127.0.0.1:8910/callback``). The client is public: no secret, PKCE
 S256 is the only proof.
@@ -21,7 +21,7 @@ import webbrowser
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from sourcerykit.config import DEFAULT_PROVABLY_APP_URL, load_app_dir_config
+from sourcerykit.config import load_app_dir_config, resolve_app_urls
 from sourcerykit.logger import get_logger
 from sourcerykit.provably._auth_api import (
     LOOPBACK_PORT,
@@ -47,17 +47,30 @@ def pkce_pair() -> tuple[str, str]:
 
 
 def consent_page_url() -> str:
-    """URL of the web app consent page.
+    """URL of the web app's sign-in and consent page.
 
-    When ``SOURCERYKIT_PROVABLY_APP_URL`` (or ``provably_app``) is set it is
-    used verbatim as the consent page URL — point it at your app's consent page
-    in dev. When unset, falls back to the production app's ``/consent`` page.
+    ``SOURCERYKIT_PROVABLY_CONSENT_URL`` (or ``provably_consent``) names it
+    whole; point that at your own app in dev. Unset, it is ``/consent`` on
+    ``SOURCERYKIT_PROVABLY_APP_URL``, and an app URL that itself ends in
+    ``/consent``, which older setups were told to write, still names the page.
+
+    Read straight from the environment and the app-dir config rather than
+    through :func:`get_settings`, because signing in is what produces the token
+    and organisation id that full settings insist on.
     """
-    raw = os.environ.get("SOURCERYKIT_PROVABLY_APP_URL") or ""
-    if not raw:
-        raw = str(load_app_dir_config().get("provably_app", ""))
-    raw = raw.strip().rstrip("/")
-    return raw or f"{DEFAULT_PROVABLY_APP_URL}/consent"
+    file_config = load_app_dir_config()
+
+    def _read(env_name: str, json_key: str) -> str:
+        value = os.environ.get(env_name)
+        if value is None:
+            value = str(file_config.get(json_key, ""))
+        return value
+
+    _app, consent = resolve_app_urls(
+        _read("SOURCERYKIT_PROVABLY_APP_URL", "provably_app"),
+        _read("SOURCERYKIT_PROVABLY_CONSENT_URL", "provably_consent"),
+    )
+    return consent
 
 
 # ----------------------------------------------------------------------

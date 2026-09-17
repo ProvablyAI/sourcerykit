@@ -5,7 +5,7 @@ from collections.abc import Generator
 
 import pytest
 
-from sourcerykit.config import Settings, get_settings, load_app_dir_config, load_local_env
+from sourcerykit.config import Settings, get_settings, load_app_dir_config, load_local_env, resolve_app_urls
 from sourcerykit.errors import SourceryKitConfigError
 
 _VALID_ORG = "00000000-0000-0000-0000-000000000001"
@@ -44,7 +44,8 @@ class TestSettings:
             org_id=uuid.UUID(_VALID_ORG),
             postgres_url="postgresql://x",
         )
-        assert s.provably_app == "https://api.provably.ai"
+        assert s.provably_app == "https://app.provably.ai"
+        assert s.provably_consent == "https://app.provably.ai/consent"
         assert s.provably_api == "https://api.provably.ai"
         assert s.provably_mcp == "https://mcp.provably.ai"
 
@@ -80,6 +81,29 @@ class TestSettings:
 # ---------------------------------------------------------------------------
 
 
+class TestResolveAppUrls:
+    def test_unset_falls_back_to_the_production_app(self) -> None:
+        assert resolve_app_urls("", "") == ("https://app.provably.ai", "https://app.provably.ai/consent")
+
+    def test_app_root_gives_the_consent_page_under_it(self) -> None:
+        assert resolve_app_urls("https://app.example.com/", "") == (
+            "https://app.example.com",
+            "https://app.example.com/consent",
+        )
+
+    def test_an_app_url_pointing_at_a_consent_page_is_split(self) -> None:
+        assert resolve_app_urls("http://localhost:3000/consent", "") == (
+            "http://localhost:3000",
+            "http://localhost:3000/consent",
+        )
+
+    def test_an_explicit_consent_url_wins(self) -> None:
+        assert resolve_app_urls("https://app.example.com", "http://localhost:3000/consent") == (
+            "https://app.example.com",
+            "http://localhost:3000/consent",
+        )
+
+
 class TestGetSettings:
     def test_reads_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("PROVABLY_ACCESS_TOKEN", "env-key")
@@ -97,6 +121,26 @@ class TestGetSettings:
         monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "https://custom-app.example.com")
         s = get_settings()
         assert s.provably_app == "https://custom-app.example.com"
+        assert s.provably_consent == "https://custom-app.example.com/consent"
+
+    def test_consent_url_can_point_somewhere_else_than_the_app(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("PROVABLY_ACCESS_TOKEN", "k")
+        monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
+        monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
+        monkeypatch.setenv("SOURCERYKIT_PROVABLY_CONSENT_URL", "http://localhost:3000/consent")
+        s = get_settings()
+        assert s.provably_consent == "http://localhost:3000/consent"
+        assert s.provably_app == "https://app.provably.ai"
+
+    def test_an_app_url_left_pointing_at_a_consent_page_still_works(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The old advice was to put the consent page in the app URL. Those setups keep working."""
+        monkeypatch.setenv("PROVABLY_ACCESS_TOKEN", "k")
+        monkeypatch.setenv("SOURCERYKIT_ORG_ID", _VALID_ORG)
+        monkeypatch.setenv("SOURCERYKIT_POSTGRES_URL", "postgresql://x")
+        monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "http://localhost:3000/consent")
+        s = get_settings()
+        assert s.provably_consent == "http://localhost:3000/consent"
+        assert s.provably_app == "http://localhost:3000"
 
     def test_raises_config_error_when_env_vars_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from unittest.mock import patch
