@@ -18,8 +18,32 @@ from sourcerykit.errors import SourceryKitConfigError
 UUID_NIL = getattr(uuid, "NIL", uuid.UUID(int=0))
 
 DEFAULT_PROVABLY_API_URL = "https://api.provably.ai"
-DEFAULT_PROVABLY_APP_URL = "https://api.provably.ai"
+DEFAULT_PROVABLY_APP_URL = "https://app.provably.ai"
 DEFAULT_PROVABLY_MCP_URL = "https://mcp.provably.ai"
+
+CONSENT_PATH = "/consent"
+DEFAULT_PROVABLY_CONSENT_URL = f"{DEFAULT_PROVABLY_APP_URL}{CONSENT_PATH}"
+
+
+def resolve_app_urls(app_url: str, consent_url: str = "") -> tuple[str, str]:
+    """Return ``(site root, consent page)`` from the two raw settings.
+
+    ``SOURCERYKIT_PROVABLY_APP_URL`` was read two ways at once: verbatim as the
+    consent page, and as the site root that ``/org/…/query-record/…`` is glued
+    onto. Both cannot hold, so anyone who pointed it at their own consent page,
+    which is what its own documentation asked for, produced query-record links
+    like ``http://localhost:3000/consent/org/…``.
+
+    A value that still ends in ``/consent`` therefore keeps naming the consent
+    page, and the site root is what remains once that is removed.
+    """
+    app = (app_url or "").strip().rstrip("/")
+    consent = (consent_url or "").strip().rstrip("/")
+    if app.endswith(CONSENT_PATH):
+        consent = consent or app
+        app = app[: -len(CONSENT_PATH)].rstrip("/")
+    app = app or DEFAULT_PROVABLY_APP_URL
+    return app, consent or f"{app}{CONSENT_PATH}"
 
 
 APP_NAME = "sourcerykit"
@@ -49,7 +73,10 @@ class Settings:
     """SOURCERYKIT_PROJECT_NAME — Project name, used as the Provably collection name."""
 
     provably_app: str = DEFAULT_PROVABLY_APP_URL
-    """SOURCERYKIT_PROVABLY_APP_URL — URL of the Provably APP."""
+    """SOURCERYKIT_PROVABLY_APP_URL — root URL of the Provably app, paths are added to it."""
+
+    provably_consent: str = DEFAULT_PROVABLY_CONSENT_URL
+    """SOURCERYKIT_PROVABLY_CONSENT_URL — URL of the sign-in and consent page, used whole."""
 
     provably_api: str = DEFAULT_PROVABLY_API_URL
     """SOURCERYKIT_PROVABLY_API_URL — URL of the Provably API."""
@@ -191,13 +218,19 @@ def get_settings() -> Settings:
         except ValueError:
             return None
 
+    _provably_app, _provably_consent = resolve_app_urls(
+        _url("SOURCERYKIT_PROVABLY_APP_URL", "provably_app"),
+        _url("SOURCERYKIT_PROVABLY_CONSENT_URL", "provably_consent"),
+    )
+
     return Settings(
         access_token=_url("PROVABLY_ACCESS_TOKEN", "token"),
         refresh_token=_url("PROVABLY_REFRESH_TOKEN", "refresh_token"),
         org_id=_org_id,
         postgres_url=_local_resolve("SOURCERYKIT_POSTGRES_URL", "SOURCERYKIT_POSTGRES_URL"),
         project_name=_local_resolve("SOURCERYKIT_PROJECT_NAME", "SOURCERYKIT_PROJECT_NAME"),
-        provably_app=_url("SOURCERYKIT_PROVABLY_APP_URL", "provably_app") or DEFAULT_PROVABLY_APP_URL,
+        provably_app=_provably_app,
+        provably_consent=_provably_consent,
         provably_api=_url("SOURCERYKIT_PROVABLY_API_URL", "provably_api") or DEFAULT_PROVABLY_API_URL,
         provably_mcp=_url("SOURCERYKIT_PROVABLY_MCP_URL", "provably_mcp") or DEFAULT_PROVABLY_MCP_URL,
         middleware_id=_opt_uuid("SOURCERYKIT_MIDDLEWARE_ID", "SOURCERYKIT_MIDDLEWARE_ID"),

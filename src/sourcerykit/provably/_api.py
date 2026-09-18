@@ -393,7 +393,13 @@ class ProvablyAPI:
     # ------------------------------------------------------------------
 
     def query_record_url(self, query_record_id: uuid.UUID) -> str:
-        """Provably Data Admin URL for a query record."""
+        """Provably Data Admin URL for a query record.
+
+        Built on the app's root, never on the consent page. This link is handed
+        to other people as the receipt for a verified answer, so a local or
+        mis-rooted address makes the receipt worthless: Switchboard's connector,
+        for one, refuses any receipt whose link is not ``https``.
+        """
         if not query_record_id:
             raise ValueError("query_record_id is required")
         return f"{self.app}/org/{self.org_id}/query-record/{query_record_id}"
