@@ -12,11 +12,13 @@ This module is pure OAuth orchestration — the token HTTP calls live in
 import asyncio
 import base64
 import hashlib
+import html
 import os
 import secrets
 import threading
 import urllib.parse
 import webbrowser
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from sourcerykit.config import DEFAULT_PROVABLY_APP_URL, load_app_dir_config
@@ -31,6 +33,9 @@ from sourcerykit.provably._auth_api import (
 from sourcerykit.provably.auth_service import auth_service
 
 _log = get_logger(__name__)
+
+# How long the browser's request waits for the token exchange to finish.
+SETTLE_TIMEOUT = 30.0
 
 
 def pkce_pair() -> tuple[str, str]:
@@ -61,37 +66,90 @@ def consent_page_url() -> str:
 
 
 class _LoopbackCallbackHandler(BaseHTTPRequestHandler):
-    """Captures ?code/&state on GET /callback and signals completion."""
+    """Captures ?code/&state on GET /callback and holds its reply.
+
+    The reply waits until the code has been traded for tokens, so what the
+    browser reads is the real outcome rather than "received it". The consent
+    page reads that reply across origins, which needs the allow-origin header.
+    """
 
     result: dict[str, str] = {}
     done = threading.Event()
+    settled = threading.Event()
+    failure: str | None = None
+    allowed_origin: str = ""
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
         parsed = urllib.parse.parse_qsl(urllib.parse.urlsplit(self.path).query)
         type(self).result = dict(parsed)
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html")
-        self.end_headers()
-        self.wfile.write(b"<html><body><h2>Logged in!</h2>You can close this window.</body></html>")
         type(self).done.set()
+
+        type(self).settled.wait(SETTLE_TIMEOUT)
+
+        failure = type(self).failure
+        if not type(self).settled.is_set():
+            failure = "the CLI stopped waiting"
+
+        self.send_response(200 if failure is None else 500)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        if type(self).allowed_origin:
+            self.send_header("Access-Control-Allow-Origin", type(self).allowed_origin)
+        self.end_headers()
+        self.wfile.write(_callback_page(failure))
 
     def log_message(self, format: str, *args: object) -> None:  # silence stderr
         pass
 
 
-async def _wait_for_loopback_code(timeout: float = 300.0) -> dict[str, str]:
-    """Bind the registered loopback port and wait for the OAuth redirect."""
+def _callback_page(failure: str | None) -> bytes:
+    """What the browser shows when the CLI has finished with the code."""
+    if failure is None:
+        body = "<h2>Logged in!</h2>You can close this window."
+    else:
+        body = f"<h2>Sign-in failed</h2>{html.escape(failure)}"
+    return f"<html><body>{body}</body></html>".encode()
+
+
+def _origin_of(url: str) -> str:
+    """Scheme and host of a URL, or "" when it has neither."""
+    parts = urllib.parse.urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else ""
+
+
+async def _wait_for_loopback_code(
+    allowed_origin: str = "",
+    timeout: float = 300.0,
+) -> tuple[dict[str, str], Callable[[str | None], None]]:
+    """Bind the registered loopback port and wait for the OAuth redirect.
+
+    The browser is still waiting for its reply when this returns. Call the
+    returned ``settle`` with ``None`` once the code has been traded for tokens,
+    or with a reason when it failed, and the browser is told which. ``settle``
+    also stops the listener, so it has to run exactly once.
+    """
     server = HTTPServer(("127.0.0.1", LOOPBACK_PORT), _LoopbackCallbackHandler)
     _LoopbackCallbackHandler.result = {}
+    _LoopbackCallbackHandler.failure = None
+    _LoopbackCallbackHandler.allowed_origin = allowed_origin
     _LoopbackCallbackHandler.done.clear()
+    _LoopbackCallbackHandler.settled.clear()
     thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.2}, daemon=True)
     thread.start()
-    try:
-        await asyncio.wait_for(asyncio.to_thread(_LoopbackCallbackHandler.done.wait), timeout)
-    finally:
+
+    def settle(failure: str | None) -> None:
+        _LoopbackCallbackHandler.failure = failure
+        _LoopbackCallbackHandler.settled.set()
         server.shutdown()
         server.server_close()
-    return _LoopbackCallbackHandler.result
+        thread.join(SETTLE_TIMEOUT)
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(_LoopbackCallbackHandler.done.wait), timeout)
+    except BaseException:
+        settle("the CLI stopped waiting")
+        raise
+
+    return _LoopbackCallbackHandler.result, settle
 
 
 async def browser_login(consent_page: str | None = None, *, machine_id: str | None = None) -> OAuthTokens:
@@ -125,12 +183,20 @@ async def browser_login(consent_page: str | None = None, *, machine_id: str | No
     print(f"Sign-in page: {consent_url}")
     webbrowser.open(consent_url)
 
-    callback = await _wait_for_loopback_code()
-    if callback.get("state") != state:
-        raise ValueError("OAuth state mismatch — aborting")
-    code = callback.get("code", "")
-    if not code:
-        error = callback.get("error", "unknown error")
-        raise ValueError(f"authorization denied: {error}")
+    callback, settle = await _wait_for_loopback_code(_origin_of(page))
 
-    return await auth_service.exchange_code(code, verifier)
+    try:
+        if callback.get("state") != state:
+            raise ValueError("OAuth state mismatch — aborting")
+        code = callback.get("code", "")
+        if not code:
+            error = callback.get("error", "unknown error")
+            raise ValueError(f"authorization denied: {error}")
+
+        tokens = await auth_service.exchange_code(code, verifier)
+    except BaseException as error:
+        settle(str(error) or error.__class__.__name__)
+        raise
+
+    settle(None)
+    return tokens
