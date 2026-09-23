@@ -1,34 +1,6 @@
-"""Tests for sourcerykit.db helpers — ConnectionInfo, _intercepts, _trusted_endpoints."""
+"""Tests for sourcerykit.db helpers — _intercepts, _trusted_endpoints."""
 
 import uuid
-
-from sourcerykit.db._engine import ConnectionInfo
-
-# ---------------------------------------------------------------------------
-# ConnectionInfo
-# ---------------------------------------------------------------------------
-
-
-class TestConnectionInfo:
-    def test_to_dict_returns_all_fields(self) -> None:
-        ci = ConnectionInfo(
-            name="mydb",
-            username="user",
-            password="secret",
-            provider="postgresql",
-            uri="postgresql://user:secret@localhost:5432/mydb",
-        )
-        d = ci.to_dict()
-        assert d["name"] == "mydb"
-        assert d["username"] == "user"
-        assert d["password"] == "secret"
-        assert d["provider"] == "postgresql"
-        assert d["uri"] == "postgresql://user:secret@localhost:5432/mydb"
-
-    def test_to_dict_keys(self) -> None:
-        ci = ConnectionInfo(name="n", username="u", password="p", provider="prov", uri="u://x")
-        assert set(ci.to_dict().keys()) == {"name", "username", "password", "provider", "uri"}
-
 
 # ---------------------------------------------------------------------------
 # DB intercept SQL builders

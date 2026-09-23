@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from uuid import UUID
 
+from provably import ConnectionInfo, ProvablyError
+from provably.service import service
+
 from sourcerykit.config import Settings
-from sourcerykit.db._engine import ConnectionInfo, get_connection_info
+from sourcerykit.db._engine import get_connection_info
+from sourcerykit.db._schema import INTERCEPTS_TABLE
 from sourcerykit.errors import SourceryKitBootstrapError, SourceryKitError
 from sourcerykit.logger import get_logger
-from sourcerykit.provably._errors import ProvablyError
-from sourcerykit.provably.service import service
 
 _log = get_logger(__name__)
 
@@ -45,14 +47,17 @@ class ProvablyBootstrapCache:
             connection_info = get_connection_info()
             self.database_id = await self._resolve_database(connection_info)
 
-            ids = await service.get_database_schema_id_and_table_id(self.middleware_id, connection_info)
+            ids = await service.get_database_schema_id_and_table_id(
+                self.middleware_id, connection_info, table_name=INTERCEPTS_TABLE
+            )
             self.schema_id = ids["schema_id"]
             self.table_id = ids["table_id"]
 
             self.collection_name = project_name
             self.collection_id = await self._resolve_collection(project_name)
             self.integration_key = await self._resolve_integration_key()
-        except SourceryKitError:
+        # ProvablyError comes from provably-sdk, so it is not a SourceryKitError.
+        except (SourceryKitError, ProvablyError):
             raise
         except Exception as e:
             _log.error("handshake_failed_unexpected", error=str(e))
@@ -110,7 +115,7 @@ class ProvablyBootstrapCache:
     async def _resolve_integration_key(self) -> str:
         if self.collection_id is None:
             raise SourceryKitBootstrapError("collection_id is not set; _resolve_collection() must succeed first")
-        _, key = await service.ensure_integration(self.collection_id)
+        _, key = await service.ensure_integration(self.collection_id, name=INTERCEPTS_TABLE)
         return key
 
 

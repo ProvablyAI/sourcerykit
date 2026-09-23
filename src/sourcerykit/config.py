@@ -218,3 +218,11 @@ def get_bootstrap_settings() -> str:
     if not raw:
         raw = load_app_dir_config().get("provably_api", "").strip().rstrip("/")
     return raw or DEFAULT_PROVABLY_API_URL
+
+
+def get_bootstrap_app_url() -> str:
+    """Return the Provably app URL without requiring full settings validation."""
+    raw = (os.getenv("SOURCERYKIT_PROVABLY_APP_URL") or "").strip().rstrip("/")
+    if not raw:
+        raw = str(load_app_dir_config().get("provably_app", "")).strip().rstrip("/")
+    return raw or DEFAULT_PROVABLY_APP_URL

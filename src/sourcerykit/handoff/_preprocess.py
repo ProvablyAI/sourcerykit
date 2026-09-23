@@ -1,10 +1,11 @@
 import asyncio
 
+from provably import ProvablyNotFoundError
+from provably.service import service
+
 from sourcerykit.bootstrap.bootstrap import get_bootstrap
 from sourcerykit.errors import SourceryKitBootstrapError
 from sourcerykit.logger import get_logger
-from sourcerykit.provably._errors import ProvablyNotFoundError
-from sourcerykit.provably.service import service
 
 _log = get_logger(__name__)
 _preprocess_lock = asyncio.Lock()

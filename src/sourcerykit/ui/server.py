@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from provably.service import service
 
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._traces import (
@@ -18,7 +19,6 @@ from sourcerykit.db._traces import (
     select_trace_by_id_prefix,
     select_trace_intercepts_by_trace_id,
 )
-from sourcerykit.provably.service import service
 from sourcerykit.utils import extract_actual
 
 _log = logging.getLogger(__name__)

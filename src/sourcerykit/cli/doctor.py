@@ -4,13 +4,15 @@ import asyncio
 import dataclasses
 from collections.abc import Callable
 
+from provably import ProvablyConnectionError, ProvablyUnauthorizedError
+from provably.auth_service import auth_service
+from provably.service import service
+
 from sourcerykit.cli.init import run_full_bootstrap
 from sourcerykit.cli.utils import console, mask_postgres_url, run_connectivity_check
 from sourcerykit.config import Settings, get_settings
 from sourcerykit.db._engine import get_connection_info
-from sourcerykit.provably._errors import ProvablyConnectionError, ProvablyUnauthorizedError
-from sourcerykit.provably.auth_service import auth_service
-from sourcerykit.provably.service import service
+from sourcerykit.db._schema import INTERCEPTS_TABLE
 
 
 def _check_token_and_org(settings: Settings) -> tuple[bool, str]:
@@ -95,7 +97,9 @@ async def _deep_check_collection_and_ids(settings: Settings) -> tuple[bool, str]
     if remote_db != settings.database_id:
         return False, f"Database mismatch (local={settings.database_id}, remote={remote_db})"
 
-    ids = await service.get_database_schema_id_and_table_id(settings.middleware_id, connection_info)
+    ids = await service.get_database_schema_id_and_table_id(
+        settings.middleware_id, connection_info, table_name=INTERCEPTS_TABLE
+    )
     if ids["schema_id"] != settings.schema_id:
         return False, f"Schema mismatch (local={settings.schema_id}, remote={ids['schema_id']})"
     if ids["table_id"] != settings.table_id:

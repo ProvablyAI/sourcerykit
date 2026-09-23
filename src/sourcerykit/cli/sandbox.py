@@ -5,10 +5,10 @@ import asyncio
 import questionary
 import typer
 from dotenv import unset_key
+from provably.service import service
 
 from sourcerykit.cli.utils import console, mask_postgres_url, require_settings
 from sourcerykit.config import LOCAL_ENV_FILE, save_local_env
-from sourcerykit.provably.service import service
 
 sandbox = typer.Typer(no_args_is_help=True)
 

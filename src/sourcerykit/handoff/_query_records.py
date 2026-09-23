@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from provably.service import service
+
 from sourcerykit.bootstrap.bootstrap import get_bootstrap
 from sourcerykit.db._intercepts import (
     select_intercept_by_call_ref,
@@ -7,7 +9,6 @@ from sourcerykit.db._intercepts import (
 )
 from sourcerykit.errors import SourceryKitBootstrapError
 from sourcerykit.logger import get_logger
-from sourcerykit.provably.service import service
 from sourcerykit.utils.validation import validate_length
 
 _log = get_logger(__name__)

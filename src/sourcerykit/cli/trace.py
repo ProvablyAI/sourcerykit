@@ -6,6 +6,8 @@ from typing import Annotated, Any
 from uuid import UUID
 
 import typer
+from provably import QueryAnswer
+from provably.service import service
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.table import Table
@@ -19,8 +21,6 @@ from sourcerykit.db._traces import (
     select_trace_intercepts_by_trace_id,
     select_traces_with_intercept_count,
 )
-from sourcerykit.provably._answer_model import QueryAnswer
-from sourcerykit.provably.service import service
 from sourcerykit.utils import extract_actual
 
 trace = typer.Typer(no_args_is_help=True)

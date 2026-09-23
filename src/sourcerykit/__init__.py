@@ -1,3 +1,4 @@
+from sourcerykit import _provably  # noqa: F401  (configures the Provably SDK first)
 from sourcerykit.bootstrap import bootstrap_system
 from sourcerykit.errors import (
     SourceryKitBootstrapError,

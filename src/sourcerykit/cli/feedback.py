@@ -3,9 +3,9 @@ from pathlib import Path
 
 import questionary
 import typer
+from provably.service import ProvablyService
 
 from sourcerykit.cli.utils import console, require_settings
-from sourcerykit.provably.service import ProvablyService
 
 service = ProvablyService()
 
