@@ -14,7 +14,6 @@ from provably import OAuthTokens, ProvablyConfig
 
 from sourcerykit.config import (
     CONFIG_FILE,
-    DEFAULT_PROVABLY_APP_URL,
     get_bootstrap_app_url,
     get_bootstrap_settings,
     get_settings,
@@ -28,6 +27,8 @@ from sourcerykit.intercept._self_egress import provably_self_egress
 # The OAuth client sourcerykit is registered as, and the loopback port it listens on.
 OAUTH_CLIENT_ID = "sourcerykit-cli"
 OAUTH_LOOPBACK_PORT = 8910
+# The web app's consent page
+DEFAULT_CONSENT_URL = "https://switchboard.provably.ai/consent"
 
 
 def _token_store() -> str | None:
@@ -88,17 +89,12 @@ def sdk_config() -> ProvablyConfig:
 
 
 def consent_page_url() -> str:
-    """URL of the web app consent page.
+    """URL of the web app consent page: ``SOURCERYKIT_CONSENT_URL``, else production.
 
-    When ``SOURCERYKIT_PROVABLY_APP_URL`` (or ``provably_app``) is set it is
-    used verbatim as the consent page URL — point it at your app's consent page
-    in dev. When unset, falls back to the production app's ``/consent`` page.
+    A setting of its own, not ``SOURCERYKIT_PROVABLY_APP_URL``: that one is the
+    base of the app's query-record links, which a consent page URL would break.
     """
-    raw = os.environ.get("SOURCERYKIT_PROVABLY_APP_URL") or ""
-    if not raw:
-        raw = str(load_app_dir_config().get("provably_app", ""))
-    raw = raw.strip().rstrip("/")
-    return raw or f"{DEFAULT_PROVABLY_APP_URL}/consent"
+    return (os.environ.get("SOURCERYKIT_CONSENT_URL") or "").strip() or DEFAULT_CONSENT_URL
 
 
 provably.configure(config=sdk_config, tokens=SourceryKitTokenStore(), egress=provably_self_egress)
