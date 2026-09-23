@@ -7,11 +7,11 @@ from urllib.parse import quote, urlparse, urlunparse
 import psycopg
 import questionary
 import typer
+from provably._api import get_api as get_main_api
+from provably._http import get_http
 from rich.console import Console
 
 from sourcerykit.config import CONFIG_FILE, Settings, get_settings, load_app_dir_config
-from sourcerykit.provably._api import get_api as get_main_api
-from sourcerykit.provably._http import get_http
 
 console = Console()
 

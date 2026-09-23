@@ -6,7 +6,19 @@ import uuid
 
 import questionary
 import typer
+from provably import (
+    Organization,
+    OrganizationType,
+    ProvablyConnectionError,
+    ProvablyUnauthorizedError,
+    browser_login,
+)
+from provably._api import get_api as get_main_api
+from provably._http import get_http
+from provably.auth_service import ProvablyAuthService
+from provably.service import service as provably_service
 
+from sourcerykit._provably import OAUTH_CLIENT_ID, OAUTH_LOOPBACK_PORT, consent_page_url
 from sourcerykit.bootstrap._cache import _BOOTSTRAP_INSTANCE
 from sourcerykit.cli import logo
 from sourcerykit.cli.utils import (
@@ -20,16 +32,6 @@ from sourcerykit.cli.utils import (
 from sourcerykit.config import load_app_dir_config, save_app_dir_config, save_local_env
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._schema import ensure_schema
-from sourcerykit.provably._api import get_api as get_main_api
-from sourcerykit.provably._auth_api import Organization, OrganizationType
-from sourcerykit.provably._errors import (
-    ProvablyConnectionError,
-    ProvablyUnauthorizedError,
-)
-from sourcerykit.provably._http import get_http
-from sourcerykit.provably.auth_service import ProvablyAuthService
-from sourcerykit.provably.oauth_login import browser_login
-from sourcerykit.provably.service import service as provably_service
 
 service = ProvablyAuthService()
 
@@ -48,7 +50,7 @@ def _run_oauth_browser(
     try:
         console.print("\n[bold]🔐 Browser authentication[/bold]")
         console.print("Opening browser for authentication...")
-        tokens = asyncio.run(browser_login())
+        tokens = asyncio.run(browser_login(consent_page_url(), client_id=OAUTH_CLIENT_ID, port=OAUTH_LOOPBACK_PORT))
         email = asyncio.run(service.get_user_email(tokens.access_token))
     except ProvablyConnectionError as e:
         console.print(f"[red]❌ Network error: {e}[/red]")

@@ -22,12 +22,13 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
+from provably import ProvablyConfig
+from provably._api import ProvablyAPI
+from provably._http import ProvablyHTTPClient
 
 from sourcerykit.config import Settings
 from sourcerykit.errors import SourceryKitTrustError
 from sourcerykit.evaluator.evaluator import evaluate_handoff
-from sourcerykit.provably._api import ProvablyAPI
-from sourcerykit.provably._http import ProvablyHTTPClient
 from sourcerykit.schemas import HandoffClaim, HandoffPayload, Outcome, VerificationMode
 from sourcerykit.schemas.agent_response import ClaimedValue
 from tests.e2e.conftest import FakeHttpServer
@@ -86,20 +87,25 @@ def _provably_settings(fake_server: FakeHttpServer) -> Settings:
 def _wired_service(_provably_settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch the Provably service layer to use a real HTTP client pointed at the fake server.
 
-    The evaluator imports ``service`` from ``sourcerykit.provably.service`` and calls
+    The evaluator imports ``service`` from ``provably.service`` and calls
     ``service.verify_proof`` and ``service.wait_for_proof_verification``.
     Those methods call ``get_api()`` which calls ``get_http()``.
 
     We patch:
-      - ``sourcerykit.provably._api.get_http`` to return our ProvablyHTTPClient
-      - ``sourcerykit.provably.service.get_api`` to return our ProvablyAPI
+      - ``provably._api.get_http`` to return our ProvablyHTTPClient
+      - ``provably.service.get_api`` to return our ProvablyAPI
       - ``sourcerykit.evaluator.evaluator.update_trace``
     """
-    http_client = ProvablyHTTPClient(settings=_provably_settings)
-    api = ProvablyAPI(settings=_provably_settings)
+    config = ProvablyConfig(
+        api_url=_provably_settings.provably_api,
+        app_url=_provably_settings.provably_app,
+        org_id=_provably_settings.org_id,
+    )
+    http_client = ProvablyHTTPClient(config)
+    api = ProvablyAPI(config)
 
-    monkeypatch.setattr("sourcerykit.provably._api.get_http", lambda: http_client)
-    monkeypatch.setattr("sourcerykit.provably.service.get_api", lambda: api)
+    monkeypatch.setattr("provably._api.get_http", lambda: http_client)
+    monkeypatch.setattr("provably.service.get_api", lambda: api)
     monkeypatch.setattr(
         "sourcerykit.evaluator.evaluator.update_trace",
         AsyncMock(),

@@ -1859,6 +1859,21 @@ wheels = [
 ]
 
 [[package]]
+name = "provably-sdk"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "msgspec" },
+    { name = "pydantic" },
+    { name = "structlog" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6d/c2/4ef44244beedef4faa3129aecc59dbe9627da01a918c4b04e55d4af1e0c3/provably_sdk-0.3.0.tar.gz", hash = "sha256:dc380737b50e0b2f21b347c3ddebd7868cc4da142e1f33f0dcb0f2ae5d02a497", size = 67697, upload-time = "2026-09-23T12:52:37.172Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7f/84/b62b013653a22d19bba62e8d0dac20d7a3c124b2c2c18116ba7b5560a026/provably_sdk-0.3.0-py3-none-any.whl", hash = "sha256:0795ca1d9614c10b8829da977ec4426cad69cf92e7d2076665d8fd56d3fcb379", size = 25806, upload-time = "2026-09-23T12:52:35.547Z" },
+]
+
+[[package]]
 name = "psycopg"
 version = "3.3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -2418,6 +2433,7 @@ dependencies = [
     { name = "httpx" },
     { name = "jsonschema" },
     { name = "msgspec" },
+    { name = "provably-sdk" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -2460,6 +2476,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "openai-agents", marker = "extra == 'dev'", specifier = ">=0.0.3" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "provably-sdk", specifier = ">=0.3.0,<1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },

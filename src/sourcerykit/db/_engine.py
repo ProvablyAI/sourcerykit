@@ -1,9 +1,6 @@
 """SQLAlchemy engine"""
 
-from dataclasses import dataclass
-from typing import Any
-from urllib.parse import unquote, urlparse
-
+from provably import ConnectionInfo
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from sourcerykit.config import get_settings
@@ -11,44 +8,6 @@ from sourcerykit.errors import SourceryKitConfigError, SourceryKitStorageError
 from sourcerykit.logger import get_logger
 
 _log = get_logger(__name__)
-
-
-@dataclass
-class ConnectionInfo:
-    name: str
-    username: str
-    password: str
-    provider: str
-    uri: str
-
-    @classmethod
-    def from_url(cls, url: str) -> "ConnectionInfo":
-        """Parse a PostgreSQL URL into a ConnectionInfo."""
-        parsed = urlparse(url)
-        provider = parsed.scheme.split("+", 1)[0]
-        host = parsed.hostname or ""
-        port = parsed.port
-        uri = f"{host}:{port}" if port else host
-        return cls(
-            name=parsed.path.lstrip("/"),
-            username=unquote(parsed.username or ""),
-            password=unquote(parsed.password or ""),
-            provider=provider,
-            uri=uri,
-        )
-
-    def same_server(self, other: "ConnectionInfo") -> bool:
-        """True if both point to the same database server and name (ignores credentials and query params)."""
-        return (self.provider, self.uri, self.name) == (other.provider, other.uri, other.name)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "username": self.username,
-            "password": self.password,
-            "provider": self.provider,
-            "uri": self.uri,
-        }
 
 
 # Internal singleton to ensure we only ever create one engine per process

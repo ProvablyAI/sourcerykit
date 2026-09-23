@@ -2,14 +2,15 @@ import asyncio
 import uuid
 from typing import Any
 
+from provably import ProvablyError, QueryAnswer
+from provably.service import service
+
 from sourcerykit.db._engine import get_engine
 from sourcerykit.db._traces import update_trace_intercept_outcome
 from sourcerykit.errors import SourceryKitError, SourceryKitStorageError
 from sourcerykit.evaluator._eval_modes import evaluate_claim
 from sourcerykit.intercept._self_egress import provably_self_egress
 from sourcerykit.logger import get_logger
-from sourcerykit.provably._answer_model import QueryAnswer
-from sourcerykit.provably.service import service
 from sourcerykit.schemas import HandoffPayload, Outcome
 from sourcerykit.trusted_endpoints.service import verify_claim_endpoints
 
@@ -29,7 +30,7 @@ async def evaluate_handoff(*, payload: HandoffPayload) -> dict[str, Any]:
                 verify_claim_endpoints(payload),
                 asyncio.gather(*(service.verify_proof(qid, integration_api_key) for qid in query_ids)),
             )
-    except (ValueError, SourceryKitError) as e:
+    except (ValueError, SourceryKitError, ProvablyError) as e:
         return {"outcome": Outcome.CAUGHT, "per_claim": [], "errors": [f"trust gate: {e}"]}
 
     per_claim: list[dict[str, Any]] = []

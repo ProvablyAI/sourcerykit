@@ -3,6 +3,8 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from provably import ProvablyConnectionError, ProvablyUnauthorizedError
+
 from sourcerykit.cli.doctor import (
     _check_bootstrap_ids,
     _check_database,
@@ -15,7 +17,6 @@ from sourcerykit.cli.doctor import (
     run_doctor,
 )
 from sourcerykit.config import Settings
-from sourcerykit.provably._errors import ProvablyConnectionError, ProvablyUnauthorizedError
 
 _ORG_ID = uuid.uuid4()
 _TOKEN = "some-access-token"

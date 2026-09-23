@@ -1,3 +1,5 @@
+from provably.service import service as provably_service
+
 from sourcerykit.bootstrap._cache import _BOOTSTRAP_INSTANCE, ProvablyBootstrapCache
 from sourcerykit.config import get_settings, save_local_env
 from sourcerykit.db._engine import get_engine
@@ -8,7 +10,6 @@ from sourcerykit.errors import (
 )
 from sourcerykit.intercept.interceptor import init_interceptor
 from sourcerykit.logger import get_logger
-from sourcerykit.provably.service import service as provably_service
 
 _log = get_logger(__name__)
 
