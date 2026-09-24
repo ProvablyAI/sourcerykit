@@ -1860,7 +1860,7 @@ wheels = [
 
 [[package]]
 name = "provably-sdk"
-version = "0.3.1"
+version = "0.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1868,9 +1868,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/48/8586bacc9a2450a8fc2b20f6aec6e4f1b9c311aa38cd8acae5163cfd78dd/provably_sdk-0.3.1.tar.gz", hash = "sha256:dcbc261ff21b60e77aa43668e744c22bafd9d6f23bce749b7ab6db37a029aa6a", size = 68115, upload-time = "2026-09-23T13:19:15.871Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/ea/f7691721076846e1ef3e4d25d2faba9cf06c841feb3f9067cd9e21419823/provably_sdk-0.3.2.tar.gz", hash = "sha256:463f3f6da5ccdba8e8f905297a209ca3208652e6d1ae71dba87441a1855c8206", size = 67963, upload-time = "2026-09-24T13:59:56.216Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/0a/ed8f26f908e97e9b4fc90d953211f5e8b4ef48c52430963e773143f0f569/provably_sdk-0.3.1-py3-none-any.whl", hash = "sha256:870e62f1ed4c09e98d78f5d2aacf4abf66d9043ac5c71f24b74921aa2a97e635", size = 26231, upload-time = "2026-09-23T13:19:14.51Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/29/b353d8bb38a597b41a68bf988aa049d306bb64a045613e8cb19836ed3f01/provably_sdk-0.3.2-py3-none-any.whl", hash = "sha256:6ce9c253133f90c219f36934ab8244b9e8d57e6a91dd6407c72ea3786b40115b", size = 25978, upload-time = "2026-09-24T13:59:54.802Z" },
 ]
 
 [[package]]
@@ -2476,7 +2476,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "openai-agents", marker = "extra == 'dev'", specifier = ">=0.0.3" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "provably-sdk", specifier = ">=0.3.1,<1" },
+    { name = "provably-sdk", specifier = ">=0.3.2,<1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
