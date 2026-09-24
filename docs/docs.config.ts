@@ -54,7 +54,7 @@ const config: RootConfig = {
 			icon: "ArrowUpFromLine",
 			pages: [
 				{ id: "index", icon: "BookMarked" },
-				{ id: "unreleased", icon: "GitBranch" },
+				{ id: "v1_3", icon: "GitBranch" },
 				{ id: "v1_0", icon: "GitBranch" },
 			],
 		},

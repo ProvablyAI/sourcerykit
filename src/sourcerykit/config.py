@@ -209,20 +209,22 @@ def get_settings() -> Settings:
     )
 
 
+def _bootstrap_url(env_name: str, json_key: str, default: str) -> str:
+    """Env, then the global JSON, then *default*; no full settings validation."""
+    raw = (os.getenv(env_name) or "").strip().rstrip("/")
+    if not raw:
+        raw = str(load_app_dir_config().get(json_key, "")).strip().rstrip("/")
+    return raw or default
+
+
 def get_bootstrap_settings() -> str:
     """Return the Provably API URL without requiring full settings validation.
 
     Safe to call before ``access_token``, ``org_id``, or ``postgres_url`` are configured.
     """
-    raw = (os.getenv("SOURCERYKIT_PROVABLY_API_URL") or "").strip().rstrip("/")
-    if not raw:
-        raw = load_app_dir_config().get("provably_api", "").strip().rstrip("/")
-    return raw or DEFAULT_PROVABLY_API_URL
+    return _bootstrap_url("SOURCERYKIT_PROVABLY_API_URL", "provably_api", DEFAULT_PROVABLY_API_URL)
 
 
 def get_bootstrap_app_url() -> str:
     """Return the Provably app URL without requiring full settings validation."""
-    raw = (os.getenv("SOURCERYKIT_PROVABLY_APP_URL") or "").strip().rstrip("/")
-    if not raw:
-        raw = str(load_app_dir_config().get("provably_app", "")).strip().rstrip("/")
-    return raw or DEFAULT_PROVABLY_APP_URL
+    return _bootstrap_url("SOURCERYKIT_PROVABLY_APP_URL", "provably_app", DEFAULT_PROVABLY_APP_URL)

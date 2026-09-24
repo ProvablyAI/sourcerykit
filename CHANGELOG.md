@@ -2,8 +2,10 @@
 
 ## Unreleased
 
+## 1.3.0
+
 ### Breaking changes
-- **User API key removed in favor of OAuth tokens** — authentication now uses `PROVABLY_ACCESS_TOKEN` (auto-refreshed via `PROVABLY_REFRESH_TOKEN`); the verify path uses the collection integration key. Existing users must re-run `sourcerykit init`. See the [migration guide](docs/migrations/unreleased/unreleased.md).
+- **User API key removed in favor of OAuth tokens** — authentication now uses `PROVABLY_ACCESS_TOKEN` (auto-refreshed via `PROVABLY_REFRESH_TOKEN`); the verify path uses the collection integration key. Existing users must re-run `sourcerykit init`. See the [migration guide](docs/migrations/v1_3/v1_3.md).
 - **OAuth browser-only login** — `--register`, `--email`, and `--password` are removed; login is browser OAuth (PKCE) only. New accounts are created on the Provably web app during login.
 - **Provably API client moved to [`provably-sdk`](https://pypi.org/project/provably-sdk/)** — `sourcerykit.provably` is gone; import from `provably` instead (e.g. `from provably import ProvablyError`, `from provably.service import service`). `ProvablyError` no longer subclasses `SourceryKitError`; catch it explicitly. sourcerykit configures the SDK on import.
 
