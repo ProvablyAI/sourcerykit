@@ -97,7 +97,7 @@ def test_consent_page_has_its_own_setting(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.delenv("SOURCERYKIT_CONSENT_URL", raising=False)
     # The app URL is the base of query-record links, so it must not move the consent page.
     monkeypatch.setenv("SOURCERYKIT_PROVABLY_APP_URL", "https://app.example")
-    assert _provably.consent_page_url() == "https://switchboard.provably.ai/consent"
+    assert _provably.consent_page_url() == "https://switchboard-app.provably.ai/consent"
 
     monkeypatch.setenv("SOURCERYKIT_CONSENT_URL", "http://localhost:3000/consent")
     assert _provably.consent_page_url() == "http://localhost:3000/consent"

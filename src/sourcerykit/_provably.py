@@ -28,7 +28,7 @@ from sourcerykit.intercept._self_egress import provably_self_egress
 OAUTH_CLIENT_ID = "sourcerykit-cli"
 OAUTH_LOOPBACK_PORT = 8910
 # The web app's consent page
-DEFAULT_CONSENT_URL = "https://switchboard.provably.ai/consent"
+DEFAULT_CONSENT_URL = "https://switchboard-app.provably.ai/consent"
 
 
 def _token_store() -> str | None:
