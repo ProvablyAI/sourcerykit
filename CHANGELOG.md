@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.1
+
+### Features
+- **`init --org-id-auto`** — when your account belongs to several organizations, `init` reuses the saved one (or the lowest ID) instead of prompting. Without the flag and without a terminal, `init` now exits with a clear error instead of crashing on the organization prompt.
+
 ## 1.3.0
 
 ### Breaking changes
