@@ -41,6 +41,7 @@ def _run_oauth_browser(
     postgres_url: str | None = None,
     project_name: str | None = None,
     sandbox: bool = False,
+    org_id_auto: bool = False,
 ) -> None:
     """OAuth2 browser login, then run the post-auth setup phases.
 
@@ -66,6 +67,7 @@ def _run_oauth_browser(
         postgres_url=postgres_url,
         project_name=project_name,
         sandbox=sandbox,
+        org_id_auto=org_id_auto,
     ):
         console.print("\n👋 Setup closed. Happy coding!")
         raise typer.Exit()
@@ -140,6 +142,7 @@ def _execute_post_auth_phases(
     postgres_url: str | None = None,
     project_name: str | None = None,
     sandbox: bool = False,
+    org_id_auto: bool = False,
 ) -> bool:
     """Executes organisation, database, project, bootstrap, and saving steps."""
 
@@ -187,6 +190,14 @@ def _execute_post_auth_phases(
 
     elif len(orgs) == 1:
         org_id = str(orgs[0]["id"])
+    elif org_id_auto:
+        # Keep the saved org, else a stable pick.
+        ids = sorted(str(o["id"]) for o in orgs)
+        saved = str(load_app_dir_config().get("org_id", ""))
+        org_id = saved if saved in ids else ids[0]
+    elif not sys.stdin.isatty():
+        console.print("[red]❌ You belong to multiple organizations; rerun with --org-id-auto.[/red]")
+        return False
     else:
         console.print("\n[bold]🏢 Choose your organization workspace[/bold]")
         choices = [{"name": f"{o.get('name', o['id'])} ({o['id']})", "value": str(o["id"])} for o in orgs]
@@ -286,12 +297,15 @@ def config_provably(
     postgres_url: str | None = None,
     project_name: str | None = None,
     sandbox: bool = False,
+    org_id_auto: bool = False,
 ) -> None:
     console.print(logo.print_logo(), "\n\n")
 
     # Non-interactive: any flag implies a browser login, then continue with the flags.
-    if postgres_url or project_name or sandbox:
-        _run_oauth_browser(postgres_url=postgres_url, project_name=project_name, sandbox=sandbox)
+    if postgres_url or project_name or sandbox or org_id_auto:
+        _run_oauth_browser(
+            postgres_url=postgres_url, project_name=project_name, sandbox=sandbox, org_id_auto=org_id_auto
+        )
         return
 
     while True:
@@ -326,6 +340,7 @@ def config_provably(
                     postgres_url=postgres_url,
                     project_name=project_name,
                     sandbox=sandbox,
+                    org_id_auto=org_id_auto,
                 ):
                     console.print("\n👋 Setup closed. Happy coding!")
                     raise typer.Exit()
@@ -347,4 +362,4 @@ def config_provably(
                 console.print("\n👋 Setup closed. Happy coding!")
                 return
 
-            _run_oauth_browser(sandbox=sandbox)
+            _run_oauth_browser(sandbox=sandbox, org_id_auto=org_id_auto)

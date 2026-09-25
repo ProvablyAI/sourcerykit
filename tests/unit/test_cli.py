@@ -7,6 +7,7 @@ import typer
 from provably import OAuthTokens, ProvablyConnectionError
 
 from sourcerykit.cli.init import (
+    _execute_post_auth_phases,
     _run_oauth_browser,
 )
 from sourcerykit.cli.utils import (
@@ -132,6 +133,7 @@ class TestRunOauthBrowser:
             postgres_url="postgresql://u:p@h:5432/db",
             project_name="proj",
             sandbox=True,
+            org_id_auto=False,
         )
 
     def test_returns_without_phases_on_connection_error(self) -> None:
@@ -143,6 +145,52 @@ class TestRunOauthBrowser:
             _run_oauth_browser(sandbox=True)  # must not raise
 
         mock_phases.assert_not_called()
+
+
+class TestExecutePostAuthPhasesOrgs:
+    _A = "11111111-1111-1111-1111-111111111111"
+    _B = "22222222-2222-2222-2222-222222222222"
+    _C = "33333333-3333-3333-3333-333333333333"
+
+    def _picked_org(self, saved_config: dict[str, str]) -> str:
+        orgs = [{"id": self._C}, {"id": self._A}, {"id": self._B}]
+        with (
+            patch("sourcerykit.cli.init.service.get_organizations", new=AsyncMock(return_value=orgs)),
+            patch("sourcerykit.cli.init.load_app_dir_config", return_value=saved_config),
+            patch("sourcerykit.cli.init.questionary") as mock_q,
+            patch("sourcerykit.cli.init.save_app_dir_config") as mock_save,
+            patch("sourcerykit.cli.init.provably_service.create_sandbox", new=AsyncMock(side_effect=Exception("stop"))),
+            patch("sourcerykit.cli.init.console"),
+        ):
+            _execute_post_auth_phases("at", email="u@example.com", sandbox=True, org_id_auto=True)
+
+        mock_q.select.assert_not_called()
+        return str(mock_save.call_args.kwargs["org_id"])
+
+    def test_multiple_orgs_keeps_saved_org(self) -> None:
+        assert self._picked_org({"org_id": self._B}) == self._B
+
+    def test_multiple_orgs_picks_lowest_id_without_saved_org(self) -> None:
+        assert self._picked_org({}) == self._A
+
+    def test_multiple_orgs_ignores_saved_org_no_longer_listed(self) -> None:
+        assert self._picked_org({"org_id": "44444444-4444-4444-4444-444444444444"}) == self._A
+
+    def test_multiple_orgs_without_flag_or_tty_fails_without_prompting(self) -> None:
+        with (
+            patch(
+                "sourcerykit.cli.init.service.get_organizations",
+                new=AsyncMock(return_value=[{"id": self._A}, {"id": self._B}]),
+            ),
+            patch("sourcerykit.cli.init.sys.stdin.isatty", return_value=False),
+            patch("sourcerykit.cli.init.questionary") as mock_q,
+            patch("sourcerykit.cli.init.save_app_dir_config") as mock_save,
+            patch("sourcerykit.cli.init.console"),
+        ):
+            assert _execute_post_auth_phases("at", email="u@example.com", sandbox=True) is False
+
+        mock_q.select.assert_not_called()
+        mock_save.assert_not_called()
 
 
 class TestMaskSecret:

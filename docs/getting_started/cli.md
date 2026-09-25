@@ -53,7 +53,7 @@ Global config is shared across all projects. Local config is project-specific an
 Setup wizard for browser login (OAuth), database linking, and project initialization.
 
 ```bash
-sourcerykit init [--postgres-url URL] [--project-name NAME] [--sandbox]
+sourcerykit init [--postgres-url URL] [--project-name NAME] [--sandbox] [--org-id-auto]
 ```
 
 **Options:**
@@ -62,6 +62,7 @@ sourcerykit init [--postgres-url URL] [--project-name NAME] [--sandbox]
 | `--postgres-url` | Full `postgresql://` URL |
 | `--project-name` | Project name |
 | `--sandbox` | Use a hosted sandbox database instead of your own PostgreSQL |
+| `--org-id-auto` | If you belong to several organizations, reuse the saved one (or the lowest ID) instead of prompting. Needed for non-interactive runs in that case |
 
 > [!NOTE]
 > Login is **browser-based OAuth** (PKCE). Passing any flag opens the browser login once,

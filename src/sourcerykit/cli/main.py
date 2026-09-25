@@ -25,8 +25,11 @@ def init(
     postgres_url: str | None = typer.Option(None, "--postgres-url", help="full postgres:// URL"),
     project_name: str | None = typer.Option(None, "--project-name", help="project name"),
     sandbox: bool = typer.Option(False, "--sandbox", help="use hosted sandbox database"),
+    org_id_auto: bool = typer.Option(
+        False, "--org-id-auto", help="with several organizations, reuse the saved one or pick one without prompting"
+    ),
 ) -> None:
-    config_provably(postgres_url=postgres_url, project_name=project_name, sandbox=sandbox)
+    config_provably(postgres_url=postgres_url, project_name=project_name, sandbox=sandbox, org_id_auto=org_id_auto)
 
 
 @app.command(help="validate configuration and connectivity")
