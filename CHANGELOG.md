@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.4.0
+
+### Changes
+- **Consent page moved to `switchboard-app.provably.ai`** — the default `SOURCERYKIT_CONSENT_URL` is now `https://switchboard-app.provably.ai/consent`.
+
 ## 1.3.1
 
 ### Features
