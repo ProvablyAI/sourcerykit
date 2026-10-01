@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.4.1
+
+### Changes
+- **`provably-sdk` minimum raised to 0.3.3.**
+
 ## 1.4.0
 
 ### Changes
