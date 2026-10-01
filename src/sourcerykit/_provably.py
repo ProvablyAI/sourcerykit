@@ -43,6 +43,8 @@ class SourceryKitTokenStore:
     """The session in sourcerykit's global JSON, or in an embedding app's ``.env``."""
 
     def load(self) -> OAuthTokens | None:
+        load_app_dir_config.cache_clear()
+        get_settings.cache_clear()
         # Raises SourceryKitConfigError when sourcerykit is not set up, as before the SDK split.
         settings = get_settings()
         # sourcerykit only ever signs in as its own client, so its tokens are that client's.
@@ -72,6 +74,7 @@ class SourceryKitTokenStore:
             os.environ.pop("PROVABLY_REFRESH_TOKEN", None)
             load_local_env.cache_clear()
         else:
+            load_app_dir_config.cache_clear()
             payload = load_app_dir_config()
             payload.pop("refresh_token", None)
             CONFIG_FILE.write_text(json.dumps(payload))
