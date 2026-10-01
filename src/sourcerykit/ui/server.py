@@ -110,7 +110,6 @@ def launch(trace_id: str, host: str = "127.0.0.1", port: int = 8743) -> None:
     url = f"http://{host}:{port}/?id={trace_id}"
     print(f"Opening trace dashboard at {url}")
 
-    # ponytail: open browser after uvicorn binds; 0.5s is enough for a local server
     threading.Timer(0.5, webbrowser.open, args=[url]).start()
 
     import uvicorn

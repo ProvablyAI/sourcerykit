@@ -1,5 +1,6 @@
 """Tests for sourcerykit._provably — how sourcerykit plugs into the Provably SDK."""
 
+import json
 import os
 from pathlib import Path
 from unittest.mock import patch
@@ -91,6 +92,38 @@ class TestTokenStorePersistence:
             )
         finally:
             get_settings.cache_clear()
+
+
+class TestSessionSharedBetweenProcesses:
+    @pytest.fixture
+    def session_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        from sourcerykit import config
+
+        path = tmp_path / "config.json"
+        monkeypatch.setattr(config, "CONFIG_FILE", path)
+        monkeypatch.setattr(_provably, "CONFIG_FILE", path)
+        for name in ("SOURCERYKIT_TOKEN_STORE", "PROVABLY_ACCESS_TOKEN", "PROVABLY_REFRESH_TOKEN"):
+            monkeypatch.delenv(name, raising=False)
+        path.write_text(json.dumps({"token": "at", "refresh_token": "rt", "org_id": _ORG}))
+        return path
+
+    def test_load_sees_a_session_another_process_rotated(self, session_file: Path) -> None:
+        store = SourceryKitTokenStore()
+        assert store.load() == OAuthTokens(access_token="at", refresh_token="rt", client_id="sourcerykit-cli")
+
+        session_file.write_text(json.dumps({"token": "at2", "refresh_token": "rt2", "org_id": _ORG}))
+
+        assert store.load() == OAuthTokens(access_token="at2", refresh_token="rt2", client_id="sourcerykit-cli")
+
+    def test_clearing_the_refresh_token_keeps_another_process_s_newer_access_token(self, session_file: Path) -> None:
+        from sourcerykit.config import load_app_dir_config
+
+        load_app_dir_config()  # this process's cached copy still holds "at"
+        session_file.write_text(json.dumps({"token": "at2", "refresh_token": "rt2", "org_id": _ORG}))
+
+        SourceryKitTokenStore().clear_refresh_token()
+
+        assert json.loads(session_file.read_text()) == {"token": "at2", "org_id": _ORG}
 
 
 def test_consent_page_has_its_own_setting(monkeypatch: pytest.MonkeyPatch) -> None:
