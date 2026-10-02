@@ -1860,7 +1860,7 @@ wheels = [
 
 [[package]]
 name = "provably-sdk"
-version = "0.3.3"
+version = "0.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1868,9 +1868,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/19/13ee32df0574a0171e64a9751d1ad4f8bcb9a82a9e731c51878ae08acbbc/provably_sdk-0.3.3.tar.gz", hash = "sha256:f27a3e6fe0e43566873cbfaf15fc99834069ad57bf8e1a9a447d001d829b998f", size = 68494, upload-time = "2026-10-01T15:32:04.533Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/78/c8e4e2e5437ac2c080af78272ad1785d825c90f9f6a2a6247f8352fe3dae/provably_sdk-0.3.4.tar.gz", hash = "sha256:41248069edc674f8a3b9bbfcb7b81f6dd9d52142458eaeb1148ca8d89bcab688", size = 70092, upload-time = "2026-10-02T13:06:14.269Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/09/155a093e7d15446de4d9bd0532b5fac3fc9f8b3c1c7aacffa53639344475/provably_sdk-0.3.3-py3-none-any.whl", hash = "sha256:bdd389f5a9b4b49597c7163b61b244d5abb35e16c3afdf9732b62203954528d9", size = 26267, upload-time = "2026-10-01T15:32:03.346Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/52/b30c1451ed86454dcbacf130fa8a37c4b6b572d89c53083b660edbd420e1/provably_sdk-0.3.4-py3-none-any.whl", hash = "sha256:7c245b2ba67f2f468d5548ce78f69fc4f79dcbf115d23a71d6efcafe232e0bcc", size = 27334, upload-time = "2026-10-02T13:06:12.857Z" },
 ]
 
 [[package]]
@@ -2423,7 +2423,7 @@ wheels = [
 
 [[package]]
 name = "sourcerykit"
-version = "1.4.1"
+version = "1.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
@@ -2476,7 +2476,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "openai-agents", marker = "extra == 'dev'", specifier = ">=0.0.3" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "provably-sdk", specifier = ">=0.3.3,<1" },
+    { name = "provably-sdk", specifier = ">=0.3.4,<1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
