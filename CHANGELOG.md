@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changes
+- **Sign-in is SourceryKit-branded at `sourcerykit-app.provably.ai`** — the default `SOURCERYKIT_CONSENT_URL` is now `https://sourcerykit-app.provably.ai/consent`, and the sign-in, sign-up and account emails carry SourceryKit's name and logo. Older versions keep working: the Switchboard address forwards SourceryKit consent requests here.
+
 ## 1.4.2
 
 ### Changes
